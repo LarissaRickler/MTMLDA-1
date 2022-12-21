@@ -69,6 +69,26 @@ def max_probability_todo_node(root):
         max_node = node
   return max_node
 
+counter_print = 0
+def print_graph(root):
+  global counter_print
+
+  # Print graph to file
+  def name_from_parents(node):
+    if node.parent is None:
+      return node.name
+    else:
+      return name_from_parents(node.parent) + node.name
+  def nodeattrfunc(node):
+    if node.logposterior is not None:
+      return 'style=filled,fillcolor=green'
+    if node.computing == True:
+      return 'style=filled,fillcolor=yellow'
+    return 'style=filled,fillcolor=white'
+  DotExporter(root, nodenamefunc=name_from_parents, nodeattrfunc=nodeattrfunc).to_dotfile(f"mtmc{str(counter_print).rjust(5, '0')}.dot")
+  counter_print += 1
+
+
 model = model.Banana() #umbridge.HTTPModel('http://localhost:4243', 'posterior')
 
 root = MTNode('a')
@@ -120,20 +140,8 @@ with ThreadPoolExecutor(max_workers=8) as executor:
     computed_node.logposterior = future.result()[0][0]
     propagate_log_posterior_to_reject_children(root)
 
-    # Print graph to file
-    def name_from_parents(node):
-      if node.parent is None:
-        return node.name
-      else:
-        return name_from_parents(node.parent) + node.name
-    def nodeattrfunc(node):
-      if node.logposterior is not None:
-        return 'style=filled,fillcolor=green'
-      if node.computing == True:
-        return 'style=filled,fillcolor=yellow'
-      return 'style=filled,fillcolor=white'
-    DotExporter(root, nodenamefunc=name_from_parents, nodeattrfunc=nodeattrfunc).to_dotfile(f"mtmc{counter_computed_models}.dot")
-    #os.system(f'dot -Tpng mtmc.dot -o mtmc{counter_computed_models}.png >/dev/null 2>&1')
+    print_graph(root)
+
 
     while True:
       # Retrieve root's children
@@ -160,13 +168,21 @@ with ThreadPoolExecutor(max_workers=8) as executor:
             root = reject_sample
             acceptance_rate_estimate = acceptance_rate_estimate * .99
 
+        print_graph(root)
+
+
         # Add new state to chain and add a new layer to the tree to compensate for removed old root and sibling subtree
         chain.append(root.state)
         add_layer_to_tree(root)
 
-    if len(chain) >= 1000:
+        print_graph(root)
+
+
+    if len(chain) >= 50:
       break
     submit_next_job(root, acceptance_rate_estimate)
+
+    print_graph(root)
 
 
 print_mtree(root)

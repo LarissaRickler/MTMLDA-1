@@ -1,8 +1,8 @@
-from anytree import Node, NodeMixin, RenderTree, LevelOrderGroupIter, PreOrderIter #, Walker
+from anytree import Node, NodeMixin, RenderTree, LevelOrderGroupIter, PreOrderIter, util #, Walker
 import numpy as np
 import umbridge
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import model
+#import model
 
 from anytree.exporter import DotExporter
 import os
@@ -11,6 +11,7 @@ class MTNodeBase(object):
   probability_reached = None
   state = None
   logposterior = None
+  logposterior_coarse = None
   computing = False
 
 class MTNode(MTNodeBase, NodeMixin):
@@ -28,7 +29,7 @@ def print_mtree(root):
     treestr = u"%s%s" % (pre, node.name)
     print(treestr.ljust(8), node.probability_reached, node.state, node.logposterior)
 
-def update_probability_reached(root, acceptance_rate_estimate):
+def update_probability_reached2(root, acceptance_rate_estimate):
 
   for level_children in LevelOrderGroupIter(root):
     for node in level_children:
@@ -41,22 +42,39 @@ def update_probability_reached(root, acceptance_rate_estimate):
       else:
         raise ValueError(f'Invalid node name: {node.name}')
 
+def update_probability_reached(root, acceptance_rate_estimate):
+
+  model_coarse = umbridge.HTTPModel('http://localhost:4243', 'posterior_coarse')
+
+  for level_children in LevelOrderGroupIter(root):
+    for node in level_children:
+
+      if node.name == 'r' and node.parent is not None:
+          node.logposterior_coarse = node.parent.logposterior_coarse
+      if node.logposterior_coarse is None:
+        node.logposterior_coarse = model_coarse([node.state.tolist()])[0][0]
+
+      if node.parent == None:
+        node.probability_reached = 1.0
+      elif node.name == 'a':
+        accept_estimate = min(1, np.exp(node.logposterior_coarse - node.parent.logposterior_coarse))
+        node.probability_reached = accept_estimate * node.parent.probability_reached
+      elif node.name == 'r':
+        sibling = util.leftsibling(node)
+        accept_estimate = min(1, np.exp(sibling.logposterior_coarse - node.parent.logposterior_coarse))
+        node.probability_reached = (1 - accept_estimate) * node.parent.probability_reached
+      else:
+        raise ValueError(f'Invalid node name: {node.name}')
+
+
 def metropolis_hastings_proposal(current_state):
   return np.random.multivariate_normal(current_state, .01*np.eye(2))
-
-def add_layer_to_tree(root):
-  *_, last_level = LevelOrderGroupIter(root)
-
-  for last_level_node in last_level:
-    accepted = MTNode('a', parent=last_level_node)
-    rejected = MTNode('r', parent=last_level_node)
-    accepted.state = metropolis_hastings_proposal(last_level_node.state)
-    rejected.state = last_level_node.state
 
 def propagate_log_posterior_to_reject_children(root):
   for level_children in LevelOrderGroupIter(root):
     for child in level_children:
       if child.name == 'r' and child.parent is not None:
+        child.computing = child.parent.computing
         child.logposterior = child.parent.logposterior
 
 def max_probability_todo_node(root):
@@ -64,13 +82,17 @@ def max_probability_todo_node(root):
   max_node = None
   for node in PreOrderIter(root):
     if node.name == 'a': # Only 'accept' nodes need model evaluations, since 'reject' nodes are just copies of their parents
-      if node.probability_reached > max_probability and node.logposterior is None and not node.computing:
-        max_probability = node.probability_reached
+      parent_probability_reached = 1.0
+      if node.parent is not None:
+        parent_probability_reached = node.parent.probability_reached
+      if parent_probability_reached > max_probability and node.logposterior is None and not node.computing:
+        max_probability = parent_probability_reached
         max_node = node
   return max_node
 
 counter_print = 0
 def print_graph(root):
+  #return
   global counter_print
 
   # Print graph to file
@@ -79,37 +101,55 @@ def print_graph(root):
       return node.name
     else:
       return name_from_parents(node.parent) + node.name
+  def node_name(node):
+    return name_from_parents(node) + "\n" + str(node.probability_reached)
   def nodeattrfunc(node):
     if node.logposterior is not None:
       return 'style=filled,fillcolor=green'
     if node.computing == True:
       return 'style=filled,fillcolor=yellow'
     return 'style=filled,fillcolor=white'
-  DotExporter(root, nodenamefunc=name_from_parents, nodeattrfunc=nodeattrfunc).to_dotfile(f"mtmc{str(counter_print).rjust(5, '0')}.dot")
+  DotExporter(root, nodenamefunc=node_name, nodeattrfunc=nodeattrfunc).to_dotfile(f"mtmc{str(counter_print).rjust(5, '0')}.dot")
   counter_print += 1
 
+def expand_tree(root):
+  # Iterate over tree, add new nodes to computed accept leaves
+  for node in root.leaves:
+    if node.name == 'a' and (node.logposterior is not None or node.computing):
+      accepted = MTNode('a', parent=node)
+      rejected = MTNode('r', parent=node)
+      accepted.state = metropolis_hastings_proposal(node.state)
+      rejected.state = node.state
 
-model = model.Banana() #umbridge.HTTPModel('http://localhost:4243', 'posterior')
+  for node in root.leaves:
+    if node.name == 'r' and (util.leftsibling(node).logposterior is not None or util.leftsibling(node).computing):
+      accepted = MTNode('a', parent=node)
+      rejected = MTNode('r', parent=node)
+      accepted.state = metropolis_hastings_proposal(node.state)
+      rejected.state = node.state
+
+
+model = umbridge.HTTPModel('http://localhost:4243', 'posterior')
 
 root = MTNode('a')
 root.state = np.array([4.0,4.0])
 chain = [root.state]
 
-for fill_iter in range(0,6):
-  add_layer_to_tree(root)
+num_workers = 8
 
 acceptance_rate_estimate = .8
 
 counter_computed_models = 0
 
-print_mtree(root)
+#print_mtree(root)
 
-with ThreadPoolExecutor(max_workers=8) as executor:
+with ThreadPoolExecutor(max_workers=num_workers) as executor:
   futures = []
   futuremap = {}
 
   def submit_next_job(root, acceptance_rate_estimate):
 
+    expand_tree(root)
     # Update (estimated) probability of reaching each node
     update_probability_reached(root, acceptance_rate_estimate)
     # Pick most likely (and not yet computed) node to evaluate
@@ -125,8 +165,10 @@ with ThreadPoolExecutor(max_workers=8) as executor:
     futuremap[future] = todo_node
 
   # Initialize by submitting as many jobs as there are workers
-  for iter in range(0,8):
+  print_graph(root)
+  for iter in range(0,num_workers):
     submit_next_job(root, acceptance_rate_estimate)
+    print_graph(root)
 
   while True:
 
@@ -168,24 +210,20 @@ with ThreadPoolExecutor(max_workers=8) as executor:
             root = reject_sample
             acceptance_rate_estimate = acceptance_rate_estimate * .99
 
-        print_graph(root)
-
-
         # Add new state to chain and add a new layer to the tree to compensate for removed old root and sibling subtree
         chain.append(root.state)
-        add_layer_to_tree(root)
 
         print_graph(root)
 
 
-    if len(chain) >= 50:
+    if len(chain) >= 40:
       break
     submit_next_job(root, acceptance_rate_estimate)
 
     print_graph(root)
 
 
-print_mtree(root)
+#print_mtree(root)
 
 print(f"MCMC chain length: {len(chain)}")
 print(f"Model evaluations computed: {counter_computed_models}")

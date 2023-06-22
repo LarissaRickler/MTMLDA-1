@@ -20,7 +20,8 @@ class Banana(umbridge.Model):
         return [1]
 
     def __call__(self, parameters, config = {}):
-        time.sleep(float(os.environ.get('SLEEP_INTERVAL', 0)))
+        # Random sleep time multiplied by SLEEP_INTERVAL
+        time.sleep(float(os.environ.get('SLEEP_INTERVAL', .1)) * np.random.random())
 
         a = config.get('a', 2.0)
         b = config.get('b', 0.2)
@@ -49,8 +50,6 @@ class BananaCoarse(umbridge.Model):
         return [1]
 
     def __call__(self, parameters, config = {}):
-        #time.sleep(float(os.environ.get('SLEEP_INTERVAL', 0)))
-
         a = config.get('a', 2.0)
         b = config.get('b', 0.2)
         scale = config.get('scale', 1.5)

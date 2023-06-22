@@ -13,6 +13,7 @@ class MTNodeBase(object):
   logposterior = None
   logposterior_coarse = None
   computing = False
+  random_draw = None
 
 class MTNode(MTNodeBase, NodeMixin):
   def __init__(self, name, parent=None, children=None):
@@ -29,6 +30,7 @@ def print_mtree(root):
     treestr = u"%s%s" % (pre, node.name)
     print(treestr.ljust(8), node.probability_reached, node.state, node.logposterior)
 
+# Basic strategy for estimating probability of needing a node: Simply go by estimated acceptance rate
 def update_probability_reached2(root, acceptance_rate_estimate):
 
   for level_children in LevelOrderGroupIter(root):
@@ -39,6 +41,31 @@ def update_probability_reached2(root, acceptance_rate_estimate):
         node.probability_reached = acceptance_rate_estimate * node.parent.probability_reached
       elif node.name == 'r':
         node.probability_reached = (1 - acceptance_rate_estimate) * node.parent.probability_reached
+      else:
+        raise ValueError(f'Invalid node name: {node.name}')
+
+# Advanced strategy using a coarse model to estimate acceptance rate
+def update_probability_reached3(root, acceptance_rate_estimate):
+
+  model_coarse = umbridge.HTTPModel('http://localhost:4243', 'posterior_coarse')
+
+  for level_children in LevelOrderGroupIter(root):
+    for node in level_children:
+
+      if node.name == 'r' and node.parent is not None:
+          node.logposterior_coarse = node.parent.logposterior_coarse
+      if node.logposterior_coarse is None:
+        node.logposterior_coarse = model_coarse([node.state.tolist()])[0][0]
+
+      if node.parent == None:
+        node.probability_reached = 1.0
+      elif node.name == 'a':
+        accept_estimate = min(1, np.exp(node.logposterior_coarse - node.parent.logposterior_coarse))
+        node.probability_reached = accept_estimate * node.parent.probability_reached
+      elif node.name == 'r':
+        sibling = util.leftsibling(node)
+        accept_estimate = min(1, np.exp(sibling.logposterior_coarse - node.parent.logposterior_coarse))
+        node.probability_reached = (1 - accept_estimate) * node.parent.probability_reached
       else:
         raise ValueError(f'Invalid node name: {node.name}')
 
@@ -56,6 +83,12 @@ def update_probability_reached(root, acceptance_rate_estimate):
 
       if node.parent == None:
         node.probability_reached = 1.0
+      elif node.name == 'a' and node.logposterior is not None and node.parent.logposterior is not None:
+        accept_probability = min(1, np.exp(node.logposterior - node.parent.logposterior))
+        node.probability_reached = (1 if node.parent.random_draw < accept_probability else 0) * node.parent.probability_reached
+      elif node.name == 'r' and util.leftsibling(node).logposterior is not None and node.parent.logposterior is not None:
+        accept_probability = min(1, np.exp(util.leftsibling(node).logposterior - node.parent.logposterior))
+        node.probability_reached = (0 if node.parent.random_draw < accept_probability else 1) * node.parent.probability_reached
       elif node.name == 'a':
         accept_estimate = min(1, np.exp(node.logposterior_coarse - node.parent.logposterior_coarse))
         node.probability_reached = accept_estimate * node.parent.probability_reached
@@ -112,27 +145,30 @@ def print_graph(root):
   DotExporter(root, nodenamefunc=node_name, nodeattrfunc=nodeattrfunc).to_dotfile(f"mtmc{str(counter_print).rjust(5, '0')}.dot")
   counter_print += 1
 
+def add_new_children_to_node(node):
+  accepted = MTNode('a', parent=node)
+  rejected = MTNode('r', parent=node)
+  accepted.state = metropolis_hastings_proposal(node.state)
+  rejected.state = node.state
+  accepted.random_draw = np.random.uniform()
+  rejected.random_draw = np.random.uniform()
+
 def expand_tree(root):
   # Iterate over tree, add new nodes to computed accept leaves
   for node in root.leaves:
     if node.name == 'a' and (node.logposterior is not None or node.computing):
-      accepted = MTNode('a', parent=node)
-      rejected = MTNode('r', parent=node)
-      accepted.state = metropolis_hastings_proposal(node.state)
-      rejected.state = node.state
+      add_new_children_to_node(node)
 
   for node in root.leaves:
     if node.name == 'r' and (util.leftsibling(node).logposterior is not None or util.leftsibling(node).computing):
-      accepted = MTNode('a', parent=node)
-      rejected = MTNode('r', parent=node)
-      accepted.state = metropolis_hastings_proposal(node.state)
-      rejected.state = node.state
+      add_new_children_to_node(node)
 
 
 model = umbridge.HTTPModel('http://localhost:4243', 'posterior')
 
 root = MTNode('a')
 root.state = np.array([4.0,4.0])
+root.random_draw = np.random.uniform()
 chain = [root.state]
 
 num_workers = 8
@@ -203,7 +239,7 @@ with ThreadPoolExecutor(max_workers=num_workers) as executor:
         if accept_sample.logposterior > root.logposterior:
           root = accept_sample
         else:
-          if np.random.uniform() < np.exp(accept_sample.logposterior - root.logposterior):
+          if root.random_draw < np.exp(accept_sample.logposterior - root.logposterior):
             root = accept_sample
             acceptance_rate_estimate = acceptance_rate_estimate * .99 + .01
           else:
@@ -216,7 +252,7 @@ with ThreadPoolExecutor(max_workers=num_workers) as executor:
         print_graph(root)
 
 
-    if len(chain) >= 40:
+    if len(chain) >= 100:
       break
     submit_next_job(root, acceptance_rate_estimate)
 

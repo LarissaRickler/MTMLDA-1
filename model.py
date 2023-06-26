@@ -50,6 +50,8 @@ class BananaCoarse(umbridge.Model):
         return [1]
 
     def __call__(self, parameters, config = {}):
+        time.sleep(.01)
+
         a = config.get('a', 2.0)
         b = config.get('b', 0.2)
         scale = config.get('scale', 1.5)

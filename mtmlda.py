@@ -1,14 +1,13 @@
-from anytree import Node, NodeMixin, LevelOrderGroupIter, PreOrderIter, util #, Walker
+from anytree import Node, NodeMixin, LevelOrderGroupIter, PreOrderIter, util
 import numpy as np
 import umbridge
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from anytree.exporter import DotExporter
-import os
 
 
-models = [umbridge.HTTPModel('http://localhost:4243', 'posterior'), umbridge.HTTPModel('http://localhost:4243', 'posterior_coarse')]
-subsampling_rates = [5, -1]
+models = [umbridge.HTTPModel('http://localhost:4243', 'posterior'), umbridge.HTTPModel('http://localhost:4243', 'posterior_intermediate'), umbridge.HTTPModel('http://localhost:4243', 'posterior_coarse')]
+subsampling_rates = [5, 3, -1]
 
 class MTNodeBase(object):
   probability_reached = None
@@ -37,10 +36,12 @@ def update_probability_reached2(root, acceptance_rate_estimate):
     for node in level_children:
       if node.parent == None:
         node.probability_reached = 1.0
+      elif len(node.parent.children) == 1:
+        node.probability_reached = node.parent.probability_reached
       elif node.name == 'a':
-        node.probability_reached = acceptance_rate_estimate * node.parent.probability_reached
+        node.probability_reached = acceptance_rate_estimate[node.level] * node.parent.probability_reached
       elif node.name == 'r':
-        node.probability_reached = (1 - acceptance_rate_estimate) * node.parent.probability_reached
+        node.probability_reached = (1 - acceptance_rate_estimate[node.level]) * node.parent.probability_reached
       else:
         raise ValueError(f'Invalid node name: {node.name}')
 
@@ -77,7 +78,7 @@ def update_probability_reached(root, acceptance_rate_estimate):
     for node in level_children:
 
       if node.name == 'r' and node.parent is not None:
-          node.logposterior_coarse = node.parent.logposterior_coarse
+        node.logposterior_coarse = node.parent.logposterior_coarse
       if node.logposterior_coarse is None:
         node.logposterior_coarse = model_coarse([node.state.tolist()])[0][0]
 
@@ -85,19 +86,10 @@ def update_probability_reached(root, acceptance_rate_estimate):
         node.probability_reached = 1.0
       elif len(node.parent.children) == 1:
         node.probability_reached = node.parent.probability_reached
-      #elif node.name == 'a' and node.logposterior is not None and node.parent.logposterior is not None:
-      #  accept_probability = min(1, np.exp(node.logposterior - node.parent.logposterior))
-      #  node.probability_reached = (1 if node.parent.random_draw < accept_probability else 0) * node.parent.probability_reached
-      #elif node.name == 'r' and util.leftsibling(node).logposterior is not None and node.parent.logposterior is not None:
-      #  accept_probability = min(1, np.exp(util.leftsibling(node).logposterior - node.parent.logposterior))
-      #  node.probability_reached = (0 if node.parent.random_draw < accept_probability else 1) * node.parent.probability_reached
-      elif node.name == 'a':
-        accept_estimate = min(1, np.exp(node.logposterior_coarse - node.parent.logposterior_coarse))
-        node.probability_reached = accept_estimate * node.parent.probability_reached
-      elif node.name == 'r':
-        sibling = util.leftsibling(node)
-        accept_estimate = min(1, np.exp(sibling.logposterior_coarse - node.parent.logposterior_coarse))
-        node.probability_reached = (1 - accept_estimate) * node.parent.probability_reached
+      elif node.level == 0 and node.name == 'a':
+        node.probability_reached = acceptance_rate_estimate * node.parent.probability_reached
+      elif node.level == 0 and node.name == 'r':
+        node.probability_reached = (1 - acceptance_rate_estimate) * node.parent.probability_reached
       else:
         raise ValueError(f'Invalid node name: {node.name}')
 
@@ -113,14 +105,15 @@ def pcn_proposal(current_state):
 def propagate_log_posterior_to_reject_children(root):
   for level_children in LevelOrderGroupIter(root):
     for child in level_children:
-      if child.name == 'r' and child.parent is not None:
-        child.computing = child.parent.computing
-        child.logposterior = child.parent.logposterior
+      same_level_parent = get_same_level_parent(child)
+      if child.name == 'r' and same_level_parent is not None:
+        child.computing = same_level_parent.computing
+        child.logposterior = same_level_parent.logposterior
 
 def max_probability_todo_node(root):
   max_probability = .0
   max_node = None
-  for node in PreOrderIter(root):
+  for node in root.leaves:
     if node.name == 'a': # Only 'accept' nodes need model evaluations, since 'reject' nodes are just copies of their parents
       parent_probability_reached = 1.0
       if node.parent is not None:
@@ -142,21 +135,33 @@ def print_graph(root):
     else:
       return name_from_parents(node.parent) + node.name
   def node_name(node):
-    return name_from_parents(node) + "\n" + str(node.probability_reached) + "\n" + str(node.level) + " (" + str(node.subchain_index) + ")" + "\n" + str(node.state[0])
+    return name_from_parents(node) + "\n" + str(node.probability_reached) + "\n" + str(node.level) + " (" + str(node.subchain_index) + ")" + "\n" + str(node.state[0]) + "\n" + str(node.logposterior)
   def nodeattrfunc(node):
     if node.logposterior is not None:
-      return 'style=filled,fillcolor=green'
+      return 'style=filled,fillcolor=green,penwidth=' + str(node.level+1)
     if node.computing == True:
-      return 'style=filled,fillcolor=yellow'
-    return 'style=filled,fillcolor=white'
+      return 'style=filled,fillcolor=yellow,penwidth=' + str(node.level+1)
+    return 'style=filled,fillcolor=white,penwidth=' + str(node.level+1)
   DotExporter(root, nodenamefunc=node_name, nodeattrfunc=nodeattrfunc).to_dotfile(f"mtmc{str(counter_print).rjust(5, '0')}.dot")
   counter_print += 1
 
 def get_same_level_parent(node):
+  if node.parent is None:
+    return None
   same_level_parent = node.parent
   while same_level_parent.level != node.level:
+    if same_level_parent.parent is None:
+      return None
     same_level_parent = same_level_parent.parent
   return same_level_parent
+
+def get_same_level_parent_child_on_path(node):
+  same_level_parent = node.parent
+  child = node
+  while same_level_parent.level != node.level:
+    child = same_level_parent
+    same_level_parent = same_level_parent.parent
+  return child
 
 
 def add_new_children_to_node(node):
@@ -185,7 +190,7 @@ def add_new_children_to_node(node):
         new_node.level = node.level - 1
       accepted.state = node.state
       rejected.state = node.state
-      #rejected.parent = None # Don't need to add reject node here: When passing to coarse levels there is no accept/reject decision to be made
+      rejected.parent = None # Don't need to add reject node here: When passing to coarse levels there is no accept/reject decision to be made
 
 
 def expand_tree(root):
@@ -195,9 +200,17 @@ def expand_tree(root):
       add_new_children_to_node(node)
 
   for node in root.leaves:
-    if node.name == 'r' and (util.leftsibling(node).logposterior is not None or util.leftsibling(node).computing):
+    if node.name == 'r' and ((len(node.parent.children) > 1 and (util.leftsibling(node).logposterior is not None or util.leftsibling(node).computing))
+                              or (len(node.parent.children) == 1)):
       add_new_children_to_node(node)
 
+def get_unique_fine_level_child(node):
+  if len(node.children) != 1:
+    return None
+  unique_child = node.children[0]
+  if unique_child.level == len(models) - 1:
+    return unique_child
+  return get_unique_fine_level_child(unique_child)
 
 
 root = MTNode('a')
@@ -209,7 +222,7 @@ root.subchain_index = 0
 
 num_workers = 8
 
-acceptance_rate_estimate = .8
+acceptance_rate_estimate = [.5, .7, .8]
 
 counter_computed_models = 0
 
@@ -223,7 +236,7 @@ with ThreadPoolExecutor(max_workers=num_workers) as executor:
 
     expand_tree(root)
     # Update (estimated) probability of reaching each node
-    update_probability_reached(root, acceptance_rate_estimate)
+    update_probability_reached2(root, acceptance_rate_estimate)
     # Pick most likely (and not yet computed) node to evaluate
     todo_node = max_probability_todo_node(root)
 
@@ -236,6 +249,12 @@ with ThreadPoolExecutor(max_workers=num_workers) as executor:
     futures.append(future)
     futuremap[future] = todo_node
 
+  def some_job_is_done():
+    for future in futures:
+      if future.done():
+        return True
+    return False
+
   # Initialize by submitting as many jobs as there are workers
   print_graph(root)
   for iter in range(0,num_workers):
@@ -245,14 +264,17 @@ with ThreadPoolExecutor(max_workers=num_workers) as executor:
   while True:
 
     # Wait for model evaluation to finish
-    future = next(as_completed(futures))
-    computed_node = futuremap.pop(future)
-    futures.remove(future)
-    counter_computed_models += 1
-
-    # Set logposterior of newly computed node, and update any reject children (same of which may have been added recently)
-    computed_node.logposterior = future.result()[0][0]
-    propagate_log_posterior_to_reject_children(root)
+    #while some_job_is_done():
+    for future in as_completed(futures):
+      computed_node = futuremap.pop(future)
+      futures.remove(future)
+      print ("job done, futures: " + str(len(futures)))
+      counter_computed_models += 1
+      # Set logposterior of newly computed node, and update any reject children (same of which may have been added recently)
+      computed_node.logposterior = future.result()[0][0]
+      propagate_log_posterior_to_reject_children(root)
+      if not some_job_is_done():
+        break
 
     print_graph(root)
 
@@ -266,64 +288,47 @@ with ThreadPoolExecutor(max_workers=num_workers) as executor:
             accept_probability = min(1, np.exp(node.logposterior - node.parent.logposterior))
             if node.parent.random_draw < accept_probability:
               util.rightsibling(node).parent = None
+              acceptance_rate_estimate[node.level] = acceptance_rate_estimate[node.level] * .99 + .01
             else:
               node.parent = None
-            print("resolved decision")
+              acceptance_rate_estimate[node.level] = acceptance_rate_estimate[node.level] * .99
+            print("resolved level 0 decision")
             resolved_a_decision = True
             print_graph(root)
-            break # TODO: possibly better to break both fors?
-
-          # TODO!!!
-          if node.name == 'a' and node.parent is not None and len(node.parent.children) > 1 and node.level - 1 == node.parent.level and node.logposterior is not None and get_same_level_parent(node).logposterior is not None:
-            accept_probability = min(1, np.exp(node.logposterior - get_same_level_parent(node).logposterior))
+          elif node.name == 'a' and node.parent is not None and len(node.parent.children) > 1 and node.level - 1 == node.parent.level and node.logposterior is not None and node.parent.logposterior is not None and get_same_level_parent(node).logposterior is not None and get_same_level_parent_child_on_path(node).logposterior is not None:
+            same_level_parent = get_same_level_parent(node)
+            same_level_parent_child = same_level_parent.children[0]
+            accept_probability = min(1, np.exp(node.logposterior - get_same_level_parent(node).logposterior - same_level_parent.logposterior + same_level_parent_child.logposterior))
             if node.parent.random_draw < accept_probability:
               util.rightsibling(node).parent = None
+              acceptance_rate_estimate[node.level] = acceptance_rate_estimate[node.level] * .99 + .01
             else:
               node.parent = None
-            print("resolved decision")
+              acceptance_rate_estimate[node.level] = acceptance_rate_estimate[node.level] * .99
+            print("resolved ML decision")
             resolved_a_decision = True
             print_graph(root)
+
+          if resolved_a_decision:
             break
+        if resolved_a_decision:
+          break
 
 
+    unique_child = get_unique_fine_level_child(root)
+    if unique_child is not None:
+      chain.append(root.state)
+      unique_child.parent = None
+      root = unique_child
+      print("extended chain")
 
-    while False:
-
-
-      # Retrieve root's children
-      accept_sample = [node for node in root.children if node.name == 'a'][0]
-      reject_sample = [node for node in root.children if node.name == 'r'][0]
-
-      # See if we can compute an accept/reject step (root and accept child logposterior must be computed)
-      if root.logposterior is None or accept_sample.logposterior is None:
-        break
-      else:
-
-        accept_sample.parent = None
-        reject_sample.parent = None
-
-        # Depending on accept/reject, change root to current root's accept or reject child
-        # (and orphan the other child, game of thrones style)
-        if accept_sample.logposterior > root.logposterior:
-          root = accept_sample
-        else:
-          if root.random_draw < np.exp(accept_sample.logposterior - root.logposterior):
-            root = accept_sample
-            acceptance_rate_estimate = acceptance_rate_estimate * .99 + .01
-          else:
-            root = reject_sample
-            acceptance_rate_estimate = acceptance_rate_estimate * .99
-
-        # If on finest level, add new state to chain
-        if (root.level == len(models)-1):
-          chain.append(root.state)
-
-        print_graph(root)
-
+    print(acceptance_rate_estimate)
 
     if len(chain) >= 100:
       break
-    submit_next_job(root, acceptance_rate_estimate)
+    while len(futures) < num_workers:
+      submit_next_job(root, acceptance_rate_estimate)
+      print ("job submitted, futures: " + str(len(futures)))
 
     print_graph(root)
 

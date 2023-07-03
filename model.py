@@ -21,7 +21,8 @@ class Banana(umbridge.Model):
 
     def __call__(self, parameters, config = {}):
         # Random sleep time multiplied by SLEEP_INTERVAL
-        time.sleep(float(os.environ.get('SLEEP_INTERVAL', .1)) * np.random.random())
+        #time.sleep(float(os.environ.get('SLEEP_INTERVAL', .1)) * np.random.random())
+        time.sleep(1)
 
         a = config.get('a', 2.0)
         b = config.get('b', 0.2)
@@ -35,6 +36,33 @@ class Banana(umbridge.Model):
     def supports_evaluate(self):
         return True
 
+class BananaIntermediate(umbridge.Model):
+    radius = 2.6
+    sigma2 = 0.033
+
+    def __init__(self):
+        super().__init__("posterior_intermediate")
+
+    def get_input_sizes(self, config):
+        return [2]
+
+    def get_output_sizes(self, config):
+        return [1]
+
+    def __call__(self, parameters, config = {}):
+        time.sleep(.6)
+
+        a = config.get('a', 2.0)
+        b = config.get('b', 0.2)
+        scale = config.get('scale', 1.2)
+
+        y = [(parameters[0][0] / a),
+             (parameters[0][1] * a + a * b * (parameters[0][0]**2 + a**2))]
+
+        return [[multivariate_normal.logpdf(y, [0, 4], [[1.0*scale, 0.5*scale], [0.5*scale, 1.0*scale]])]]
+
+    def supports_evaluate(self):
+        return True
 
 class BananaCoarse(umbridge.Model):
     radius = 2.6
@@ -50,7 +78,7 @@ class BananaCoarse(umbridge.Model):
         return [1]
 
     def __call__(self, parameters, config = {}):
-        time.sleep(.01)
+        time.sleep(.3)
 
         a = config.get('a', 2.0)
         b = config.get('b', 0.2)
@@ -64,4 +92,4 @@ class BananaCoarse(umbridge.Model):
     def supports_evaluate(self):
         return True
 
-umbridge.serve_models([Banana(), BananaCoarse()], port=4243,max_workers=100)
+umbridge.serve_models([Banana(), BananaIntermediate(), BananaCoarse()], port=4243,max_workers=100)

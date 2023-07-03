@@ -209,7 +209,7 @@ with ThreadPoolExecutor(max_workers=num_workers) as executor:
   while True:
 
     # Wait for model evaluation to finish
-    future = next(as_completed(futures))
+    future = next(as_completed(futures)) # TODO: Potential issue if >1 node ready. Need to handle all completed nodes, then proceed with submitting new jobs
     computed_node = futuremap.pop(future)
     futures.remove(future)
     counter_computed_models += 1

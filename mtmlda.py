@@ -410,7 +410,7 @@ with ThreadPoolExecutor(max_workers=num_workers) as executor:
 
         print(acceptance_rate_estimate)
 
-        if len(chain) >= 100:
+        if len(chain) >= 5:
             break
         while len(futures) < num_workers:
             submit_next_job(root, acceptance_rate_estimate)

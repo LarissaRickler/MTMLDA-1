@@ -6,7 +6,7 @@ import pathlib
 import numpy as np
 
 # --------------------------------------------------------------------------------------------------
-num_processes = 2
+num_chains = 2
 
 
 class Settings:
@@ -47,9 +47,9 @@ def _save_trace(process_id, mcmc_trace, settings):
 
 # --------------------------------------------------------------------------------------------------
 def main():
-    process_ids = range(num_processes)
+    process_ids = range(num_chains)
     run_per_process = functools.partial(execute_mtmlda_run, settings=Settings)
-    with multiprocessing.Pool(processes=num_processes) as process_pool:
+    with multiprocessing.Pool(processes=num_chains) as process_pool:
         process_pool.map(run_per_process, process_ids)
 
 

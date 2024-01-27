@@ -201,3 +201,6 @@ pyrightconfig.json
 *.dot
 *.mp4
 */
+!models/
+!src/mtmlda/
+!run/

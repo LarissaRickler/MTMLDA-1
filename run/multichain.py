@@ -11,7 +11,7 @@ num_chains = 2
 
 class Settings:
     num_parameters = 4
-    parameter_ranges = [[500, 5000], [1e5, 1e6], [5, 50], [5, 50]]
+    parameter_ranges = np.array([[500, 5000], [1e5, 1e6], [5, 50], [5, 50]])
     output_directory = "results"
     output_filename = "chain"
     overwrite_results = True
@@ -27,7 +27,7 @@ def execute_mtmlda_run(process_id, settings):
 def _get_initial_state(process_id, settings):
     rng = np.random.default_rng(process_id)
     initial_state = [
-        rng.uniform(low=settings.parameter_ranges[i][0], high=settings.parameter_ranges[i][1])
+        rng.uniform(low=settings.parameter_ranges[i, 0], high=settings.parameter_ranges[i, 1])
         for i in range(settings.num_parameters)
     ]
     return initial_state

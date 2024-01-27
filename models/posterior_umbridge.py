@@ -4,8 +4,10 @@ import umbridge
 from scipy.stats import multivariate_normal
 
 
-class BananaBase(umbridge.Model):
-    _sleep_time = None
+class BananaPosterior(umbridge.Model):
+    def __init__(self, model_name, sleep_time):
+        self._sleep_time = sleep_time
+        super().__init__(model_name)
 
     def get_input_sizes(self, config):
         return [2]
@@ -36,25 +38,13 @@ class BananaBase(umbridge.Model):
         ]
 
 
-class BananaFine(umbridge.Model):
-    def __init__(self):
-        self._sleep_time = 1
-        super().__init__("posterior_fine")
-
-
-class BananaIntermediate(umbridge.Model):
-    def __init__(self):
-        self._sleep_time = 0.6
-        super().__init__("posterior_intermediate")
-
-
-class BananaCoarse(umbridge.Model):
-    def __init__(self):
-        self._sleep_time = 0.3
-        super().__init__("posterior_coarse")
-
-
 if __name__ == "__main__":
     umbridge.serve_models(
-        [BananaFine(), BananaIntermediate(), BananaCoarse()], port=4243, max_workers=100
+        [
+            BananaPosterior(model_name="posterior_fine", sleep_time=1),
+            BananaPosterior(model_name="posterior_intermediate", sleep_time=0.6),
+            BananaPosterior(model_name="posterior_coarse", sleep_time=0.3),
+        ],
+        port=4243,
+        max_workers=100,
     )

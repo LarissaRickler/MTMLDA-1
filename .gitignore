@@ -200,3 +200,4 @@ pyrightconfig.json
 *.dot.png
 *.dot
 *.mp4
+results/

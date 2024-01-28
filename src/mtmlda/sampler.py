@@ -3,21 +3,18 @@ from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 from anytree import LevelOrderGroupIter, util
 
-from mlmcmc import MLMetropolisHastingsKernel
-from .mltree import MTNode
+from mlmcmc import MLMetropolisHastingsKernel as kernel
+from .mltree import MTNode, MLTreeSearcher
 from .jobhandling import JobHandler
 
 
 class MTMLDASampler:
     def __init__(self, mtmlda_settings, mtmlda_components):
         self._num_levels = mtmlda_settings.num_levels
-        self._subsampling_rates = mtmlda_settings.sub_sampling_rates
         self._models = mtmlda_components.models
         self._proposals = mtmlda_components.proposals
         self._accept_rate_estimator = mtmlda_components.accept_rate_estimator
-        self._mltree_searcher = mtmlda_components.mltree_searcher
         self._mltree_modifier = mtmlda_components.mltree_modifier
-        self._mlmcmc_kernel = MLMetropolisHastingsKernel()
         self._job_handler = None
 
     def run(self, run_settings):
@@ -43,8 +40,10 @@ class MTMLDASampler:
             while True:
                 self._update_tree_from_finished_jobs(mltree_root)
                 self._compute_available_mcmc_decisions(mltree_root)
-                
-                unique_child = self._mltree_searcherget_unique_fine_level_child(mltree_root)
+
+                unique_child = MLTreeSearcher.get_unique_fine_level_child(
+                    mltree_root, self._num_levels
+                )
                 if unique_child is not None:
                     mcmc_chain.append(mltree_root.state)
                     unique_child.parent = None
@@ -54,11 +53,10 @@ class MTMLDASampler:
                 while self._job_handler.num_busy_workers < num_workers:
                     self._choose_and_submit_job(mltree_root)
 
-
     def _choose_and_submit_job(self, mltree_root):
         self._mltree_modifier.expand_tree(mltree_root)
         self._mltree_modifier.update_probability_reached(mltree_root, self._accept_rate_estimator)
-        most_promising_candidate = self._mltree_searcher.find_max_probability_node(mltree_root)
+        most_promising_candidate = MLTreeSearcher.find_max_probability_node(mltree_root)
         self._job_handler.submit_job(most_promising_candidate)
 
     def _update_tree_from_finished_jobs(self, mltree_root):
@@ -82,14 +80,14 @@ class MTMLDASampler:
                     ) = self._check_if_node_is_available_for_decision(node)
 
                     if node_available_for_decision and is_ground_level_decision:
-                        accepted = self._mlmcmc_kernel.compute_single_level_decision(node)
+                        accepted = kernel.compute_single_level_decision(node)
                         self._accept_rate_estimator.update(accepted, node.level)
                         self._discard_rejected_nodes(node, accepted)
                         trying_to_compute_mcmc_decision = True
 
                     if node_available_for_decision and is_two_level_decision:
-                        same_level_parent = self._mltree_searcher.get_same_level_parent(node)
-                        accepted = self._mlmcmc_kernel.compute_two_level_decision(
+                        same_level_parent = MLTreeSearcher.get_same_level_parent(node)
+                        accepted = kernel.compute_two_level_decision(
                             node, same_level_parent
                         )
                         self._discard_rejected_nodes(node, accepted)
@@ -113,9 +111,9 @@ class MTMLDASampler:
             is_ground_level_decision = False
             is_two_level_decision = False
         else:
-            same_level_parent = self._mltree_searcher.get_same_level_parent(node)
+            same_level_parent = MLTreeSearcher.get_same_level_parent(node)
             same_level_parent_child_on_path = (
-                self._mltree_searcher.get_same_level_parent_child_on_path(node)
+                MLTreeSearcher.get_same_level_parent_child_on_path(node)
             )
             is_ground_level_decision = node.level == node.parent.level == 0
             is_two_level_decision = (

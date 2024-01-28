@@ -204,5 +204,6 @@ doodling.ipynb
 .VSCodeCounter/
 .vscode/
 !/models/
-!/src/
+!proposals/
 !/run/
+!/src/

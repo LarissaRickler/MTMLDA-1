@@ -8,6 +8,7 @@ class JobHandler:
         self._models = models
 
     def submit_job(self, node):
+        node.computing = True
         future = self._executor.submit(self._models[node.level], [node.state.tolist()])
         self._futures.append(future)
         self._futuremap[future] = node
@@ -19,6 +20,7 @@ class JobHandler:
         for future in as_completed(self._futures):
             result = future.result()[0][0]
             node = self._futuremap.pop(future)
+            node.computing = False
             self._futures.remove(future)
             results.append(result)
             nodes.append(node)

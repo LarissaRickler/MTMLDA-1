@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from dataclasses import dataclass
 
 import numpy as np
 
@@ -33,7 +34,7 @@ class RandomWalkProposal(BaseProposal):
         return log_probability
 
 
-class RandomWalkProposal(BaseProposal):
+class PCNProposal(BaseProposal):
     def __init__(self, beta, covariance, seed):
         super().__init__(seed)
         self._beta = beta
@@ -52,3 +53,16 @@ class RandomWalkProposal(BaseProposal):
         state_diff = proposal - np.sqrt(1 - self._beta**2) * current_state
         log_probability = -0.5 * state_diff.T @ (self._beta**2 * self._precision) @ state_diff
         return log_probability
+
+
+@dataclass
+class RandomWalkProposalSettings:
+    step_width: float
+    covariance: np.ndarray
+    rng_seed: int
+
+@dataclass
+class PCNProposalSettings:
+    beta: float
+    covariance: np.ndarray
+    rng_seed: int

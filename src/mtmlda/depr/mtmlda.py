@@ -7,9 +7,9 @@ from anytree.exporter import DotExporter
 
 
 models = [
-    umbridge.HTTPModel("http://localhost:4243", "posterior"),
-    umbridge.HTTPModel("http://localhost:4243", "posterior_intermediate"),
     umbridge.HTTPModel("http://localhost:4243", "posterior_coarse"),
+    umbridge.HTTPModel("http://localhost:4243", "posterior_intermediate"),
+    umbridge.HTTPModel("http://localhost:4243", "posterior_fine"),
 ]
 subsampling_rates = [5, 3, -1]
 
@@ -414,7 +414,7 @@ with ThreadPoolExecutor(max_workers=num_workers) as executor:
 
         print(acceptance_rate_estimate)
 
-        if len(chain) >= 100:
+        if len(chain) >= 5:
             break
         while len(futures) < num_workers:
             submit_next_job(root, acceptance_rate_estimate)

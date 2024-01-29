@@ -22,7 +22,7 @@ class MTNode(MTNodeBase, NodeMixin):
             self.children = children
 
 
-class MLTreeSearcher:
+class MLTreeSearchFunctions:
     def __init__(self, num_levels):
         self._num_levels = num_levels
 
@@ -69,22 +69,22 @@ class MLTreeSearcher:
         if len(node.children) != 1:
             return None
         unique_child = node.children[0]
-        if unique_child.level == num_levels:
+        if unique_child.level == num_levels - 1:
             return unique_child
-        return MLTreeSearcher.get_unique_fine_level_child(unique_child)
+        return MLTreeSearchFunctions.get_unique_fine_level_child(unique_child, num_levels)
 
 
 class MLTreeModifier:
-    def __init__(self, proposals, subsampling_rates, rng_seed):
-        self._proposals = proposals
+    def __init__(self, ground_proposal, subsampling_rates, rng_seed):
+        self._ground_proposal = ground_proposal
         self._subsampling_rates = subsampling_rates
         self._rng = np.random.default_rng(rng_seed)
 
-    def expand_tree(self, root, subsa):
+    def expand_tree(self, root):
         # Iterate over tree, add new nodes to computed accept leaves
         for node in root.leaves:
             if node.name == "a" and (node.logposterior is not None or node.computing):
-                self.add_new_children_to_node(node)
+                self._add_new_children_to_node(node)
 
         for node in root.leaves:
             if node.name == "r" and (
@@ -97,12 +97,14 @@ class MLTreeModifier:
                 )
                 or (len(node.parent.children) == 1)
             ):
-                self.add_new_children_to_node(node)
+                self._add_new_children_to_node(node)
 
+    @staticmethod
     def update_probability_reached(root, acceptance_rate_estimator):
         for level_children in LevelOrderGroupIter(root):
             for node in level_children:
                 acceptance_rate_estimate = acceptance_rate_estimator.get_acceptance_rate(node)
+                
                 if node.parent == None:
                     node.probability_reached = 1.0
                 elif len(node.parent.children) == 1:
@@ -122,7 +124,7 @@ class MLTreeModifier:
     def propagate_log_posterior_to_reject_children(root):
         for level_children in LevelOrderGroupIter(root):
             for child in level_children:
-                same_level_parent = MLTreeSearcher.get_same_level_parent(child)
+                same_level_parent = MLTreeSearchFunctions.get_same_level_parent(child)
                 if child.name == "r" and same_level_parent is not None:
                     child.computing = same_level_parent.computing
                     child.logposterior = same_level_parent.logposterior
@@ -140,16 +142,16 @@ class MLTreeModifier:
             for new_node in [accepted, rejected]:
                 new_node.level = node.level + 1
                 new_node.subchain_index = (
-                    MLTreeSearcher.get_same_level_parent(new_node).subchain_index + 1
+                    MLTreeSearchFunctions.get_same_level_parent(new_node).subchain_index + 1
                 )
             accepted.state = node.state
-            rejected.state = MLTreeSearcher.get_same_level_parent(rejected).state
+            rejected.state = MLTreeSearchFunctions.get_same_level_parent(rejected).state
         else:  # Within subchain
             if node.level == 0:  # Extend subchain on coarsest level
                 for new_node in [accepted, rejected]:
                     new_node.subchain_index = node.subchain_index + 1
                     new_node.level = node.level
-                accepted.state = self._proposals[node.level](node.state)
+                accepted.state = self._ground_proposal.propose(node.state)
                 rejected.state = node.state
             else:  # Spawn new subchain on next coarser level
                 for new_node in [accepted, rejected]:

@@ -1,5 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
+import logging
+import sys
 
 import numpy as np
 from anytree import LevelOrderGroupIter, util
@@ -10,24 +12,22 @@ from .jobhandling import JobHandler
 
 
 class MTMLDASampler:
-    def __init__(
-        self,
-        num_levels,
-        subsampling_rates,
-        rng_seed,
-        models,
-        accept_rate_estimator,
-        ground_proposal,
-    ):
-        self._num_levels = num_levels
+    def __init__(self, setup_settings, models, accept_rate_estimator, ground_proposal):
+        self._num_levels = setup_settings.num_levels
         self._models = models
         self._accept_rate_estimator = accept_rate_estimator
         self._mcmc_kernel = MLMetropolisHastingsKernel(ground_proposal)
-        self._mltree_modifier = MLTreeModifier(ground_proposal, subsampling_rates, rng_seed)
+        self._mltree_modifier = MLTreeModifier(
+            ground_proposal, setup_settings.subsampling_rates, setup_settings.rng_seed
+        )
+        self._logger = self._init_logger(setup_settings.do_printing, setup_settings.logfile)
         self._job_handler = None
 
-    def run(self, num_samples, initial_state, num_threads, rng_seed):
-        rng = np.random.default_rng(rng_seed)
+    def run(self, run_settings):
+        num_samples = run_settings.num_samples
+        initial_state = run_settings.initial_state
+        num_threads = run_settings.num_threads
+        rng = np.random.default_rng(run_settings.rng_seed)
 
         mltree_root = MTNode("a")
         mltree_root.state = initial_state
@@ -37,7 +37,7 @@ class MTMLDASampler:
 
         mcmc_chain = [mltree_root.state]
 
-        print(f"Number of samples: {len(mcmc_chain)}")
+        self._logger.info(f"Number of samples: {len(mcmc_chain)}")
 
         with ThreadPoolExecutor(max_workers=num_threads) as executor:
             self._job_handler = JobHandler(executor, self._models)
@@ -56,13 +56,32 @@ class MTMLDASampler:
                     mcmc_chain.append(mltree_root.state)
                     unique_child.parent = None
                     mltree_root = unique_child
-                    print(f"Number of samples: {len(mcmc_chain)}")
+                    self._logger.info(f"Number of samples: {len(mcmc_chain)}")
                 if len(mcmc_chain) >= num_samples:
                     break
                 while self._job_handler.num_busy_workers < num_threads:
                     self._choose_and_submit_job(mltree_root)
 
         return mcmc_chain
+    
+    @staticmethod
+    def _init_logger(do_printing, logfile):
+        logger = logging.getLogger(__name__)
+        logger.setLevel(logging.INFO)
+        formatter = logging.Formatter("%(message)s")
+
+        if do_printing:
+            console_handler = logging.StreamHandler(sys.stdout)
+            console_handler.setFormatter
+            console_handler.setFormatter(formatter)
+            logger.addHandler(console_handler)
+
+        if logfile is not None:
+            file_handler = logging.FileHandler(logfile)
+            file_handler.setFormatter(formatter)
+            logger.addHandler(file_handler)
+
+        return logger
 
     def _choose_and_submit_job(self, mltree_root):
         self._mltree_modifier.expand_tree(mltree_root)
@@ -149,7 +168,8 @@ class SamplerSetupSettings:
     num_levels: int
     subsampling_rates: list
     rng_seed: int
-
+    do_printing: bool
+    logfile: str
 
 @dataclass
 class SamplerRunSettings:

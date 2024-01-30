@@ -14,17 +14,18 @@ class result_settings:
     overwrite_results = True
 
 class proposal_settings:
-    step_width = (0.1,)
-    covariance = (np.identity(2),)
+    step_width = 0.1
+    covariance = np.identity(2)
     rng_seed = 0
 
 class accept_rate_settings:
-    initial_guess = ([0.5, 0.7, 0.8],)
+    initial_guess = [0.5, 0.7, 0.8]
     update_parameter = 0.01
 
 sampler_setup_settings = SamplerSetupSettings(
     num_levels=3,
     subsampling_rates=[5, 3, -1],
+    max_tree_height=50,
     rng_seed=0,
     do_printing=True,
     mltree_path=Path("results") / Path("mltree"),
@@ -33,17 +34,18 @@ sampler_setup_settings = SamplerSetupSettings(
 )
 
 sampler_run_settings = SamplerRunSettings(
-    num_samples=100,
-    initial_state=np.array([4, 4]),
+    num_samples=1000,
+    initial_state=np.array([0, 0]),
     num_threads=8,
     rng_seed=0,
-    print_interval=10
+    print_interval=50,
+    tree_render_interval = 50
 )
 
 models = [
-    umbridge.HTTPModel("http://localhost:4243", "banana_posterior_coarse"),
-    umbridge.HTTPModel("http://localhost:4243", "banana_posterior_intermediate"),
-    umbridge.HTTPModel("http://localhost:4243", "banana_posterior_fine"),
+    umbridge.HTTPModel("http://localhost:4243", "gauss_posterior_coarse"),
+    umbridge.HTTPModel("http://localhost:4243", "gauss_posterior_intermediate"),
+    umbridge.HTTPModel("http://localhost:4243", "gauss_posterior_fine"),
 ]
 
 

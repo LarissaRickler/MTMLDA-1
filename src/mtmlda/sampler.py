@@ -22,6 +22,8 @@ class MTMLDASampler:
     def __init__(self, setup_settings, models, accept_rate_estimator, ground_proposal):
         self._num_levels = setup_settings.num_levels
         self._models = models
+        self._subsampling_rates = setup_settings.subsampling_rates
+        self._maximum_tree_height = setup_settings.max_tree_height
         self._accept_rate_estimator = accept_rate_estimator
         self._mcmc_kernel = MLMetropolisHastingsKernel(ground_proposal)
         self._mltree_modifier = MLTreeModifier(
@@ -38,6 +40,7 @@ class MTMLDASampler:
         num_samples = run_settings.num_samples
         num_threads = run_settings.num_threads
         print_interval = run_settings.print_interval
+        tree_render_interval = run_settings.tree_render_interval
 
         self._logger.print_header()
         mltree_root = self._init_mltree(run_settings.initial_state, run_settings.rng_seed)
@@ -46,36 +49,43 @@ class MTMLDASampler:
 
         try:
             with ThreadPoolExecutor(max_workers=num_threads) as executor:
-                self._job_handler = JobHandler(executor, self._models)
-                for _ in range(num_threads):
-                    self._choose_and_submit_job(mltree_root)
+                self._job_handler = JobHandler(executor, self._models, num_threads)
 
                 # --- Main MCMC Loop ---
                 while True:
+                    self._extend_tree_and_launch_jobs(mltree_root)
                     self._update_tree_from_finished_jobs()
+                    self._mltree_modifier.propagate_log_posterior_to_reject_children(mltree_root)
                     self._compute_available_mcmc_decisions(mltree_root)
 
                     while (
                         unique_child := search_functions.get_unique_fine_level_child(
                             mltree_root, self._num_levels
                         )
-                        is not None
-                    ):
+                    ) is not None:
                         mcmc_chain.append(mltree_root.state)
-                        self._mltree_visualizer.export_to_dot(mltree_root)
                         unique_child.parent = None
                         mltree_root = unique_child
+
                         if (len(mcmc_chain) % print_interval == 0) or (
                             len(mcmc_chain) == num_samples
                         ):
                             self._logger.print_statistics({"samples": len(mcmc_chain)})
 
+                        if (len(mcmc_chain) % tree_render_interval == 0) or (
+                            len(mcmc_chain) == num_samples
+                        ):
+                            self._mltree_visualizer.export_to_dot(mltree_root)
+
                     if len(mcmc_chain) >= num_samples:
                         break
-                    while self._job_handler.num_busy_workers < num_threads:
-                        self._choose_and_submit_job(mltree_root)
+
         except BaseException as exc:
             self._logger.exception(exc)
+            try:
+                self._mltree_visualizer.export_to_dot(mltree_root)
+            except RecursionError as exc:
+                self._logger.exception(exc)
         finally:
             return mcmc_chain
 
@@ -91,20 +101,22 @@ class MTMLDASampler:
         return mltree_root
 
     # ----------------------------------------------------------------------------------------------
-    def _choose_and_submit_job(self, mltree_root):
-        self._mltree_modifier.expand_tree(mltree_root)
-        self._mltree_modifier.update_probability_reached(mltree_root, self._accept_rate_estimator)
-        most_promising_candidate = search_functions.find_max_probability_node(mltree_root)
-        if most_promising_candidate is None:
-            raise ValueError("No more nodes to compute, most likely tree expansion failed!")
-        self._job_handler.submit_job(most_promising_candidate)
+    def _extend_tree_and_launch_jobs(self, mltree_root):
+        while (
+            mltree_root.height <= self._maximum_tree_height
+        ) and self._job_handler.workers_available:
+            self._mltree_modifier.expand_tree(mltree_root)
+            self._mltree_modifier.update_probability_reached(
+                mltree_root, self._accept_rate_estimator
+            )
+            new_candidate = search_functions.find_max_probability_node(mltree_root)
+            self._job_handler.submit_job(new_candidate)        
 
     # ----------------------------------------------------------------------------------------------
     def _update_tree_from_finished_jobs(self):
         results, nodes = self._job_handler.get_finished_jobs()
         for result, node in zip(results, nodes):
             node.logposterior = result
-            self._mltree_modifier.propagate_log_posterior_to_reject_children(node)
 
     # ----------------------------------------------------------------------------------------------
     def _compute_available_mcmc_decisions(self, mltree_root):
@@ -140,7 +152,7 @@ class MTMLDASampler:
                         break
                 if trying_to_compute_mcmc_decision:
                     break
-    
+
     # ----------------------------------------------------------------------------------------------
     def _check_if_node_is_available_for_decision(self, node):
         node_available_for_decision = (
@@ -201,7 +213,7 @@ class MTMLDALogger:
     # ----------------------------------------------------------------------------------------------
     def print_header(self):
         self._logger.info(self._header_string)
-        self._logger.info("-" * sum(self._print_widths.values()))
+        self._logger.info("-" * (len(self._header_string) + 1))
 
     # ----------------------------------------------------------------------------------------------
     def print_statistics(self, statistics):
@@ -225,6 +237,7 @@ class MTMLDALogger:
 class SamplerSetupSettings:
     num_levels: int
     subsampling_rates: list
+    max_tree_height: int
     rng_seed: int
     do_printing: bool
     mltree_path: str
@@ -239,3 +252,4 @@ class SamplerRunSettings:
     num_threads: int
     rng_seed: int
     print_interval: int
+    tree_render_interval: int

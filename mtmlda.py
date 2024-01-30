@@ -138,10 +138,10 @@ def print_graph(root):
     return name_from_parents(node) + "\n" + str(node.probability_reached) + "\n" + str(node.level) + " (" + str(node.subchain_index) + ")" + "\n" + str(node.state[0]) + "\n" + str(node.logposterior)
   def nodeattrfunc(node):
     if node.logposterior is not None:
-      return 'style=filled,fillcolor=green,penwidth=' + str(node.level+1)
+      return 'style=filled,fillcolor=green,penwidth=' + str(node.level*2+1)
     if node.computing == True:
-      return 'style=filled,fillcolor=yellow,penwidth=' + str(node.level+1)
-    return 'style=filled,fillcolor=white,penwidth=' + str(node.level+1)
+      return 'style=filled,fillcolor=yellow,penwidth=' + str(node.level*2+1)
+    return 'style=filled,fillcolor=white,penwidth=' + str(node.level*2+1)
   DotExporter(root, nodenamefunc=node_name, nodeattrfunc=nodeattrfunc).to_dotfile(f"mtmc{str(counter_print).rjust(5, '0')}.dot")
   counter_print += 1
 

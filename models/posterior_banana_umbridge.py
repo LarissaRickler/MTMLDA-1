@@ -41,9 +41,9 @@ class BananaPosterior(umbridge.Model):
 if __name__ == "__main__":
     umbridge.serve_models(
         [
-            BananaPosterior(model_name="posterior_fine", sleep_time=1),
-            BananaPosterior(model_name="posterior_intermediate", sleep_time=0.6),
-            BananaPosterior(model_name="posterior_coarse", sleep_time=0.3),
+            BananaPosterior(model_name="banana_posterior_fine", sleep_time=0.1),
+            BananaPosterior(model_name="banana_posterior_intermediate", sleep_time=0.06),
+            BananaPosterior(model_name="banana_posterior_coarse", sleep_time=0.03),
         ],
         port=4243,
         max_workers=100,

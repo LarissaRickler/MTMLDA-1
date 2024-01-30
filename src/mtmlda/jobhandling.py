@@ -1,5 +1,7 @@
 from concurrent.futures import as_completed
 
+
+# ==================================================================================================
 class JobHandler:
     def __init__(self, executor, models):
         self._futures = []
@@ -7,12 +9,14 @@ class JobHandler:
         self._executor = executor
         self._models = models
 
+    # ----------------------------------------------------------------------------------------------
     def submit_job(self, node):
         node.computing = True
         future = self._executor.submit(self._models[node.level], [node.state.tolist()])
         self._futures.append(future)
         self._futuremap[future] = node
 
+    # ----------------------------------------------------------------------------------------------
     def get_finished_jobs(self):
         results = []
         nodes = []
@@ -28,13 +32,15 @@ class JobHandler:
                 break
 
         return results, nodes
-        
+    
+    # ----------------------------------------------------------------------------------------------
     def _some_job_is_done(self):
         for future in self._futures:
             if future.done():
                 return True
         return False
     
+    # ----------------------------------------------------------------------------------------------
     @property
     def num_busy_workers(self):
         return len(self._futures)

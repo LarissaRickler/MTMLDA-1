@@ -1,12 +1,12 @@
-from dataclasses import dataclass
-
 import numpy as np
 
 
+# ==================================================================================================
 class MLMetropolisHastingsKernel:
     def __init__(self, ground_proposal):
         self._ground_proposal = ground_proposal
 
+    # ----------------------------------------------------------------------------------------------
     def compute_single_level_decision(self, node):
         new_state = node.state
         old_state = node.parent.state
@@ -27,6 +27,7 @@ class MLMetropolisHastingsKernel:
         accepted = node.parent.random_draw < accept_probability
         return accepted
 
+    # ----------------------------------------------------------------------------------------------
     @staticmethod
     def compute_two_level_decision(node, same_level_parent):
         posterior_logp_new_fine = node.logposterior
@@ -37,7 +38,7 @@ class MLMetropolisHastingsKernel:
         accept_probability = min(
             1,
             np.exp(
-                + posterior_logp_new_fine
+                +posterior_logp_new_fine
                 + posterior_logp_old_coarse
                 - posterior_logp_old_fine
                 - posterior_logp_new_coarse
@@ -47,15 +48,18 @@ class MLMetropolisHastingsKernel:
         return accepted
 
 
+# ==================================================================================================
 class MLAcceptRateEstimator:
     def __init__(self, initial_guess, update_parameter):
         self._acceptance_rates = initial_guess
         self._update_parameter = update_parameter
 
+    # ----------------------------------------------------------------------------------------------
     def get_acceptance_rate(self, node):
         acceptance_rate = self._acceptance_rates[node.level]
         return acceptance_rate
 
+    # ----------------------------------------------------------------------------------------------
     def update(self, accepted, node):
         level = node.level
         decreased_rate = (1 - self._update_parameter) * self._acceptance_rates[level]
@@ -63,9 +67,3 @@ class MLAcceptRateEstimator:
             self._acceptance_rates[level] = decreased_rate + self._update_parameter
         else:
             self._acceptance_rates[level] = decreased_rate
-
-
-@dataclass
-class MLAcceptRateEstimatorSettings:
-    initial_guess: list
-    update_parameter: float

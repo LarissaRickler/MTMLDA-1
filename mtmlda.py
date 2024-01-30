@@ -212,6 +212,68 @@ def get_unique_fine_level_child(node):
     return unique_child
   return get_unique_fine_level_child(unique_child)
 
+def resolve_decision():
+  for level_children in LevelOrderGroupIter(root):
+    for node in level_children:
+
+      if node.name == 'a' and node.parent is not None and len(node.parent.children) > 1 and node.level == node.parent.level == 0 and node.logposterior is not None and node.parent.logposterior is not None:
+        accept_probability = min(1, np.exp(node.logposterior - node.parent.logposterior))
+        if node.parent.random_draw < accept_probability:
+          util.rightsibling(node).parent = None
+          acceptance_rate_estimate[node.level] = acceptance_rate_estimate[node.level] * .99 + .01
+        else:
+          node.parent = None
+          acceptance_rate_estimate[node.level] = acceptance_rate_estimate[node.level] * .99
+        print("resolved level 0 decision")
+        print_graph(root)
+        return True
+      elif node.name == 'a' and node.parent is not None and len(node.parent.children) > 1 and node.level - 1 == node.parent.level and node.logposterior is not None and node.parent.logposterior is not None and get_same_level_parent(node).logposterior is not None and get_same_level_parent_child_on_path(node).logposterior is not None:
+        same_level_parent = get_same_level_parent(node)
+        same_level_parent_child = same_level_parent.children[0]
+        accept_probability = min(1, np.exp(node.logposterior - get_same_level_parent(node).logposterior - same_level_parent.logposterior + same_level_parent_child.logposterior))
+        if node.parent.random_draw < accept_probability:
+          util.rightsibling(node).parent = None
+          acceptance_rate_estimate[node.level] = acceptance_rate_estimate[node.level] * .99 + .01
+        else:
+          node.parent = None
+          acceptance_rate_estimate[node.level] = acceptance_rate_estimate[node.level] * .99
+        print("resolved ML decision")
+        print_graph(root)
+        return True
+
+  return False
+
+
+def get_unique_same_subchain_child(node):
+  iter = node
+  while True:
+    if len(iter.children) != 1:
+      return None
+    iter = iter.children[0]
+    if iter.level > node.level: # we have left the subchain
+      return None
+    if iter.level == node.level and iter is not node:
+      return iter
+
+# See if we have any three nodes on a subchain (i.e. subsequent nodes on same level < finest level) that are all resolved (i.e. have only one child).
+# If so, remove the middle on, since the MLDA accept/reject on the next finer level will only need first and last subchain entry
+def compress_resolved_subchains():
+  for level_children in LevelOrderGroupIter(root):
+    for node in level_children:
+      if node.level == len(models) - 1:
+        continue
+      same_subchain_child = get_unique_same_subchain_child(node)
+      if same_subchain_child is None:
+        continue
+      same_subchain_grandchild = get_unique_same_subchain_child(same_subchain_child)
+      if same_subchain_grandchild is None:
+        continue
+      node.children[0].parent = None
+      same_subchain_grandchild.parent = node
+      return True
+  return False
+
+
 
 root = MTNode('a')
 root.state = np.array([4.0,4.0])
@@ -270,49 +332,21 @@ with ThreadPoolExecutor(max_workers=num_workers) as executor:
       futures.remove(future)
       print ("job done, futures: " + str(len(futures)))
       counter_computed_models += 1
-      # Set logposterior of newly computed node, and update any reject children (same of which may have been added recently)
+      # Set logposterior of newly computed node
       computed_node.logposterior = future.result()[0][0]
-      propagate_log_posterior_to_reject_children(root)
       if not some_job_is_done():
         break
 
+    propagate_log_posterior_to_reject_children(root) # update any reject children (same of which may have been added recently)
+
     print_graph(root)
 
-    resolved_a_decision = True
-    while resolved_a_decision:
-      resolved_a_decision = False
-      for level_children in LevelOrderGroupIter(root):
-        for node in level_children:
+    while resolve_decision():
+      pass
 
-          if node.name == 'a' and node.parent is not None and len(node.parent.children) > 1 and node.level == node.parent.level == 0 and node.logposterior is not None and node.parent.logposterior is not None:
-            accept_probability = min(1, np.exp(node.logposterior - node.parent.logposterior))
-            if node.parent.random_draw < accept_probability:
-              util.rightsibling(node).parent = None
-              acceptance_rate_estimate[node.level] = acceptance_rate_estimate[node.level] * .99 + .01
-            else:
-              node.parent = None
-              acceptance_rate_estimate[node.level] = acceptance_rate_estimate[node.level] * .99
-            print("resolved level 0 decision")
-            resolved_a_decision = True
-            print_graph(root)
-          elif node.name == 'a' and node.parent is not None and len(node.parent.children) > 1 and node.level - 1 == node.parent.level and node.logposterior is not None and node.parent.logposterior is not None and get_same_level_parent(node).logposterior is not None and get_same_level_parent_child_on_path(node).logposterior is not None:
-            same_level_parent = get_same_level_parent(node)
-            same_level_parent_child = same_level_parent.children[0]
-            accept_probability = min(1, np.exp(node.logposterior - get_same_level_parent(node).logposterior - same_level_parent.logposterior + same_level_parent_child.logposterior))
-            if node.parent.random_draw < accept_probability:
-              util.rightsibling(node).parent = None
-              acceptance_rate_estimate[node.level] = acceptance_rate_estimate[node.level] * .99 + .01
-            else:
-              node.parent = None
-              acceptance_rate_estimate[node.level] = acceptance_rate_estimate[node.level] * .99
-            print("resolved ML decision")
-            resolved_a_decision = True
-            print_graph(root)
+    #while compress_resolved_subchains():
+    #  pass
 
-          if resolved_a_decision:
-            break
-        if resolved_a_decision:
-          break
 
 
     unique_child = get_unique_fine_level_child(root)

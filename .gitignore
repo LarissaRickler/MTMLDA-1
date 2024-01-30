@@ -200,6 +200,7 @@ doodling.ipynb
 *.dot.png
 *.dot
 *.mp4
+*.npy
 /*/
 .VSCodeCounter/
 .vscode/

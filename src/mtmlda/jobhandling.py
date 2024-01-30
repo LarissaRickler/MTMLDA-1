@@ -3,11 +3,12 @@ from concurrent.futures import as_completed
 
 # ==================================================================================================
 class JobHandler:
-    def __init__(self, executor, models):
+    def __init__(self, executor, models, num_threads):
         self._futures = []
         self._futuremap = {}
         self._executor = executor
         self._models = models
+        self._num_threads = num_threads
 
     # ----------------------------------------------------------------------------------------------
     def submit_job(self, node):
@@ -42,5 +43,6 @@ class JobHandler:
     
     # ----------------------------------------------------------------------------------------------
     @property
-    def num_busy_workers(self):
-        return len(self._futures)
+    def workers_available(self):
+        workers_available = len(self._futures) < self._num_threads
+        return workers_available

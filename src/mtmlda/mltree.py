@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import numpy as np
@@ -43,7 +44,7 @@ class MLTreeSearchFunctions:
                     and not node.computing
                 ):
                     max_probability = parent_probability_reached
-                    max_node = node
+                    max_node = node 
         return max_node
 
     # ----------------------------------------------------------------------------------------------
@@ -67,7 +68,7 @@ class MLTreeSearchFunctions:
         if unique_child.level == num_levels - 1:
             return unique_child
         return MLTreeSearchFunctions.get_unique_fine_level_child(unique_child, num_levels)
-
+    
 
 # ==================================================================================================
 class MLTreeModifier:
@@ -83,7 +84,6 @@ class MLTreeModifier:
             if node.name == "a" and (node.logposterior is not None or node.computing):
                 self._add_new_children_to_node(node)
 
-        for node in root.leaves:
             if node.name == "r" and (
                 (
                     len(node.parent.children) > 1
@@ -164,7 +164,7 @@ class MLTreeModifier:
 
 # ==================================================================================================
 class MLTreeVisualizer:
-    _base_size = 0.75
+    _base_size = 1
     _fixed_size = True
     _style = "filled"
     _shape = "circle"
@@ -175,29 +175,38 @@ class MLTreeVisualizer:
 
     # ----------------------------------------------------------------------------------------------
     def __init__(self, result_directory_path):
+        os.makedirs(result_directory_path, exist_ok=True)
         self._result_dir = result_directory_path
         self._print_counter = 0
 
     # ----------------------------------------------------------------------------------------------
     def export_to_dot(self, mltree_root):
-        exporter = DotExporter(
-            mltree_root, nodenamefunc=self._node_name_function, nodeattrfunc=self._node_attr_func
-        )
-        exporter.to_dotfile(self._result_dir / Path(f"mltree_{self._print_counter}.dot"))
-        self._print_counter += 1
+        if self._result_dir is not None:
+            exporter = DotExporter(
+                mltree_root, nodenamefunc=self._name_from_parents, nodeattrfunc=self._node_attr_func
+            )
+            exporter.to_dotfile(self._result_dir / Path(f"mltree_{self._print_counter}.dot"))
+            self._print_counter += 1
 
     # ----------------------------------------------------------------------------------------------
     @classmethod
     def _node_attr_func(cls, node):
-        node_size = (1 + 0.5 * node.level) * cls._base_size
+        node_size = (1 + 0.75 * node.level) * cls._base_size
         if node.logposterior is not None:
             color = cls._color_visited
         elif node.computing:
             color = cls._color_computing
         else:
             color = cls._color_not_visited
+        node_label = (
+            f"N: {node.name}\n"
+            f"PR: {node.probability_reached:.3f}\n"
+            f"LVL: {node.level}\n"
+            f"SCI: {node.subchain_index}"
+        )
 
         attr_string = (
+            f"""label="{node_label}", """
             f"shape={cls._shape}, "
             f"fixedsize={cls._fixed_size}, "
             f"bordercolor={cls._border_color}, "
@@ -207,19 +216,7 @@ class MLTreeVisualizer:
             f"height={node_size}"
         )
         return attr_string
-
-    # ----------------------------------------------------------------------------------------------
-    @staticmethod
-    def _node_name_function(node):
-        node_name = (
-            f"N: {MLTreeVisualizer._name_from_parents(node) + node.name}\n"
-            f"PR: {node.probability_reached}\n"
-            f"LVL: {node.level}\n"
-            f"SCI: {node.subchain_index}"
-        )
-
-        return node_name
-
+    
     # ----------------------------------------------------------------------------------------------
     @staticmethod
     def _name_from_parents(node):

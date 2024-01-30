@@ -7,9 +7,9 @@ from anytree.exporter import DotExporter
 
 
 models = [
-    umbridge.HTTPModel("http://localhost:4243", "posterior_coarse"),
-    umbridge.HTTPModel("http://localhost:4243", "posterior_intermediate"),
-    umbridge.HTTPModel("http://localhost:4243", "posterior_fine"),
+    umbridge.HTTPModel("http://localhost:4243", "banana_posterior_coarse"),
+    umbridge.HTTPModel("http://localhost:4243", "banana_posterior_intermediate"),
+    umbridge.HTTPModel("http://localhost:4243", "banana_posterior_fine"),
 ]
 subsampling_rates = [5, 3, -1]
 
@@ -233,7 +233,7 @@ def add_new_children_to_node(node):
             for new_node in [accepted, rejected]:
                 new_node.subchain_index = node.subchain_index + 1
                 new_node.level = node.level
-            accepted.state = pcn_proposal(node.state)
+            accepted.state = metropolis_hastings_proposal(node.state)
             rejected.state = node.state
         else:  # Spawn new subchain on next coarser level
             for new_node in [accepted, rejected]:
@@ -274,7 +274,7 @@ def get_unique_fine_level_child(node):
 
 
 root = MTNode("a")
-root.state = np.array([4.0, 4.0])
+root.state = np.array([4, 4])
 root.random_draw = np.random.uniform()
 chain = [root.state]
 root.level = len(models) - 1
@@ -315,10 +315,10 @@ with ThreadPoolExecutor(max_workers=num_workers) as executor:
         return False
 
     # Initialize by submitting as many jobs as there are workers
-    print_graph(root)
+    #print_graph(root)
     for iter in range(0, num_workers):
         submit_next_job(root, acceptance_rate_estimate)
-        print_graph(root)
+        #print_graph(root)
 
     while True:
         # Wait for model evaluation to finish
@@ -334,7 +334,7 @@ with ThreadPoolExecutor(max_workers=num_workers) as executor:
             if not some_job_is_done():
                 break
 
-        print_graph(root)
+        #print_graph(root)
 
         resolved_a_decision = True
         while resolved_a_decision:
@@ -364,7 +364,7 @@ with ThreadPoolExecutor(max_workers=num_workers) as executor:
                             )
                         print("resolved level 0 decision")
                         resolved_a_decision = True
-                        print_graph(root)
+                        #print_graph(root)
                     elif (
                         node.name == "a"
                         and node.parent is not None
@@ -381,11 +381,12 @@ with ThreadPoolExecutor(max_workers=num_workers) as executor:
                             1,
                             np.exp(
                                 node.logposterior
-                                - get_same_level_parent(node).logposterior
-                                - same_level_parent.logposterior
                                 + same_level_parent_child.logposterior
+                                - same_level_parent.logposterior
+                                - node.parent.logposterior
                             ),
                         )
+
                         if node.parent.random_draw < accept_probability:
                             util.rightsibling(node).parent = None
                             acceptance_rate_estimate[node.level] = (
@@ -398,7 +399,7 @@ with ThreadPoolExecutor(max_workers=num_workers) as executor:
                             )
                         print("resolved ML decision")
                         resolved_a_decision = True
-                        print_graph(root)
+                        #print_graph(root)
 
                     if resolved_a_decision:
                         break
@@ -414,7 +415,7 @@ with ThreadPoolExecutor(max_workers=num_workers) as executor:
 
         print(acceptance_rate_estimate)
 
-        if len(chain) >= 5:
+        if len(chain) >= 100:
             break
         while len(futures) < num_workers:
             submit_next_job(root, acceptance_rate_estimate)
@@ -426,3 +427,5 @@ with ThreadPoolExecutor(max_workers=num_workers) as executor:
 print(f"MCMC chain length: {len(chain)}")
 print(f"Model evaluations computed: {counter_computed_models}")
 print(f"Acceptance rate: {acceptance_rate_estimate}")
+
+np.save("chain", chain)

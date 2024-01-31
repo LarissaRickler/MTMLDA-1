@@ -2,7 +2,6 @@ import os
 from pathlib import Path
 
 import numpy as np
-import umbridge
 
 from proposals.proposals import RandomWalkProposal
 from src.mtmlda.mlmcmc import MLAcceptRateEstimator
@@ -15,7 +14,6 @@ import settings
 class result_settings:
     result_directory_path = Path("results") / Path("chain")
     overwrite_results = True
-
 
 
 # ==================================================================================================

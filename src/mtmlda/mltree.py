@@ -44,7 +44,7 @@ class MLTreeSearchFunctions:
                     and not node.computing
                 ):
                     max_probability = parent_probability_reached
-                    max_node = node 
+                    max_node = node
         return max_node
 
     # ----------------------------------------------------------------------------------------------
@@ -68,11 +68,25 @@ class MLTreeSearchFunctions:
         if unique_child.level == num_levels - 1:
             return unique_child
         return MLTreeSearchFunctions.get_unique_fine_level_child(unique_child, num_levels)
-    
+
+    # ----------------------------------------------------------------------------------------------
+    @staticmethod
+    def get_unique_same_subchain_child(node):
+        iter = node
+        while True:
+            if len(iter.children) != 1:
+                return None
+            iter = iter.children[0]
+            if iter.level > node.level:  # we have left the subchain
+                return None
+            if iter.level == node.level and iter is not node:
+                return iter
+
 
 # ==================================================================================================
 class MLTreeModifier:
-    def __init__(self, ground_proposal, subsampling_rates, rng_seed):
+    def __init__(self, num_levels, ground_proposal, subsampling_rates, rng_seed):
+        self._num_levels = num_levels
         self._ground_proposal = ground_proposal
         self._subsampling_rates = subsampling_rates
         self._rng = np.random.default_rng(rng_seed)
@@ -95,6 +109,22 @@ class MLTreeModifier:
                 or (len(node.parent.children) == 1)
             ):
                 self._add_new_children_to_node(node)
+
+    def compress_resolved_subchains(self, root):
+        for level_children in LevelOrderGroupIter(root):
+            for node in level_children:
+                if node.level == self._num_levels - 1:
+                    continue
+                same_subchain_child = MLTreeSearchFunctions.get_unique_same_subchain_child(node)
+                if same_subchain_child is None:
+                    continue
+                same_subchain_grandchild = MLTreeSearchFunctions.get_unique_same_subchain_child(
+                    same_subchain_child
+                )
+                if same_subchain_grandchild is None:
+                    continue
+                node.children[0].parent = None
+                same_subchain_grandchild.parent = node
 
     # ----------------------------------------------------------------------------------------------
     @staticmethod
@@ -217,7 +247,7 @@ class MLTreeVisualizer:
             f"height={node_size}"
         )
         return attr_string
-    
+
     # ----------------------------------------------------------------------------------------------
     @staticmethod
     def _name_from_parents(node):

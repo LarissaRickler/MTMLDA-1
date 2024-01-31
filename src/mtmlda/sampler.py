@@ -34,18 +34,20 @@ class MTMLDASampler:
             setup_settings.do_printing, setup_settings.logfile_path, setup_settings.write_mode
         )
         self._job_handler = None
+        self._num_samples = None
+        self._print_interval = None
+        self._tree_render_interval = None
 
     # ----------------------------------------------------------------------------------------------
     def run(self, run_settings):
-        num_samples = run_settings.num_samples
         num_threads = run_settings.num_threads
-        print_interval = run_settings.print_interval
-        tree_render_interval = run_settings.tree_render_interval
+        self._num_samples = run_settings.num_samples
+        self._print_interval = run_settings.print_interval
+        self._tree_render_interval = run_settings.tree_render_interval
 
-        self._logger.print_header()
         mltree_root = self._init_mltree(run_settings.initial_state, run_settings.rng_seed)
         mcmc_chain = [mltree_root.state]
-        self._logger.print_statistics({"samples": len(mcmc_chain)})
+        self._logger.print_statistics(print_header=True, samples=len(mcmc_chain))
 
         try:
             with ThreadPoolExecutor(max_workers=num_threads) as executor:
@@ -66,18 +68,9 @@ class MTMLDASampler:
                         mcmc_chain.append(mltree_root.state)
                         unique_child.parent = None
                         mltree_root = unique_child
+                        self._generate_output(mcmc_chain, mltree_root)
 
-                        if (len(mcmc_chain) % print_interval == 0) or (
-                            len(mcmc_chain) == num_samples
-                        ):
-                            self._logger.print_statistics({"samples": len(mcmc_chain)})
-
-                        if (len(mcmc_chain) % tree_render_interval == 0) or (
-                            len(mcmc_chain) == num_samples
-                        ):
-                            self._mltree_visualizer.export_to_dot(mltree_root)
-
-                    if len(mcmc_chain) >= num_samples:
+                    if len(mcmc_chain) >= self._num_samples:
                         break
 
         except BaseException as exc:
@@ -183,53 +176,67 @@ class MTMLDASampler:
         else:
             node.parent = None
 
+    # ----------------------------------------------------------------------------------------------
+    def _generate_output(self, mcmc_chain, mltree_root):#
+        if (len(mcmc_chain) % self._print_interval == 0) or (
+            len(mcmc_chain) == self._num_samples
+        ):
+            self._logger.print_statistics(samples=len(mcmc_chain))
+
+        if (len(mcmc_chain) % self._tree_render_interval == 0) or (
+            len(mcmc_chain) == self._num_samples
+        ):
+            self._mltree_visualizer.export_to_dot(mltree_root)
+        return mcmc_chain
+
 
 # ==================================================================================================
 class MTMLDALogger:
-    _print_components = ["samples"]
 
     # ----------------------------------------------------------------------------------------------
     def __init__(self, do_printing, logfile_path, write_mode):
-        print_widths = [len(component) for component in self._print_components]
-        self._header_string = " ".join(self._print_components)
-        self._print_widths = dict(zip(self._print_components, print_widths))
-        self._logger = logging.getLogger(__name__)
-        self._logger.setLevel(logging.INFO)
+        self._pylogger = logging.getLogger(__name__)
+        self._pylogger.setLevel(logging.INFO)
         formatter = logging.Formatter("%(message)s")
 
-        if not self._logger.hasHandlers():
+        if not self._pylogger.hasHandlers():
             if do_printing:
                 console_handler = logging.StreamHandler(sys.stdout)
                 console_handler.setFormatter
                 console_handler.setFormatter(formatter)
-                self._logger.addHandler(console_handler)
+                self._pylogger.addHandler(console_handler)
 
             if logfile_path is not None:
                 os.makedirs(logfile_path.parent, exist_ok=True)
                 file_handler = logging.FileHandler(logfile_path, mode=write_mode)
                 file_handler.setFormatter(formatter)
-                self._logger.addHandler(file_handler)
+                self._pylogger.addHandler(file_handler)
 
     # ----------------------------------------------------------------------------------------------
-    def print_header(self):
-        self._logger.info(self._header_string)
-        self._logger.info("-" * (len(self._header_string) + 1))
-
-    # ----------------------------------------------------------------------------------------------
-    def print_statistics(self, statistics):
+    def print_statistics(self, print_header=False, **kwargs):
+        if print_header:
+            self._print_header(**kwargs)
         output_str = ""
 
-        for component, statistic in statistics.items():
-            output_str += f"{statistic:<{self._print_widths[component]}} "
-        self._logger.info(output_str)
+        for component, statistic in kwargs.items():
+            output_str += f"{statistic:<{len(component)+1}} "
+        self._pylogger.info(output_str)
 
     # ----------------------------------------------------------------------------------------------
     def info(self, message):
-        self._logger.info(message)
+        self._pylogger.info(message)
 
     # ----------------------------------------------------------------------------------------------
     def exception(self, message):
-        self._logger.exception(message)
+        self._pylogger.exception(message)
+
+    # ----------------------------------------------------------------------------------------------
+    def _print_header(self, **kwargs):
+        header_string = " ".join(kwargs.keys())
+        header_width = len(header_string) + 1
+        separator = "-" * header_width
+        self._pylogger.info(header_string)
+        self._pylogger.info(separator)
 
 
 # ==================================================================================================

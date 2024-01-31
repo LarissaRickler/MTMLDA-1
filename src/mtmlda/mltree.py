@@ -111,20 +111,26 @@ class MLTreeModifier:
                 self._add_new_children_to_node(node)
 
     def compress_resolved_subchains(self, root):
-        for level_children in LevelOrderGroupIter(root):
-            for node in level_children:
-                if node.level == self._num_levels - 1:
-                    continue
-                same_subchain_child = MLTreeSearchFunctions.get_unique_same_subchain_child(node)
-                if same_subchain_child is None:
-                    continue
-                same_subchain_grandchild = MLTreeSearchFunctions.get_unique_same_subchain_child(
-                    same_subchain_child
-                )
-                if same_subchain_grandchild is None:
-                    continue
-                node.children[0].parent = None
-                same_subchain_grandchild.parent = node
+        trying_to_compress = True
+        while trying_to_compress:
+            trying_to_compress = False
+
+            for level_children in LevelOrderGroupIter(root):
+                for node in level_children:
+                    if node.level == self._num_levels - 1:
+                        continue
+                    same_subchain_child = MLTreeSearchFunctions.get_unique_same_subchain_child(node)
+                    if same_subchain_child is None:
+                        continue
+                    same_subchain_grandchild = MLTreeSearchFunctions.get_unique_same_subchain_child(
+                        same_subchain_child
+                    )
+                    if same_subchain_grandchild is None:
+                        continue
+
+                    node.children[0].parent = None
+                    same_subchain_grandchild.parent = node
+                    trying_to_compress = True
 
     # ----------------------------------------------------------------------------------------------
     @staticmethod

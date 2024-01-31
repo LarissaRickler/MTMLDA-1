@@ -28,16 +28,16 @@ sampler_setup_settings = SamplerSetupSettings(
 )
 
 sampler_run_settings = SamplerRunSettings(
-    num_samples=1000,
+    num_samples=100,
     initial_state=np.array([0, 0]),
     num_threads=8,
     rng_seed=0,
-    print_interval=100,
-    tree_render_interval = 100
+    print_interval=10,
+    tree_render_interval = 10
 )
 
 models = [
-    umbridge.HTTPModel("http://localhost:4243", "banana_posterior_coarse"),
-    umbridge.HTTPModel("http://localhost:4243", "banana_posterior_intermediate"),
-    umbridge.HTTPModel("http://localhost:4243", "banana_posterior_fine"),
+    umbridge.HTTPModel("http://localhost:4243", "gauss_posterior_coarse"),
+    umbridge.HTTPModel("http://localhost:4243", "gauss_posterior_intermediate"),
+    umbridge.HTTPModel("http://localhost:4243", "gauss_posterior_fine"),
 ]

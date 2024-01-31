@@ -3,6 +3,7 @@ from dataclasses import dataclass
 import logging
 import os
 import sys
+import time
 
 import numpy as np
 from anytree import LevelOrderGroupIter, util
@@ -27,19 +28,24 @@ class MTMLDASampler:
         self._accept_rate_estimator = accept_rate_estimator
         self._mcmc_kernel = MLMetropolisHastingsKernel(ground_proposal)
         self._mltree_modifier = MLTreeModifier(
-            ground_proposal, setup_settings.subsampling_rates, setup_settings.rng_seed
+            setup_settings.num_levels,
+            ground_proposal,
+            setup_settings.subsampling_rates,
+            setup_settings.rng_seed,
         )
         self._mltree_visualizer = MLTreeVisualizer(setup_settings.mltree_path)
         self._logger = MTMLDALogger(
             setup_settings.do_printing, setup_settings.logfile_path, setup_settings.write_mode
         )
         self._job_handler = None
+        self._start_time = None
         self._num_samples = None
         self._print_interval = None
         self._tree_render_interval = None
 
     # ----------------------------------------------------------------------------------------------
     def run(self, run_settings):
+        self._start_time = time.time()
         num_threads = run_settings.num_threads
         self._num_samples = run_settings.num_samples
         self._print_interval = run_settings.print_interval
@@ -47,7 +53,9 @@ class MTMLDASampler:
 
         mltree_root = self._init_mltree(run_settings.initial_state, run_settings.rng_seed)
         mcmc_chain = [mltree_root.state]
-        self._logger.print_statistics(print_header=True, samples=len(mcmc_chain))
+        self._logger.print_statistics(
+            print_header=True, samples=len(mcmc_chain), time=time.time()-self._start_time
+        )
 
         try:
             with ThreadPoolExecutor(max_workers=num_threads) as executor:
@@ -59,6 +67,7 @@ class MTMLDASampler:
                     self._update_tree_from_finished_jobs()
                     self._mltree_modifier.propagate_log_posterior_to_reject_children(mltree_root)
                     self._compute_available_mcmc_decisions(mltree_root)
+                    self._mltree_modifier.compress_resolved_subchains(mltree_root)
 
                     while (
                         unique_child := search_functions.get_unique_fine_level_child(
@@ -103,7 +112,7 @@ class MTMLDASampler:
                 mltree_root, self._accept_rate_estimator
             )
             new_candidate = search_functions.find_max_probability_node(mltree_root)
-            self._job_handler.submit_job(new_candidate)        
+            self._job_handler.submit_job(new_candidate)
 
     # ----------------------------------------------------------------------------------------------
     def _update_tree_from_finished_jobs(self):
@@ -177,11 +186,11 @@ class MTMLDASampler:
             node.parent = None
 
     # ----------------------------------------------------------------------------------------------
-    def _generate_output(self, mcmc_chain, mltree_root):#
-        if (len(mcmc_chain) % self._print_interval == 0) or (
-            len(mcmc_chain) == self._num_samples
-        ):
-            self._logger.print_statistics(samples=len(mcmc_chain))
+    def _generate_output(self, mcmc_chain, mltree_root):  #
+        if (len(mcmc_chain) % self._print_interval == 0) or (len(mcmc_chain) == self._num_samples):
+            self._logger.print_statistics(
+                samples=len(mcmc_chain), time=time.time()-self._start_time
+            )
 
         if (len(mcmc_chain) % self._tree_render_interval == 0) or (
             len(mcmc_chain) == self._num_samples
@@ -192,6 +201,10 @@ class MTMLDASampler:
 
 # ==================================================================================================
 class MTMLDALogger:
+    _print_formats = {
+        "samples": {"id": "#Samples", "width": 12, "format": "12.3e"},
+        "time": {"id": "Time[s]", "width": 12, "format": "12.3e"},
+    }
 
     # ----------------------------------------------------------------------------------------------
     def __init__(self, do_printing, logfile_path, write_mode):
@@ -219,7 +232,8 @@ class MTMLDALogger:
         output_str = ""
 
         for component, statistic in kwargs.items():
-            output_str += f"{statistic:<{len(component)+1}} "
+            component_format = self._print_formats[component]["format"]
+            output_str += f"{statistic:<{component_format}}| "
         self._pylogger.info(output_str)
 
     # ----------------------------------------------------------------------------------------------
@@ -232,10 +246,14 @@ class MTMLDALogger:
 
     # ----------------------------------------------------------------------------------------------
     def _print_header(self, **kwargs):
-        header_string = " ".join(kwargs.keys())
-        header_width = len(header_string) + 1
+        header_str = ""
+        for component in kwargs.keys():
+            component_name = self._print_formats[component]["id"]
+            component_width = self._print_formats[component]["width"]
+            header_str += f"{component_name:{component_width}}| "
+        header_width = len(header_str)
         separator = "-" * header_width
-        self._pylogger.info(header_string)
+        self._pylogger.info(header_str)
         self._pylogger.info(separator)
 
 

@@ -175,9 +175,10 @@ class MLTreeVisualizer:
 
     # ----------------------------------------------------------------------------------------------
     def __init__(self, result_directory_path):
-        os.makedirs(result_directory_path, exist_ok=True)
         self._result_dir = result_directory_path
         self._print_counter = 0
+        if self._result_dir is not None:
+            os.makedirs(result_directory_path, exist_ok=True)
 
     # ----------------------------------------------------------------------------------------------
     def export_to_dot(self, mltree_root):

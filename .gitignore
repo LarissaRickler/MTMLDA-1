@@ -197,10 +197,11 @@ pyrightconfig.json
 #--- Additional Ignores ---
 
 doodling.ipynb
-*.dot.png
+*.png
 *.dot
 *.mp4
 *.npy
+*.pdf
 /*/
 .VSCodeCounter/
 .vscode/

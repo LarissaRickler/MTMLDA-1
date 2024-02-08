@@ -1,3 +1,49 @@
+# ====================================== General Configuration =====================================
+[project]
+name = "mtmlda"
+version = "0.1.0"
+description = "Markov Tree Multilevel Delayed Acceptance MCMC Library"
+readme = "README.md"
+license = {text = "GNU GPLv3"}
+authors = [
+    {name = "Linus Seelinger", email = "linus.seelinger@kit.edu"},
+    {name = "Maximilian Kruse", email = "maximilian.kruse@kit.edu"},
+]
+
+requires-python = ">=3.11"
+dependencies = [
+    "anytree>=2.12.1",
+    "numpy>=1.26.3"
+]
+
+#---------------------------------------------------------------------------------------------------
+[project.optional-dependencies]
+model = [
+    "umbridge>=1.2.4",
+    "scipy>=1.11.4"
+]
+postprocessing = [
+    "arviz>=0..17.0",
+    "pydot>=2.0.0"
+]
+notebook = [
+    "jupyter>=1.0.0",
+    "pandas>=2.1.4"
+]
+style = [
+    "ruff>=0.0.292",
+    "black>=24.1.0",
+    "mypy>=1.8.0",
+]
+
+#---------------------------------------------------------------------------------------------------
+[build-system]
+requires = ["setuptools>=65", "wheel"]
+build-backend = "setuptools.build_meta"
+
+
+
+
 # =============================================== Ruff =============================================
 [tool.ruff]
 line-length = 100
@@ -38,15 +84,3 @@ convention = "google"
 # =============================================== Black ============================================
 [tool.black]
 line-length = 100
-
-
-# =============================================== Pytest ===========================================
-[tool.pytest.ini_options]
-minversion = "6.0"
-addopts = [
-    "-ra -q",
-    "--import-mode=importlib",
-]
-testpaths = [
-    "tests"
-]

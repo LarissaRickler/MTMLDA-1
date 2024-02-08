@@ -195,8 +195,6 @@ pyrightconfig.json
 # End of https://www.toptal.com/developers/gitignore/api/python,visualstudiocode
 
 #--- Additional Ignores ---
-
-doodling.ipynb
 *.png
 *.dot
 *.mp4
@@ -206,7 +204,5 @@ doodling.ipynb
 .VSCodeCounter/
 .vscode/
 !/models/
-!/postprocessing/
-!proposals/
 !/run/
 !/src/

@@ -1,18 +1,19 @@
 import os
+import sys
 from pathlib import Path
+sys.path.append(str(Path("..").resolve() / Path("src/")))
 
 import numpy as np
 
-from proposals.proposals import RandomWalkProposal
-from src.mtmlda.mlmcmc import MLAcceptRateEstimator
-from src.mtmlda.sampler import MTMLDASampler
+from mtmlda.mcmc import RandomWalkProposal, MLAcceptRateEstimator
+from mtmlda.sampler import MTMLDASampler
 
 import settings
 
 
 # ==================================================================================================
 class result_settings:
-    result_directory_path = Path("results") / Path("chain")
+    result_directory_path = Path("../results") / Path("chain")
     overwrite_results = True
 
 

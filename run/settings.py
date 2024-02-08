@@ -3,7 +3,7 @@ from pathlib import Path
 import numpy as np
 import umbridge
 
-from src.mtmlda.sampler import SamplerSetupSettings, SamplerRunSettings
+from mtmlda.sampler import SamplerSetupSettings, SamplerRunSettings
 
 
 # ==================================================================================================
@@ -22,8 +22,8 @@ sampler_setup_settings = SamplerSetupSettings(
     max_tree_height=50,
     rng_seed=0,
     do_printing=True,
-    mltree_path=Path("results") / Path("mltree"),
-    logfile_path=Path("results") / Path("singlechain.log"),
+    mltree_path=Path("../results") / Path("mltree"),
+    logfile_path=Path("../results") / Path("singlechain.log"),
     write_mode="w",
 )
 

@@ -1,21 +1,19 @@
-import functools
 import multiprocessing
 import os
 from pathlib import Path
 
 import numpy as np
-import umbridge
 
-from proposals.proposals import RandomWalkProposal
-from src.mtmlda.mlmcmc import MLAcceptRateEstimator
-from src.mtmlda.sampler import MTMLDASampler
+from package.src.mtmlda.mcmc import RandomWalkProposal
+from package.src.mtmlda.mcmc import MLAcceptRateEstimator
+from package.src.mtmlda.sampler import MTMLDASampler
 import settings
 
 
 # ==================================================================================================
 class run_settings:
     num_chains = 4
-    result_directory_path = Path("results")
+    result_directory_path = Path("../results")
     overwrite_results = True
 
 

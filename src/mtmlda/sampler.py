@@ -8,7 +8,7 @@ import time
 import numpy as np
 from anytree import LevelOrderGroupIter, util
 
-from .mlmcmc import MLMetropolisHastingsKernel
+from .mcmc import MLMetropolisHastingsKernel
 from .mltree import (
     MTNode,
     MLTreeModifier,

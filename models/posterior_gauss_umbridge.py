@@ -1,27 +1,29 @@
 import time
+from collections.abc import Sequence
+from typing import Any
 
 import umbridge
 from scipy.stats import multivariate_normal
 
 
 class GaussianPosterior(umbridge.Model):
-    def __init__(self, model_name, sleep_time):
+    def __init__(self, model_name: str, sleep_time: float) -> None:
         super().__init__(model_name)
         self._sleep_time = sleep_time
-        self._mean = [0, 0]
-        self._covariance = [[0.1, 0.05], [0.05, 0.1]]
-        self._distribution = multivariate_normal(self._mean, self._covariance)
+        mean = [0, 0]
+        covariance = [[0.1, 0.05], [0.05, 0.1]]
+        self._distribution = multivariate_normal(mean, covariance)
 
-    def get_input_sizes(self, config):
+    def get_input_sizes(self, config: Any) -> list[int]:
         return [2]
 
-    def get_output_sizes(self, config):
+    def get_output_sizes(self, config: Any) -> list[int]:
         return [1]
 
-    def supports_evaluate(self):
+    def supports_evaluate(self) -> bool:
         return True
 
-    def __call__(self, parameters, config={}):
+    def __call__(self, parameters: list[list[float]], config: Any = {}) -> list[list[float]]:
         time.sleep(self._sleep_time)
         logp = self._distribution.logpdf(parameters[0])
         return [[logp]]

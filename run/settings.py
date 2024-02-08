@@ -36,6 +36,8 @@ sampler_run_settings = SamplerRunSettings(
     tree_render_interval = 10
 )
 
+
+# ==================================================================================================
 models = [
     umbridge.HTTPModel("http://localhost:4243", "gauss_posterior_coarse"),
     umbridge.HTTPModel("http://localhost:4243", "gauss_posterior_intermediate"),

@@ -1,9 +1,14 @@
-from concurrent.futures import as_completed
+from collections.abc import Callable, Sequence
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+from anytree import AnyNode
 
 
 # ==================================================================================================
 class JobHandler:
-    def __init__(self, executor, models, num_threads):
+    def __init__(
+        self, executor: ThreadPoolExecutor, models: Sequence[Callable], num_threads: int
+    ) -> None:
         self._futures = []
         self._futuremap = {}
         self._executor = executor
@@ -11,14 +16,14 @@ class JobHandler:
         self._num_threads = num_threads
 
     # ----------------------------------------------------------------------------------------------
-    def submit_job(self, node):
+    def submit_job(self, node: AnyNode) -> None:
         node.computing = True
         future = self._executor.submit(self._models[node.level], [node.state.tolist()])
         self._futures.append(future)
         self._futuremap[future] = node
 
     # ----------------------------------------------------------------------------------------------
-    def get_finished_jobs(self):
+    def get_finished_jobs(self) -> tuple[list[float], list[AnyNode]]:
         results = []
         nodes = []
 
@@ -33,16 +38,16 @@ class JobHandler:
                 break
 
         return results, nodes
-    
+
     # ----------------------------------------------------------------------------------------------
-    def _some_job_is_done(self):
+    def _some_job_is_done(self) -> bool:
         for future in self._futures:
             if future.done():
                 return True
         return False
-    
+
     # ----------------------------------------------------------------------------------------------
     @property
-    def workers_available(self):
+    def workers_available(self) -> bool:
         workers_available = len(self._futures) < self._num_threads
         return workers_available

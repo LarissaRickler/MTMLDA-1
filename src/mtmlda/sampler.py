@@ -1,26 +1,60 @@
-from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
 import logging
 import os
 import sys
 import time
+from collections.abc import Callable, Sequence
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
 
 import numpy as np
 from anytree import LevelOrderGroupIter, util
 
-from .mcmc import MLMetropolisHastingsKernel
+from .jobhandling import JobHandler
+from .mcmc import BaseProposal, MLAcceptRateEstimator, MLMetropolisHastingsKernel
 from .mltree import (
-    MTNode,
     MLTreeModifier,
     MLTreeVisualizer,
+    MTNode,
+)
+from .mltree import (
     MLTreeSearchFunctions as search_functions,
 )
-from .jobhandling import JobHandler
+
+
+# ==================================================================================================
+@dataclass
+class SamplerSetupSettings:
+    num_levels: int
+    subsampling_rates: list
+    max_tree_height: int
+    rng_seed: int
+    do_printing: bool
+    mltree_path: str
+    logfile_path: str
+    write_mode: str
+
+
+@dataclass
+class SamplerRunSettings:
+    num_samples: int
+    initial_state: np.ndarray
+    num_threads: int
+    rng_seed: int
+    print_interval: int
+    tree_render_interval: int
 
 
 # ==================================================================================================
 class MTMLDASampler:
-    def __init__(self, setup_settings, models, accept_rate_estimator, ground_proposal):
+    def __init__(
+        self,
+        setup_settings: SamplerSetupSettings,
+        models: Sequence[Callable],
+        accept_rate_estimator: MLAcceptRateEstimator,
+        ground_proposal: BaseProposal,
+    ) -> None:
         self._num_levels = setup_settings.num_levels
         self._models = models
         self._subsampling_rates = setup_settings.subsampling_rates
@@ -44,7 +78,7 @@ class MTMLDASampler:
         self._tree_render_interval = None
 
     # ----------------------------------------------------------------------------------------------
-    def run(self, run_settings):
+    def run(self, run_settings: SamplerRunSettings) -> list[float]:
         self._start_time = time.time()
         num_threads = run_settings.num_threads
         self._num_samples = run_settings.num_samples
@@ -54,7 +88,7 @@ class MTMLDASampler:
         mltree_root = self._init_mltree(run_settings.initial_state, run_settings.rng_seed)
         mcmc_chain = [mltree_root.state]
         self._logger.print_statistics(
-            print_header=True, samples=len(mcmc_chain), time=time.time()-self._start_time
+            print_header=True, samples=len(mcmc_chain), time=time.time() - self._start_time
         )
 
         try:
@@ -92,7 +126,7 @@ class MTMLDASampler:
             return mcmc_chain
 
     # ----------------------------------------------------------------------------------------------
-    def _init_mltree(self, initial_state, seed):
+    def _init_mltree(self, initial_state: np.ndarray, seed: float) -> MTNode:
         rng = np.random.default_rng(seed)
         mltree_root = MTNode("a")
         mltree_root.state = initial_state
@@ -103,7 +137,7 @@ class MTMLDASampler:
         return mltree_root
 
     # ----------------------------------------------------------------------------------------------
-    def _extend_tree_and_launch_jobs(self, mltree_root):
+    def _extend_tree_and_launch_jobs(self, mltree_root: MTNode) -> None:
         while (
             mltree_root.height <= self._maximum_tree_height
         ) and self._job_handler.workers_available:
@@ -115,13 +149,13 @@ class MTMLDASampler:
             self._job_handler.submit_job(new_candidate)
 
     # ----------------------------------------------------------------------------------------------
-    def _update_tree_from_finished_jobs(self):
+    def _update_tree_from_finished_jobs(self) -> None:
         results, nodes = self._job_handler.get_finished_jobs()
         for result, node in zip(results, nodes):
             node.logposterior = result
 
     # ----------------------------------------------------------------------------------------------
-    def _compute_available_mcmc_decisions(self, mltree_root):
+    def _compute_available_mcmc_decisions(self, mltree_root: MTNode) -> None:
         trying_to_compute_mcmc_decision = True
 
         while trying_to_compute_mcmc_decision:
@@ -156,7 +190,7 @@ class MTMLDASampler:
                     break
 
     # ----------------------------------------------------------------------------------------------
-    def _check_if_node_is_available_for_decision(self, node):
+    def _check_if_node_is_available_for_decision(self, node: MTNode) -> tuple[bool, bool, bool]:
         node_available_for_decision = (
             node.name == "a"
             and node.parent is not None
@@ -179,24 +213,23 @@ class MTMLDASampler:
         return node_available_for_decision, is_ground_level_decision, is_two_level_decision
 
     # ----------------------------------------------------------------------------------------------
-    def _discard_rejected_nodes(self, node, accepted):
+    def _discard_rejected_nodes(self, node: MTNode, accepted: bool) -> None:
         if accepted:
             util.rightsibling(node).parent = None
         else:
             node.parent = None
 
     # ----------------------------------------------------------------------------------------------
-    def _generate_output(self, mcmc_chain, mltree_root):  #
+    def _generate_output(self, mcmc_chain: Sequence[np.ndarray], mltree_root: MTNode) -> None:
         if (len(mcmc_chain) % self._print_interval == 0) or (len(mcmc_chain) == self._num_samples):
             self._logger.print_statistics(
-                samples=len(mcmc_chain), time=time.time()-self._start_time
+                samples=len(mcmc_chain), time=time.time() - self._start_time
             )
 
         if (len(mcmc_chain) % self._tree_render_interval == 0) or (
             len(mcmc_chain) == self._num_samples
         ):
             self._mltree_visualizer.export_to_dot(mltree_root)
-        return mcmc_chain
 
 
 # ==================================================================================================
@@ -207,7 +240,7 @@ class MTMLDALogger:
     }
 
     # ----------------------------------------------------------------------------------------------
-    def __init__(self, do_printing, logfile_path, write_mode):
+    def __init__(self, do_printing: bool, logfile_path: Path, write_mode: str) -> None:
         self._pylogger = logging.getLogger(__name__)
         self._pylogger.setLevel(logging.INFO)
         formatter = logging.Formatter("%(message)s")
@@ -226,7 +259,7 @@ class MTMLDALogger:
                 self._pylogger.addHandler(file_handler)
 
     # ----------------------------------------------------------------------------------------------
-    def print_statistics(self, print_header=False, **kwargs):
+    def print_statistics(self, print_header: bool = False, **kwargs: Any) -> None:
         if print_header:
             self._print_header(**kwargs)
         output_str = ""
@@ -237,15 +270,15 @@ class MTMLDALogger:
         self._pylogger.info(output_str)
 
     # ----------------------------------------------------------------------------------------------
-    def info(self, message):
+    def info(self, message: str) -> None:
         self._pylogger.info(message)
 
     # ----------------------------------------------------------------------------------------------
-    def exception(self, message):
+    def exception(self, message: str) -> None:
         self._pylogger.exception(message)
 
     # ----------------------------------------------------------------------------------------------
-    def _print_header(self, **kwargs):
+    def _print_header(self, **kwargs: Any) -> None:
         header_str = ""
         for component in kwargs.keys():
             component_name = self._print_formats[component]["id"]
@@ -255,26 +288,3 @@ class MTMLDALogger:
         separator = "-" * header_width
         self._pylogger.info(header_str)
         self._pylogger.info(separator)
-
-
-# ==================================================================================================
-@dataclass
-class SamplerSetupSettings:
-    num_levels: int
-    subsampling_rates: list
-    max_tree_height: int
-    rng_seed: int
-    do_printing: bool
-    mltree_path: str
-    logfile_path: str
-    write_mode: str
-
-
-@dataclass
-class SamplerRunSettings:
-    num_samples: int
-    initial_state: np.ndarray
-    num_threads: int
-    rng_seed: int
-    print_interval: int
-    tree_render_interval: int

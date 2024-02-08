@@ -1,25 +1,31 @@
 import os
+from collections.abc import Sequence
 from pathlib import Path
+from typing import Self
 
 import numpy as np
 from anytree import LevelOrderGroupIter, NodeMixin, util
 from anytree.exporter import DotExporter
 
+from .mcmc import MLAcceptRateEstimator
+
 
 # ==================================================================================================
 class MTNodeBase:
-    probability_reached = None
-    state = None
-    logposterior = None
-    logposterior_coarse = None
-    computing = False
-    random_draw = None
-    level = -1
-    subchain_index = 0
+    probability_reached: float = None
+    state: float = None
+    logposterior: float = None
+    logposterior_coarse: float = None
+    computing: bool = False
+    random_draw: float = None
+    level: int = -1
+    subchain_index: int = 0
 
 
 class MTNode(MTNodeBase, NodeMixin):
-    def __init__(self, name, parent=None, children=None):
+    def __init__(
+        self, name: str, parent: Self | None = None, children: Sequence[Self] | None = None
+    ):
         super(MTNodeBase, self).__init__()
         self.name = name
         self.parent = parent
@@ -30,7 +36,7 @@ class MTNode(MTNodeBase, NodeMixin):
 # ==================================================================================================
 class MLTreeSearchFunctions:
     @staticmethod
-    def find_max_probability_node(root):
+    def find_max_probability_node(root: MTNode) -> MTNode:
         max_probability = 0.0
         max_node = None
         for node in root.leaves:
@@ -49,7 +55,7 @@ class MLTreeSearchFunctions:
 
     # ----------------------------------------------------------------------------------------------
     @staticmethod
-    def get_same_level_parent(node):
+    def get_same_level_parent(node: MTNode) -> MTNode:
         if node.parent is None:
             return None
         same_level_parent = node.parent
@@ -61,7 +67,7 @@ class MLTreeSearchFunctions:
 
     # ----------------------------------------------------------------------------------------------
     @staticmethod
-    def get_unique_fine_level_child(node, num_levels):
+    def get_unique_fine_level_child(node: MTNode, num_levels: int) -> MTNode:
         if len(node.children) != 1:
             return None
         unique_child = node.children[0]
@@ -71,7 +77,7 @@ class MLTreeSearchFunctions:
 
     # ----------------------------------------------------------------------------------------------
     @staticmethod
-    def get_unique_same_subchain_child(node):
+    def get_unique_same_subchain_child(node: MTNode) -> MTNode:
         iter = node
         while True:
             if len(iter.children) != 1:
@@ -85,14 +91,20 @@ class MLTreeSearchFunctions:
 
 # ==================================================================================================
 class MLTreeModifier:
-    def __init__(self, num_levels, ground_proposal, subsampling_rates, rng_seed):
+    def __init__(
+        self,
+        num_levels: int,
+        ground_proposal: np.ndarray,
+        subsampling_rates: Sequence[int],
+        rng_seed: float,
+    ) -> None:
         self._num_levels = num_levels
         self._ground_proposal = ground_proposal
         self._subsampling_rates = subsampling_rates
         self._rng = np.random.default_rng(rng_seed)
 
     # ----------------------------------------------------------------------------------------------
-    def expand_tree(self, root):
+    def expand_tree(self, root: MTNode) -> None:
         # Iterate over tree, add new nodes to computed accept leaves
         for node in root.leaves:
             if node.name == "a" and (node.logposterior is not None or node.computing):
@@ -110,7 +122,7 @@ class MLTreeModifier:
             ):
                 self._add_new_children_to_node(node)
 
-    def compress_resolved_subchains(self, root):
+    def compress_resolved_subchains(self, root: MTNode) -> None:
         trying_to_compress = True
         while trying_to_compress:
             trying_to_compress = False
@@ -134,7 +146,9 @@ class MLTreeModifier:
 
     # ----------------------------------------------------------------------------------------------
     @staticmethod
-    def update_probability_reached(root, acceptance_rate_estimator):
+    def update_probability_reached(
+        root: MTNode, acceptance_rate_estimator: MLAcceptRateEstimator
+    ) -> None:
         for level_children in LevelOrderGroupIter(root):
             for node in level_children:
                 acceptance_rate_estimate = acceptance_rate_estimator.get_acceptance_rate(node)
@@ -156,7 +170,7 @@ class MLTreeModifier:
 
     # ----------------------------------------------------------------------------------------------
     @staticmethod
-    def propagate_log_posterior_to_reject_children(root):
+    def propagate_log_posterior_to_reject_children(root: MTNode) -> None:
         for level_children in LevelOrderGroupIter(root):
             for child in level_children:
                 same_level_parent = MLTreeSearchFunctions.get_same_level_parent(child)
@@ -165,7 +179,7 @@ class MLTreeModifier:
                     child.logposterior = same_level_parent.logposterior
 
     # ----------------------------------------------------------------------------------------------
-    def _add_new_children_to_node(self, node):
+    def _add_new_children_to_node(self, node: MTNode) -> None:
         accepted = MTNode("a", parent=node)
         rejected = MTNode("r", parent=node)
 
@@ -210,14 +224,14 @@ class MLTreeVisualizer:
     _color_visited = "mediumaquamarine"
 
     # ----------------------------------------------------------------------------------------------
-    def __init__(self, result_directory_path):
+    def __init__(self, result_directory_path: Path | None = None) -> None:
         self._result_dir = result_directory_path
         self._print_counter = 0
         if self._result_dir is not None:
             os.makedirs(result_directory_path, exist_ok=True)
 
     # ----------------------------------------------------------------------------------------------
-    def export_to_dot(self, mltree_root):
+    def export_to_dot(self, mltree_root: MTNode) -> None:
         if self._result_dir is not None:
             exporter = DotExporter(
                 mltree_root, nodenamefunc=self._name_from_parents, nodeattrfunc=self._node_attr_func
@@ -227,7 +241,7 @@ class MLTreeVisualizer:
 
     # ----------------------------------------------------------------------------------------------
     @classmethod
-    def _node_attr_func(cls, node):
+    def _node_attr_func(cls, node: MTNode) -> str:
         node_size = (1 + 0.75 * node.level) * cls._base_size
         if node.logposterior is not None:
             color = cls._color_visited
@@ -256,7 +270,7 @@ class MLTreeVisualizer:
 
     # ----------------------------------------------------------------------------------------------
     @staticmethod
-    def _name_from_parents(node):
+    def _name_from_parents(node: MTNode) -> str:
         if node.parent is None:
             return node.name
         else:

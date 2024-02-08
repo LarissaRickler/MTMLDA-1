@@ -1,28 +1,30 @@
-import umbridge
-import numpy as np
 import time
+from typing import Any
+
+import numpy as np
+import umbridge
 
 
 class PTOModel(umbridge.Model):
-    def __init__(self, model_name, sleep_time):
+    def __init__(self, model_name: str, sleep_time: float) -> None:
         self._sleep_time = sleep_time
         super().__init__(model_name)
 
-    def get_input_sizes(self, config):
+    def get_input_sizes(self, config: Any = {}) -> list[int]:
         return [4]
 
-    def get_output_sizes(self, config):
+    def get_output_sizes(self, config: Any = {}) -> list[int]:
         return [100]
 
-    def supports_evaluate(self):
+    def supports_evaluate(self) -> bool:
         return True
 
-    def __call__(self, parameters, config={}):
+    def __call__(self, parameters: list[list[float]], config: Any = {}) -> list[list[float]]:
         time.sleep(self._sleep_time)
         observables = self._transform_input_to_output(parameters)
         return [observables.tolist()]
 
-    def _transform_input_to_output(self, parameters):
+    def _transform_input_to_output(self, parameters: list[list[float]]) -> np.ndarray:
         observables = np.zeros((100,))
         const_block = np.ones((25,))
         observables[0:25] = parameters[0][0] * const_block

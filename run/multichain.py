@@ -1,12 +1,14 @@
 import multiprocessing
 import os
+import sys
 from pathlib import Path
+sys.path.append(str(Path("..").resolve() / Path("src/")))
 
 import numpy as np
 
-from package.src.mtmlda.mcmc import RandomWalkProposal
-from package.src.mtmlda.mcmc import MLAcceptRateEstimator
-from package.src.mtmlda.sampler import MTMLDASampler
+from mtmlda.mcmc import RandomWalkProposal
+from mtmlda.mcmc import MLAcceptRateEstimator
+from mtmlda.sampler import MTMLDASampler
 import settings
 
 

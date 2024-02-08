@@ -23,7 +23,7 @@ sampler_setup_settings = SamplerSetupSettings(
     rng_seed=0,
     do_printing=True,
     mltree_path=Path("../results") / Path("mltree"),
-    logfile_path=Path("../results") / Path("singlechain.log"),
+    logfile_path=Path("../results") / Path("mtmlda.log"),
     write_mode="w",
 )
 

@@ -2,7 +2,7 @@ import multiprocessing
 import os
 import sys
 from pathlib import Path
-sys.path.append(str(Path("..").resolve() / Path("src/")))
+sys.path.append(str(Path("../src/").resolve()))
 
 import numpy as np
 

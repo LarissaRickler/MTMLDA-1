@@ -67,9 +67,9 @@ sampler_run_settings = sampler.SamplerRunSettings(
     print_interval=1,
     tree_render_interval=1,
 )
-4
 
 # ==================================================================================================
+### change me to the actual mesh file names
 pto_model_config = ("coarse", "fine")
 server_available = False
 while not server_available:

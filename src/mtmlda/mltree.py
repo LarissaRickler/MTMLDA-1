@@ -1,7 +1,7 @@
 import os
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, Self
+from typing_extensions import Any, Self
 
 import numpy as np
 import anytree as at
@@ -22,7 +22,7 @@ class MTNodeBase:
 
 class MTNode(MTNodeBase, at.NodeMixin):
     def __init__(
-        self, name: str, parent: Self | None = None, children: Sequence[Self] | None = None
+        self, name: str, parent, children
     ):
         super(MTNodeBase, self).__init__()
         self.name = name
@@ -230,7 +230,7 @@ class MLTreeVisualizer:
     _color_visited = "mediumaquamarine"
 
     # ----------------------------------------------------------------------------------------------
-    def __init__(self, result_directory_path: Path | None = None) -> None:
+    def __init__(self, result_directory_path) -> None:
         self._result_dir = result_directory_path
         self._print_counter = 0
         if self._result_dir is not None:

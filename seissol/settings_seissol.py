@@ -1,4 +1,5 @@
 import os
+import time
 from functools import partial
 from pathlib import Path
 
@@ -66,11 +67,21 @@ sampler_run_settings = sampler.SamplerRunSettings(
     print_interval=1,
     tree_render_interval=1,
 )
-
+4
 
 # ==================================================================================================
 pto_model_config = ("coarse", "fine")
-pto_model = ub.HTTPModel("http://localhost:4243", "forward")
+server_available = False
+while not server_available:
+        try:
+                pto_model = ub.HTTPModel("https://localhost:4242", "forward")
+                pto_model = ub.HTTPModel("http://localhost:4243", "forward")
+                print("Server available")
+                server_available = True
+        except:
+                print("Server not available")
+                time.sleep(10)
+
 
 prior = wrapper.UninformLogPrior(prior_settings.parameter_intervals)
 likelihood = wrapper.GaussianLogLikelihood(

@@ -19,7 +19,7 @@ class run_settings:
 
 
 class prior_settings:
-    parameter_intervals = np.array([[500, 5000], [1e5, 1e6], [5, 50], [5, 50]])
+    parameter_intervals = np.array([[500, 2000], [1, 20], [20e9, 30e9], [20e9, 30e9]])
 
 
 class likelihood_settings:
@@ -60,7 +60,7 @@ sampler_setup_settings = sampler.SamplerSetupSettings(
 
 sampler_run_settings = sampler.SamplerRunSettings(
     num_samples=2,
-    initial_state=np.array([2000, 5e5, 32, 17]),
+    initial_state=np.array([1000, 10, 28518750000, 24637500000]),
     num_threads=8,
     rng_seed_node_init=0,
     print_interval=1,

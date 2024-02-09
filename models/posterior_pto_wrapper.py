@@ -32,8 +32,8 @@ class GaussianLogLikelihood:
         self._data = data
         self._precision = np.linalg.inv(covariance)
 
-    def evaluate(self, parameter: list[list[float]]) -> float:
-        observables = np.array(self._umbridge_pto_map(parameter)[0])
+    def evaluate(self, parameter: list[list[float]], config) -> float:
+        observables = np.array(self._umbridge_pto_map(parameter, config)[0])
         misfit = self._data - observables
         log_likelihood = -0.5 * misfit.T @ self._precision @ misfit
         return log_likelihood
@@ -44,15 +44,15 @@ class LogPosterior:
         self._log_prior = log_prior
         self._log_likelihood = log_likelihood
 
-    def __call__(self, parameter: np.ndarray) -> list[list[float]]:
-        return [[self.evaluate(parameter)]]
+    def __call__(self, parameter: np.ndarray, config) -> list[list[float]]:
+        return [[self.evaluate(parameter, config)]]
 
-    def evaluate(self, parameter: np.ndarray) -> float:
+    def evaluate(self, parameter: np.ndarray, config) -> float:
         log_prior = self._log_prior.evaluate(parameter)
         if np.isneginf(log_prior):
             log_posterior = -np.inf
         else:
-            log_likelihood = self._log_likelihood.evaluate(parameter)
+            log_likelihood = self._log_likelihood.evaluate(parameter, config)
             log_posterior = log_prior + log_likelihood
 
         return log_posterior

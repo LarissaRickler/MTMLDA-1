@@ -19,7 +19,10 @@ class PTOModel(ub.Model):
         return True
 
     def __call__(self, parameters: list[list[float]], config: str) -> list[list[float]]:
-        
+        if config == "coarse":
+            time.sleep(0.3)
+        if config == "fine":
+            time.sleep(0.3)
         observables = self._transform_input_to_output(parameters)
         return [observables.tolist()]
 
@@ -37,8 +40,8 @@ class PTOModel(ub.Model):
 if __name__ == "__main__":
     ub.serve_models(
         [
-            PTOModel(model_name="parameter_to_observable_map_fine", sleep_time=1),
-            PTOModel(model_name="parameter_to_observable_map_coarse", sleep_time=0.3),
+            PTOModel(),
+            PTOModel(),
         ],
         port=4243,
         max_workers=100,

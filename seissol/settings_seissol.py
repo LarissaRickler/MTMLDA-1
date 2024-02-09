@@ -69,10 +69,10 @@ sampler_run_settings = sampler.SamplerRunSettings(
 
 
 # ==================================================================================================
-pto_model_config = ("coarse_mesh", "fine_mesh")
-pto_model = ub.HTTPModel("adress", "forward")
+pto_model_config = ("coarse", "fine")
+pto_model = ub.HTTPModel("http://localhost:4243", "forward")
 
-prior = (wrapper.UninformLogPrior(prior_settings.parameter_intervals),)
+prior = wrapper.UninformLogPrior(prior_settings.parameter_intervals)
 likelihood = wrapper.GaussianLogLikelihood(
     pto_model, likelihood_settings.data, likelihood_settings.covariance
 )

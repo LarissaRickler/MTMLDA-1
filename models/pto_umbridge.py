@@ -6,9 +6,8 @@ import umbridge as ub
 
 
 class PTOModel(ub.Model):
-    def __init__(self, model_name: str, sleep_time: float) -> None:
-        self._sleep_time = sleep_time
-        super().__init__(model_name)
+    def __init__(self) -> None:
+        super().__init__("forward")
 
     def get_input_sizes(self, config: Any = {}) -> list[int]:
         return [4]
@@ -19,8 +18,8 @@ class PTOModel(ub.Model):
     def supports_evaluate(self) -> bool:
         return True
 
-    def __call__(self, parameters: list[list[float]], config: Any = {}) -> list[list[float]]:
-        time.sleep(self._sleep_time)
+    def __call__(self, parameters: list[list[float]], config: str) -> list[list[float]]:
+        
         observables = self._transform_input_to_output(parameters)
         return [observables.tolist()]
 

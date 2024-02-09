@@ -9,18 +9,9 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-from anytree import LevelOrderGroupIter, util
+import anytree as at
 
-from .jobhandling import JobHandler
-from .mcmc import BaseProposal, MLAcceptRateEstimator, MLMetropolisHastingsKernel
-from .mltree import (
-    MLTreeModifier,
-    MLTreeVisualizer,
-    MTNode,
-)
-from .mltree import (
-    MLTreeSearchFunctions as search_functions,
-)
+from . import jobhandling, mltree, mcmc
 
 
 # ==================================================================================================
@@ -52,22 +43,22 @@ class MTMLDASampler:
         self,
         setup_settings: SamplerSetupSettings,
         models: Sequence[Callable],
-        accept_rate_estimator: MLAcceptRateEstimator,
-        ground_proposal: BaseProposal,
+        accept_rate_estimator: mcmc.MLAcceptRateEstimator,
+        ground_proposal: mcmc.BaseProposal,
     ) -> None:
         self._num_levels = setup_settings.num_levels
         self._models = models
         self._subsampling_rates = setup_settings.subsampling_rates
         self._maximum_tree_height = setup_settings.max_tree_height
         self._accept_rate_estimator = accept_rate_estimator
-        self._mcmc_kernel = MLMetropolisHastingsKernel(ground_proposal)
-        self._mltree_modifier = MLTreeModifier(
+        self._mcmc_kernel = mcmc.MLMetropolisHastingsKernel(ground_proposal)
+        self._mltree_modifier = mltree.MLTreeModifier(
             setup_settings.num_levels,
             ground_proposal,
             setup_settings.subsampling_rates,
             setup_settings.rng_seed,
         )
-        self._mltree_visualizer = MLTreeVisualizer(setup_settings.mltree_path)
+        self._mltree_visualizer = mltree.MLTreeVisualizer(setup_settings.mltree_path)
         self._logger = MTMLDALogger(
             setup_settings.do_printing, setup_settings.logfile_path, setup_settings.write_mode
         )
@@ -93,7 +84,7 @@ class MTMLDASampler:
 
         try:
             with ThreadPoolExecutor(max_workers=num_threads) as executor:
-                self._job_handler = JobHandler(executor, self._models, num_threads)
+                self._job_handler = jobhandling.JobHandler(executor, self._models, num_threads)
 
                 # --- Main MCMC Loop ---
                 while True:
@@ -104,7 +95,7 @@ class MTMLDASampler:
                     self._mltree_modifier.compress_resolved_subchains(mltree_root)
 
                     while (
-                        unique_child := search_functions.get_unique_fine_level_child(
+                        unique_child := mltree.MLTreeSearchFunctions.get_unique_fine_level_child(
                             mltree_root, self._num_levels
                         )
                     ) is not None:
@@ -126,9 +117,9 @@ class MTMLDASampler:
             return mcmc_chain
 
     # ----------------------------------------------------------------------------------------------
-    def _init_mltree(self, initial_state: np.ndarray, seed: float) -> MTNode:
+    def _init_mltree(self, initial_state: np.ndarray, seed: float) -> mltree.MTNode:
         rng = np.random.default_rng(seed)
-        mltree_root = MTNode("a")
+        mltree_root = mltree.MTNode("a")
         mltree_root.state = initial_state
         mltree_root.random_draw = rng.uniform()
         mltree_root.level = self._num_levels - 1
@@ -137,7 +128,7 @@ class MTMLDASampler:
         return mltree_root
 
     # ----------------------------------------------------------------------------------------------
-    def _extend_tree_and_launch_jobs(self, mltree_root: MTNode) -> None:
+    def _extend_tree_and_launch_jobs(self, mltree_root: mltree.MTNode) -> None:
         while (
             mltree_root.height <= self._maximum_tree_height
         ) and self._job_handler.workers_available:
@@ -145,7 +136,7 @@ class MTMLDASampler:
             self._mltree_modifier.update_probability_reached(
                 mltree_root, self._accept_rate_estimator
             )
-            new_candidate = search_functions.find_max_probability_node(mltree_root)
+            new_candidate = mltree.MLTreeSearchFunctions.find_max_probability_node(mltree_root)
             self._job_handler.submit_job(new_candidate)
 
     # ----------------------------------------------------------------------------------------------
@@ -155,13 +146,13 @@ class MTMLDASampler:
             node.logposterior = result
 
     # ----------------------------------------------------------------------------------------------
-    def _compute_available_mcmc_decisions(self, mltree_root: MTNode) -> None:
+    def _compute_available_mcmc_decisions(self, mltree_root: mltree.MTNode) -> None:
         trying_to_compute_mcmc_decision = True
 
         while trying_to_compute_mcmc_decision:
             trying_to_compute_mcmc_decision = False
 
-            for level_children in LevelOrderGroupIter(mltree_root):
+            for level_children in at.LevelOrderGroupIter(mltree_root):
                 for node in level_children:
                     (
                         node_available_for_decision,
@@ -176,7 +167,7 @@ class MTMLDASampler:
                         trying_to_compute_mcmc_decision = True
 
                     if node_available_for_decision and is_two_level_decision:
-                        same_level_parent = search_functions.get_same_level_parent(node)
+                        same_level_parent = mltree.MLTreeSearchFunctions.get_same_level_parent(node)
                         accepted = self._mcmc_kernel.compute_two_level_decision(
                             node, same_level_parent
                         )
@@ -190,7 +181,9 @@ class MTMLDASampler:
                     break
 
     # ----------------------------------------------------------------------------------------------
-    def _check_if_node_is_available_for_decision(self, node: MTNode) -> tuple[bool, bool, bool]:
+    def _check_if_node_is_available_for_decision(
+        self, node: mltree.MTNode
+    ) -> tuple[bool, bool, bool]:
         node_available_for_decision = (
             node.name == "a"
             and node.parent is not None
@@ -203,7 +196,7 @@ class MTMLDASampler:
             is_ground_level_decision = False
             is_two_level_decision = False
         else:
-            same_level_parent = search_functions.get_same_level_parent(node)
+            same_level_parent = mltree.MLTreeSearchFunctions.get_same_level_parent(node)
             is_ground_level_decision = node.level == node.parent.level == 0
             is_two_level_decision = (
                 node.level - 1 == node.parent.level
@@ -213,14 +206,16 @@ class MTMLDASampler:
         return node_available_for_decision, is_ground_level_decision, is_two_level_decision
 
     # ----------------------------------------------------------------------------------------------
-    def _discard_rejected_nodes(self, node: MTNode, accepted: bool) -> None:
+    def _discard_rejected_nodes(self, node: mltree.MTNode, accepted: bool) -> None:
         if accepted:
-            util.rightsibling(node).parent = None
+            at.util.rightsibling(node).parent = None
         else:
             node.parent = None
 
     # ----------------------------------------------------------------------------------------------
-    def _generate_output(self, mcmc_chain: Sequence[np.ndarray], mltree_root: MTNode) -> None:
+    def _generate_output(
+        self, mcmc_chain: Sequence[np.ndarray], mltree_root: mltree.MTNode
+    ) -> None:
         if (len(mcmc_chain) % self._print_interval == 0) or (len(mcmc_chain) == self._num_samples):
             self._logger.print_statistics(
                 samples=len(mcmc_chain), time=time.time() - self._start_time

@@ -1,9 +1,9 @@
 from pathlib import Path
 
 import numpy as np
-import umbridge
+import umbridge as ub
 
-from mtmlda.sampler import SamplerSetupSettings, SamplerRunSettings
+import mtmlda.sampler as sampler
 
 
 # ==================================================================================================
@@ -16,7 +16,7 @@ class accept_rate_settings:
     initial_guess = [0.5, 0.7, 0.8]
     update_parameter = 0.01
 
-sampler_setup_settings = SamplerSetupSettings(
+sampler_setup_settings = sampler.SamplerSetupSettings(
     num_levels=3,
     subsampling_rates=[5, 3, -1],
     max_tree_height=50,
@@ -27,7 +27,7 @@ sampler_setup_settings = SamplerSetupSettings(
     write_mode="w",
 )
 
-sampler_run_settings = SamplerRunSettings(
+sampler_run_settings = sampler.SamplerRunSettings(
     num_samples=100,
     initial_state=np.array([0, 0]),
     num_threads=8,
@@ -39,7 +39,7 @@ sampler_run_settings = SamplerRunSettings(
 
 # ==================================================================================================
 models = [
-    umbridge.HTTPModel("http://localhost:4243", "gauss_posterior_coarse"),
-    umbridge.HTTPModel("http://localhost:4243", "gauss_posterior_intermediate"),
-    umbridge.HTTPModel("http://localhost:4243", "gauss_posterior_fine"),
+    ub.HTTPModel("http://localhost:4243", "gauss_posterior_coarse"),
+    ub.HTTPModel("http://localhost:4243", "gauss_posterior_intermediate"),
+    ub.HTTPModel("http://localhost:4243", "gauss_posterior_fine"),
 ]

@@ -6,9 +6,8 @@ sys.path.append(str(Path("../src/").resolve()))
 
 import numpy as np
 
-from mtmlda.mcmc import RandomWalkProposal, MLAcceptRateEstimator
-from mtmlda.sampler import MTMLDASampler
-
+import mtmlda.mcmc as mcmc
+import mtmlda.sampler as sampler
 import settings
 
 
@@ -22,35 +21,35 @@ class result_settings:
 def set_up_sampler(
     proposal_settings, accept_rate_settings, sampler_setup_settings, models
 ):
-    ground_proposal = RandomWalkProposal(
+    ground_proposal = mcmc.RandomWalkProposal(
         proposal_settings.step_width,
         proposal_settings.covariance,
         proposal_settings.rng_seed,
     )
-    accept_rate_estimator = MLAcceptRateEstimator(
+    accept_rate_estimator = mcmc.MLAcceptRateEstimator(
         accept_rate_settings.initial_guess,
         accept_rate_settings.update_parameter,
     )
-    sampler = MTMLDASampler(
+    mtmlda_sampler = sampler.MTMLDASampler(
         sampler_setup_settings,
         models,
         accept_rate_estimator,
         ground_proposal,
     )
-    return sampler
+    return mtmlda_sampler
 
 
 def main():
     os.makedirs(
         result_settings.result_directory_path.parent, exist_ok=result_settings.overwrite_results
     )
-    sampler = set_up_sampler(
+    mtmlda_sampler = set_up_sampler(
         settings.proposal_settings,
         settings.accept_rate_settings,
         settings.sampler_setup_settings,
         settings.models,
     )
-    mcmc_chain = sampler.run(settings.sampler_run_settings)
+    mcmc_chain = mtmlda_sampler.run(settings.sampler_run_settings)
     np.save(result_settings.result_directory_path, mcmc_chain)
 
 

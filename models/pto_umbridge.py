@@ -2,10 +2,10 @@ import time
 from typing import Any
 
 import numpy as np
-import umbridge
+import umbridge as ub
 
 
-class PTOModel(umbridge.Model):
+class PTOModel(ub.Model):
     def __init__(self, model_name: str, sleep_time: float) -> None:
         self._sleep_time = sleep_time
         super().__init__(model_name)
@@ -36,7 +36,7 @@ class PTOModel(umbridge.Model):
 
 
 if __name__ == "__main__":
-    umbridge.serve_models(
+    ub.serve_models(
         [
             PTOModel(model_name="parameter_to_observable_map_fine", sleep_time=1),
             PTOModel(model_name="parameter_to_observable_map_intermediate", sleep_time=0.6),

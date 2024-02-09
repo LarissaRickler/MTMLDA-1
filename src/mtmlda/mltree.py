@@ -4,8 +4,8 @@ from pathlib import Path
 from typing import Any, Self
 
 import numpy as np
-from anytree import LevelOrderGroupIter, NodeMixin, util
-from anytree.exporter import DotExporter
+import anytree as at
+import anytree.exporter as exporter
 
 
 # ==================================================================================================
@@ -20,7 +20,7 @@ class MTNodeBase:
     subchain_index: int = 0
 
 
-class MTNode(MTNodeBase, NodeMixin):
+class MTNode(MTNodeBase, at.NodeMixin):
     def __init__(
         self, name: str, parent: Self | None = None, children: Sequence[Self] | None = None
     ):
@@ -112,8 +112,8 @@ class MLTreeModifier:
                 (
                     len(node.parent.children) > 1
                     and (
-                        util.leftsibling(node).logposterior is not None
-                        or util.leftsibling(node).computing
+                        at.util.leftsibling(node).logposterior is not None
+                        or at.util.leftsibling(node).computing
                     )
                 )
                 or (len(node.parent.children) == 1)
@@ -125,7 +125,7 @@ class MLTreeModifier:
         while trying_to_compress:
             trying_to_compress = False
 
-            for level_children in LevelOrderGroupIter(root):
+            for level_children in at.LevelOrderGroupIter(root):
                 for node in level_children:
                     if node.level == self._num_levels - 1:
                         continue
@@ -145,7 +145,7 @@ class MLTreeModifier:
     # ----------------------------------------------------------------------------------------------
     @staticmethod
     def update_probability_reached(root: MTNode, acceptance_rate_estimator: Any) -> None:
-        for level_children in LevelOrderGroupIter(root):
+        for level_children in at.LevelOrderGroupIter(root):
             for node in level_children:
                 acceptance_rate_estimate = acceptance_rate_estimator.get_acceptance_rate(node)
 
@@ -167,7 +167,7 @@ class MLTreeModifier:
     # ----------------------------------------------------------------------------------------------
     @staticmethod
     def propagate_log_posterior_to_reject_children(root: MTNode) -> None:
-        for level_children in LevelOrderGroupIter(root):
+        for level_children in at.LevelOrderGroupIter(root):
             for child in level_children:
                 same_level_parent = MLTreeSearchFunctions.get_same_level_parent(child)
                 if child.name == "r" and same_level_parent is not None:
@@ -229,10 +229,10 @@ class MLTreeVisualizer:
     # ----------------------------------------------------------------------------------------------
     def export_to_dot(self, mltree_root: MTNode) -> None:
         if self._result_dir is not None:
-            exporter = DotExporter(
+            tree_exporter = exporter.DotExporter(
                 mltree_root, nodenamefunc=self._name_from_parents, nodeattrfunc=self._node_attr_func
             )
-            exporter.to_dotfile(self._result_dir / Path(f"mltree_{self._print_counter}.dot"))
+            tree_exporter.to_dotfile(self._result_dir / Path(f"mltree_{self._print_counter}.dot"))
             self._print_counter += 1
 
     # ----------------------------------------------------------------------------------------------

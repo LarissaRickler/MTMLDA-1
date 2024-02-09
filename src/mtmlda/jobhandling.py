@@ -1,13 +1,13 @@
 from collections.abc import Callable, Sequence
-from concurrent.futures import ThreadPoolExecutor, as_completed
+import concurrent.futures as concurrent
 
-from anytree import AnyNode
+import anytree as at
 
 
 # ==================================================================================================
 class JobHandler:
     def __init__(
-        self, executor: ThreadPoolExecutor, models: Sequence[Callable], num_threads: int
+        self, executor: concurrent.ThreadPoolExecutor, models: Sequence[Callable], num_threads: int
     ) -> None:
         self._futures = []
         self._futuremap = {}
@@ -16,18 +16,18 @@ class JobHandler:
         self._num_threads = num_threads
 
     # ----------------------------------------------------------------------------------------------
-    def submit_job(self, node: AnyNode) -> None:
+    def submit_job(self, node: at.AnyNode) -> None:
         node.computing = True
         future = self._executor.submit(self._models[node.level], [node.state.tolist()])
         self._futures.append(future)
         self._futuremap[future] = node
 
     # ----------------------------------------------------------------------------------------------
-    def get_finished_jobs(self) -> tuple[list[float], list[AnyNode]]:
+    def get_finished_jobs(self) -> tuple[list[float], list[at.AnyNode]]:
         results = []
         nodes = []
 
-        for future in as_completed(self._futures):
+        for future in concurrent.as_completed(self._futures):
             result = future.result()[0][0]
             node = self._futuremap.pop(future)
             node.computing = False

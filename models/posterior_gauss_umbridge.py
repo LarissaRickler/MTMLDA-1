@@ -1,17 +1,17 @@
 import time
 from typing import Any
 
-import umbridge
-from scipy.stats import multivariate_normal
+import umbridge as ub
+import scipy.stats as stats
 
 
-class GaussianPosterior(umbridge.Model):
+class GaussianPosterior(ub.Model):
     def __init__(self, model_name: str, sleep_time: float) -> None:
         super().__init__(model_name)
         self._sleep_time = sleep_time
         mean = [0, 0]
         covariance = [[0.1, 0.05], [0.05, 0.1]]
-        self._distribution = multivariate_normal(mean, covariance)
+        self._distribution = stats.multivariate_normal(mean, covariance)
 
     def get_input_sizes(self, config: Any) -> list[int]:
         return [2]
@@ -29,7 +29,7 @@ class GaussianPosterior(umbridge.Model):
 
 
 if __name__ == "__main__":
-    umbridge.serve_models(
+    ub.serve_models(
         [
             GaussianPosterior(model_name="gauss_posterior_fine", sleep_time=0.1),
             GaussianPosterior(model_name="gauss_posterior_intermediate", sleep_time=0.06),

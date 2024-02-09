@@ -8,9 +8,8 @@ sys.path.append(str(Path("../src/").resolve()))
 
 import numpy as np
 
-from mtmlda.mcmc import RandomWalkProposal
-from mtmlda.mcmc import MLAcceptRateEstimator
-from mtmlda.sampler import MTMLDASampler
+import mtmlda.mcmc as mcmc
+import mtmlda.sampler as sampler
 import settings
 
 
@@ -34,10 +33,10 @@ def execute_mtmlda_run(
     _modify_process_dependent_settings(
         process_id, proposal_settings, sampler_setup_settings, sampler_run_settings
     )
-    sampler = _set_up_sampler(
+    mtmlda_sampler = _set_up_sampler(
         proposal_settings, accept_rate_settings, sampler_setup_settings, models
     )
-    mcmc_chain = sampler.run(sampler_run_settings)
+    mcmc_chain = mtmlda_sampler.run(sampler_run_settings)
     _save_trace(process_id, run_settings, mcmc_chain)
 
 
@@ -59,22 +58,22 @@ def _modify_process_dependent_settings(
 
 
 def _set_up_sampler(proposal_settings, accept_rate_settings, sampler_setup_settings, models):
-    ground_proposal = RandomWalkProposal(
+    ground_proposal = mcmc.RandomWalkProposal(
         proposal_settings.step_width,
         proposal_settings.covariance,
         proposal_settings.rng_seed,
     )
-    accept_rate_estimator = MLAcceptRateEstimator(
+    accept_rate_estimator = mcmc.MLAcceptRateEstimator(
         accept_rate_settings.initial_guess,
         accept_rate_settings.update_parameter,
     )
-    sampler = MTMLDASampler(
+    mtmlda_sampler = sampler.MTMLDASampler(
         sampler_setup_settings,
         models,
         accept_rate_estimator,
         ground_proposal,
     )
-    return sampler
+    return mtmlda_sampler
 
 
 def _save_trace(process_id, run_settings, mcmc_trace) -> None:

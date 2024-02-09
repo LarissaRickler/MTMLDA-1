@@ -1,7 +1,7 @@
 from typing import Any
 
 import numpy as np
-import umbridge
+import umbridge as ub
 
 
 class UninformLogPrior:
@@ -25,7 +25,7 @@ class UninformLogPrior:
 
 class GaussianLogLikelihood:
     def __init__(
-        self, umbridge_pto_map: umbridge.Model, data: np.ndarray, covariance: np.ndarray
+        self, umbridge_pto_map: ub.Model, data: np.ndarray, covariance: np.ndarray
     ) -> None:
         self._umbridge_pto_map = umbridge_pto_map
         self._data = data

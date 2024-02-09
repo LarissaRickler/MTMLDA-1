@@ -200,6 +200,7 @@ pyrightconfig.json
 *.mp4
 *.npy
 *.pdf
+*.pkl
 *.ipynb
 
 /*/

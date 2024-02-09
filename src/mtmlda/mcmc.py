@@ -2,6 +2,7 @@ from abc import abstractmethod
 
 import numpy as np
 
+from . import mltree
 
 # ==================================================================================================
 class BaseProposal:
@@ -42,14 +43,14 @@ class RandomWalkProposal(BaseProposal):
 
 # ==================================================================================================
 class PCNProposal(BaseProposal):
-    def __init__(self, beta, covariance, seed):
+    def __init__(self, beta: float, covariance: np.ndarray, seed: int) -> None:
         super().__init__(seed)
         self._beta = beta
         self._cholesky = np.linalg.cholesky(covariance)
         self._precision = np.linalg.inv(covariance)
 
     # ----------------------------------------------------------------------------------------------
-    def propose(self, current_state):
+    def propose(self, current_state: np.ndarray) -> np.ndarray:
         standard_normal_increment = self._rng.normal(size=current_state.size)
         proposal = (
             np.sqrt(1 - self._beta**2) * current_state
@@ -58,7 +59,7 @@ class PCNProposal(BaseProposal):
         return proposal
 
     # ----------------------------------------------------------------------------------------------
-    def evaluate_log_probability(self, proposal, current_state):
+    def evaluate_log_probability(self, proposal: np.ndarray, current_state: np.ndarray) -> float:
         state_diff = proposal - np.sqrt(1 - self._beta**2) * current_state
         log_probability = -0.5 * state_diff.T @ (self._beta**2 * self._precision) @ state_diff
         return log_probability
@@ -66,11 +67,11 @@ class PCNProposal(BaseProposal):
 
 # ==================================================================================================
 class MLMetropolisHastingsKernel:
-    def __init__(self, ground_proposal):
+    def __init__(self, ground_proposal: BaseProposal) -> None:
         self._ground_proposal = ground_proposal
 
     # ----------------------------------------------------------------------------------------------
-    def compute_single_level_decision(self, node):
+    def compute_single_level_decision(self, node: mltree.MTNode) -> bool:
         new_state = node.state
         old_state = node.parent.state
         posterior_logp_new = node.logposterior
@@ -92,7 +93,7 @@ class MLMetropolisHastingsKernel:
 
     # ----------------------------------------------------------------------------------------------
     @staticmethod
-    def compute_two_level_decision(node, same_level_parent):
+    def compute_two_level_decision(node: mltree.MTNode, same_level_parent: mltree.MTNode) -> bool:
         posterior_logp_new_fine = node.logposterior
         posterior_logp_old_coarse = same_level_parent.children[0].logposterior
         posterior_logp_old_fine = same_level_parent.logposterior
@@ -113,17 +114,17 @@ class MLMetropolisHastingsKernel:
 
 # ==================================================================================================
 class MLAcceptRateEstimator:
-    def __init__(self, initial_guess, update_parameter):
+    def __init__(self, initial_guess: list[float], update_parameter: float) -> None:
         self._acceptance_rates = initial_guess
         self._update_parameter = update_parameter
 
     # ----------------------------------------------------------------------------------------------
-    def get_acceptance_rate(self, node):
+    def get_acceptance_rate(self, node: mltree.MTNode) -> float:
         acceptance_rate = self._acceptance_rates[node.level]
         return acceptance_rate
 
     # ----------------------------------------------------------------------------------------------
-    def update(self, accepted, node):
+    def update(self, accepted: bool, node: mltree.MTNode) -> None:
         level = node.level
         decreased_rate = (1 - self._update_parameter) * self._acceptance_rates[level]
         if accepted:

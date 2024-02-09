@@ -1,13 +1,11 @@
 import os
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Self
+from typing import Any, Self
 
 import numpy as np
 from anytree import LevelOrderGroupIter, NodeMixin, util
 from anytree.exporter import DotExporter
-
-from .mcmc import MLAcceptRateEstimator
 
 
 # ==================================================================================================
@@ -146,9 +144,7 @@ class MLTreeModifier:
 
     # ----------------------------------------------------------------------------------------------
     @staticmethod
-    def update_probability_reached(
-        root: MTNode, acceptance_rate_estimator: MLAcceptRateEstimator
-    ) -> None:
+    def update_probability_reached(root: MTNode, acceptance_rate_estimator: Any) -> None:
         for level_children in LevelOrderGroupIter(root):
             for node in level_children:
                 acceptance_rate_estimate = acceptance_rate_estimator.get_acceptance_rate(node)

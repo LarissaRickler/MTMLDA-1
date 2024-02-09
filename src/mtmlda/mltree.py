@@ -207,6 +207,16 @@ class MLTreeModifier:
                 rejected.state = node.state
                 rejected.parent = None
 
+    # ----------------------------------------------------------------------------------------------
+    @property
+    def rng(self) -> np.random.Generator:
+        return self._rng
+    
+    # ----------------------------------------------------------------------------------------------
+    @rng.setter
+    def rng(self, rng: np.random.Generator) -> None:
+        self._rng = rng
+
 
 # ==================================================================================================
 class MLTreeVisualizer:

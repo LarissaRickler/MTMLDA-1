@@ -19,6 +19,16 @@ class BaseProposal:
     def evaluate_log_probability(self, left_state: np.ndarray, right_state: np.ndarray) -> None:
         pass
 
+    # ----------------------------------------------------------------------------------------------
+    @property
+    def rng(self) -> np.random.Generator:
+        return self._rng
+    
+    # ----------------------------------------------------------------------------------------------
+    @rng.setter
+    def rng(self, rng: np.random.Generator) -> None:
+        self._rng = rng
+
 
 # ==================================================================================================
 class RandomWalkProposal(BaseProposal):

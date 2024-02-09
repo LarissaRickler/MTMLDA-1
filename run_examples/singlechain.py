@@ -1,4 +1,5 @@
 import os
+import pickle
 import sys
 from pathlib import Path
 
@@ -12,14 +13,16 @@ import settings
 
 
 # ==================================================================================================
-class result_settings:
+class run_settings:
     result_directory_path = Path("results") / Path("chain")
     overwrite_results = True
+    rng_state_load_file = Path("results") / Path("rng_states.pkl")
+    rng_state_save_file = Path("results") / Path("rng_states.pkl")
 
 
 # ==================================================================================================
 def set_up_sampler(
-    proposal_settings, accept_rate_settings, sampler_setup_settings, models
+    run_settings, proposal_settings, accept_rate_settings, sampler_setup_settings, models
 ):
     ground_proposal = mcmc.RandomWalkProposal(
         proposal_settings.step_width,
@@ -36,21 +39,29 @@ def set_up_sampler(
         accept_rate_estimator,
         ground_proposal,
     )
+    if run_settings.rng_state_load_file is not None:
+        with run_settings.rng_state_load_file.open("rb") as rng_state_file:
+            rng_states = pickle.load(rng_state_file)
+        mtmlda_sampler.set_rngs(rng_states)
     return mtmlda_sampler
 
 
 def main():
     os.makedirs(
-        result_settings.result_directory_path.parent, exist_ok=result_settings.overwrite_results
+        run_settings.result_directory_path.parent, exist_ok=run_settings.overwrite_results
     )
     mtmlda_sampler = set_up_sampler(
+        run_settings,
         settings.proposal_settings,
         settings.accept_rate_settings,
         settings.sampler_setup_settings,
         settings.models,
     )
     mcmc_chain = mtmlda_sampler.run(settings.sampler_run_settings)
-    np.save(result_settings.result_directory_path, mcmc_chain)
+    np.save(run_settings.result_directory_path, mcmc_chain)
+    if run_settings.rng_state_save_file is not None:
+        with run_settings.rng_state_save_file.open("wb") as rng_state_file:
+            pickle.dump(mtmlda_sampler.get_rngs(), rng_state_file)
 
 
 if __name__ == "__main__":

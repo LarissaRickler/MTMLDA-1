@@ -1,4 +1,3 @@
-import os
 from functools import partial
 from pathlib import Path
 
@@ -23,8 +22,9 @@ class prior_settings:
 
 
 class likelihood_settings:
-    space_data, space_variance = np.load("seissol/data/space_data.npz").values()
-    time_data, time_variance = np.load("seissol/data/time_data.npz").values()
+    data_directory = Path("seissol").resolve() / Path("data")
+    space_data, space_variance = np.load(data_directory / Path("space_data.npz")).values()
+    time_data, time_variance = np.load(data_directory / Path("time_data.npz")).values()
     data = np.concatenate((space_data, time_data))
     space_covariance = np.diag(space_variance)
     time_covariance = np.diag(time_variance)

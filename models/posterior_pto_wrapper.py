@@ -12,11 +12,12 @@ class UninformLogPrior:
         )
 
     def evaluate(self, parameter: np.ndarray) -> float:
+        parameter = np.array(parameter[0])
         has_support = (
             (parameter >= self._parameter_intervals[:, 0])
             & (parameter <= self._parameter_intervals[:, 1])
         ).all()
-
+        
         if has_support:
             return self._log_prior_const
         else:
@@ -31,8 +32,8 @@ class GaussianLogLikelihood:
         self._data = data
         self._precision = np.linalg.inv(covariance)
 
-    def evaluate(self, parameter: np.ndarray) -> float:
-        observables = np.array(self._umbridge_pto_map([parameter.tolist()])[0])
+    def evaluate(self, parameter: list[list[float]]) -> float:
+        observables = np.array(self._umbridge_pto_map(parameter)[0])
         misfit = self._data - observables
         log_likelihood = -0.5 * misfit.T @ self._precision @ misfit
         return log_likelihood

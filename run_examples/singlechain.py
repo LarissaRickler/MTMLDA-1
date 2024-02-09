@@ -2,18 +2,18 @@ import os
 import sys
 from pathlib import Path
 
-sys.path.append(str(Path("../src/").resolve()))
+sys.path.append(str(Path("../").resolve()))
 
 import numpy as np
 
-import mtmlda.mcmc as mcmc
-import mtmlda.sampler as sampler
+import src.mtmlda.mcmc as mcmc
+import src.mtmlda.sampler as sampler
 import settings
 
 
 # ==================================================================================================
 class result_settings:
-    result_directory_path = Path("../results") / Path("chain")
+    result_directory_path = Path("results") / Path("chain")
     overwrite_results = True
 
 

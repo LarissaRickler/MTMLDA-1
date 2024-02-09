@@ -16,7 +16,7 @@ import settings
 # ==================================================================================================
 class run_settings:
     num_chains = 4
-    result_directory_path = Path("../results")
+    result_directory_path = Path("results")
     overwrite_results = True
 
 

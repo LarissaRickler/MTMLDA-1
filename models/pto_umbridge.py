@@ -26,7 +26,7 @@ class PTOModel(ub.Model):
 
     def _transform_input_to_output(self, parameters: list[list[float]]) -> np.ndarray:
         observables = np.zeros((100,))
-        const_block = np.ones((25,))
+        const_block = 0.1 * np.ones((25,))
         observables[0:25] = parameters[0][0] * const_block
         observables[25:50] = parameters[0][1] * const_block
         observables[50:75] = parameters[0][2] * const_block
@@ -39,7 +39,6 @@ if __name__ == "__main__":
     ub.serve_models(
         [
             PTOModel(model_name="parameter_to_observable_map_fine", sleep_time=1),
-            PTOModel(model_name="parameter_to_observable_map_intermediate", sleep_time=0.6),
             PTOModel(model_name="parameter_to_observable_map_coarse", sleep_time=0.3),
         ],
         port=4243,

@@ -200,9 +200,11 @@ pyrightconfig.json
 *.mp4
 *.npy
 *.pdf
+*.ipynb
+
 /*/
 .VSCodeCounter/
 .vscode/
 !/models/
-!/run/
 !/src/
+!/run*/

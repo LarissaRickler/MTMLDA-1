@@ -1,5 +1,4 @@
-from application import sampling
-from seissol import settings_seissol as settings
+from seissol import settings, sampling
 
 
 def main():
@@ -9,7 +8,9 @@ def main():
         settings.accept_rate_settings,
         settings.sampler_setup_settings,
         settings.sampler_run_settings,
-        settings.models
+        settings.model_settings,
+        settings.prior_settings,
+        settings.likelihood_settings,
     )
 
 if __name__ == "__main__":

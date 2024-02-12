@@ -9,7 +9,7 @@ import xarray as xa
 
 # ==================================================================================================
 chain_directory = Path("../results")
-output_directory = Path(".")
+output_directory = Path("../results")
 components = ["x", "y"]
 
 dotfile_directory = Path("../results") / Path("mltree")

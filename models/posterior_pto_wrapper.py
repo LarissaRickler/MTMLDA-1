@@ -5,23 +5,25 @@ import umbridge as ub
 
 
 class UninformLogPrior:
-    def __init__(self, parameter_intervals: np.ndarray) -> None:
-        self._parameter_intervals = parameter_intervals
-        self._log_prior_const = np.log(
-            1 / np.prod(parameter_intervals[:, 1] - parameter_intervals[:, 0])
-        )
+    def __init__(self, parameter_intervals: np.ndarray, seed: int = 0) -> None:
+        self._lower_bounds = parameter_intervals[:, 0]
+        self._upper_bounds = parameter_intervals[:, 1]
+        self._interval_lengths = self._upper_bounds - self._lower_bounds
+        self._log_prior_const = np.log(1 / np.prod(self._upper_bounds - self._lower_bounds))
+        self._rng = np.random.default_rng(seed)
 
     def evaluate(self, parameter: np.ndarray) -> float:
         parameter = np.array(parameter[0])
-        has_support = (
-            (parameter >= self._parameter_intervals[:, 0])
-            & (parameter <= self._parameter_intervals[:, 1])
-        ).all()
-        
+        has_support = ((parameter >= self._lower_bounds) & (parameter <= self._upper_bounds)).all()
+
         if has_support:
             return self._log_prior_const
         else:
             return -np.inf
+        
+    def sample(self):
+        sample = self._rng.uniform(self._lower_bounds, self._upper_bounds)
+        return sample
 
 
 class GaussianLogLikelihood:

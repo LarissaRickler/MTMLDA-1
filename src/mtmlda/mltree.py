@@ -21,9 +21,7 @@ class MTNodeBase:
 
 
 class MTNode(MTNodeBase, at.NodeMixin):
-    def __init__(
-        self, name: str, parent, children
-    ):
+    def __init__(self, name: str, parent=None, children=None):
         super(MTNodeBase, self).__init__()
         self.name = name
         self.parent = parent
@@ -211,7 +209,7 @@ class MLTreeModifier:
     @property
     def rng(self) -> np.random.Generator:
         return self._rng
-    
+
     # ----------------------------------------------------------------------------------------------
     @rng.setter
     def rng(self, rng: np.random.Generator) -> None:

@@ -1,6 +1,7 @@
 import multiprocessing
 import os
 import pickle
+import time
 from functools import partial
 
 import numpy as np
@@ -57,6 +58,18 @@ def modify_process_dependent_settings(
 
 def set_up_models(model_settings, prior_settings, likelihood_settings):
     configs = model_settings.configs
+
+    server_available = False
+    while not server_available:
+        try:
+                pto_model = ub.HTTPModel("https://localhost:4242", "forward")
+                pto_model = ub.HTTPModel("http://localhost:4243", "forward")
+                print("Server available")
+                server_available = True
+        except:
+                print("Server not available")
+                time.sleep(10)
+    
     pto_model = ub.HTTPModel(model_settings.address, model_settings.name)
     prior = wrapper.UninformLogPrior(prior_settings.parameter_intervals, prior_settings.rng_seed)
     likelihood = wrapper.GaussianLogLikelihood(

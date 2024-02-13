@@ -62,7 +62,7 @@ def set_up_models(model_settings, prior_settings, likelihood_settings):
     server_available = False
     while not server_available:
         try:
-                pto_model = ub.HTTPModel("http://localhost:4243", "forward")
+                pto_model = ub.HTTPModel(model_settings.address, model_settings.name)
                 print("Server available")
                 server_available = True
         except:

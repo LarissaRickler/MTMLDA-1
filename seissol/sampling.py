@@ -69,7 +69,6 @@ def set_up_models(model_settings, prior_settings, likelihood_settings):
                 print("Server not available")
                 time.sleep(10)
     
-    pto_model = ub.HTTPModel(model_settings.address, model_settings.name)
     prior = wrapper.UninformLogPrior(prior_settings.parameter_intervals, prior_settings.rng_seed)
     likelihood = wrapper.GaussianLogLikelihood(
         pto_model, likelihood_settings.data, likelihood_settings.covariance

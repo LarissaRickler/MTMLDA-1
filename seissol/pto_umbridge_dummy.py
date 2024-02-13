@@ -38,10 +38,4 @@ class PTOModel(ub.Model):
 
 
 if __name__ == "__main__":
-    ub.serve_models(
-        [
-            PTOModel(),
-        ],
-        port=4243,
-        max_workers=100,
-    )
+    ub.serve_models([PTOModel(),], port=4243, max_workers=100)

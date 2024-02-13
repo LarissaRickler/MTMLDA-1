@@ -41,7 +41,6 @@ if __name__ == "__main__":
     ub.serve_models(
         [
             PTOModel(),
-            PTOModel(),
         ],
         port=4243,
         max_workers=100,

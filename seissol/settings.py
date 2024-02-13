@@ -7,7 +7,7 @@ import src.mtmlda.sampler as sampler
 
 # ==================================================================================================
 class run_settings:
-    num_chains = 8
+    num_chains = 5
     result_directory_path = Path("results")
     chain_file_stem = Path("chain")
     rng_state_save_file_stem = Path("rng_states")
@@ -66,7 +66,7 @@ sampler_setup_settings = sampler.SamplerSetupSettings(
 sampler_run_settings = sampler.SamplerRunSettings(
     num_samples=5,
     initial_state=None,
-    num_threads=8,
+    num_threads=11,
     rng_seed_node_init=None,
     print_interval=1,
     tree_render_interval=1,

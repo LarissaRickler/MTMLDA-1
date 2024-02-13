@@ -43,7 +43,7 @@ class likelihood_settings:
 
 class proposal_settings:
     step_width = 0.1
-    covariance = np.diag((np.sqrt(1500), np.sqrt(19), np.sqrt(10e9), np.sqrt(10e9)))
+    covariance = np.diag((np.square(1500), np.square(19), np.square(10e9), np.square(10e9)))
     rng_seed = None
 
 

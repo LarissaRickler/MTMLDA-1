@@ -25,8 +25,8 @@ class BananaPosterior(ub.Model):
     def __call__(self, parameters: list[list[float]], config: Any = {}) -> list[list[float]]:
         time.sleep(self._sleep_time)
         transformed_input = [
-            (parameters[0][0] / 2),
-            (parameters[0][1] * 2 + 0.4 * (parameters[0][0] ** 2 + 4)),
+            (0.5 * parameters[0][0]),
+            (2 * parameters[0][1] + 0.4 * (parameters[0][0] ** 2 + 4)),
         ]
         logp = self._distribution.logpdf(transformed_input)
 

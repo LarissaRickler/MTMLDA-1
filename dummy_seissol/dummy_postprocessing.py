@@ -8,11 +8,11 @@ import xarray as xa
 
 
 # ==================================================================================================
-chain_directory = Path("results")
-output_directory = Path("results")
-components = ["var_1", "var_2", "var_3", "var_4"]
+chain_directory = Path("dummy_results")
+output_directory = Path("dummy_results")
+components = ["v1", "v2", "v3", "v4"]
 
-dotfile_directory = Path("results") / Path("mltree")
+dotfile_directory = Path("dummy_results") / Path("mltree")
 visualize_tree = False
 
 
@@ -59,15 +59,15 @@ def _visualize_density_trace(
         axes = az.plot_trace(
             dataset, coords={"components": [component]}, show=False, figsize=(15, 5)
         )
-    density_ax = axes.flatten()[0]
-    trace_ax = axes.flatten()[1]
-    figure = density_ax.figure
-    density_ax.set_title(f"Posterior for {component}")
-    density_ax.set_xlabel(component)
-    trace_ax.set_title(f"MCMC trace for {component}")
-    trace_ax.set_xlabel("Sample number")
-    trace_ax.set_ylabel(component)
-    figure.savefig(output_directory / Path(f"density_trace_{component}.pdf"))
+        density_ax = axes.flatten()[0]
+        trace_ax = axes.flatten()[1]
+        figure = density_ax.figure
+        density_ax.set_title(f"Posterior for {component}")
+        density_ax.set_xlabel(component)
+        trace_ax.set_title(f"MCMC trace for {component}")
+        trace_ax.set_xlabel("Sample number")
+        trace_ax.set_ylabel(component)
+        figure.savefig(output_directory / Path(f"density_trace_{component}.pdf"))
 
 
 def _visualize_autocorrelation(
@@ -97,8 +97,11 @@ def _visualize_ess(dataset: xa.Dataset, output_directory: Path, components: list
 def _visualize_data_pairs(
     dataset: xa.Dataset, output_directory: Path, components: list[str]
 ) -> None:
-    ax = az.plot_pair(dataset, figsize=(7, 7), kind="kde")
-    figure = ax.figure
+    axes = az.plot_pair(dataset, figsize=(15, 15))
+    if isinstance(axes, np.ndarray):
+        figure = axes[0, 0].figure
+    else:
+        figure = axes.figure
     figure.savefig(output_directory / Path("pair_plots.pdf"))
 
 

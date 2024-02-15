@@ -8,7 +8,7 @@ import src.mtmlda.sampler as sampler
 # ==================================================================================================
 class run_settings:
     num_chains = 4
-    result_directory_path = Path("results")
+    result_directory_path = Path("dummy_seissol/dummy_results")
     chain_file_stem = Path("chain")
     rng_state_save_file_stem = Path("rng_states")
     rng_state_load_file_stem = None
@@ -27,18 +27,9 @@ class prior_settings:
 
 
 class likelihood_settings:
-    data_directory = Path("seissol").resolve() / Path("data")
-    space_data, space_variance = np.load(data_directory / Path("space_data.npz")).values()
-    time_data, time_variance = np.load(data_directory / Path("time_data.npz")).values()
-    data = np.concatenate((space_data, time_data))
-    space_covariance = np.diag(space_variance)
-    time_covariance = np.diag(time_variance)
-    covariance = np.block(
-        [
-            [space_covariance, np.zeros((space_data.size, time_data.size))],
-            [np.zeros((time_data.size, space_data.size)), time_covariance],
-        ]
-    )
+    data = np.array([0, 0, 0, 0])
+    covariance = np.block([[np.array([[1, 0.9], [0.9, 1]]), np.zeros((2, 2))],
+                           [np.zeros((2, 2)), np.array([[1, -0.9], [-0.9, 1]])]])
 
 
 class proposal_settings:
@@ -66,9 +57,9 @@ sampler_setup_settings = sampler.SamplerSetupSettings(
 
 
 sampler_run_settings = sampler.SamplerRunSettings(
-    num_samples=100,
+    num_samples=500,
     initial_state=None,
     num_threads=8,
-    print_interval=1,
-    tree_render_interval=1,
+    print_interval=10,
+    tree_render_interval=10,
 )

@@ -206,8 +206,8 @@ pyrightconfig.json
 /*/
 .VSCodeCounter/
 .vscode/
-!/application/
+!/example/
 !/models/
 !/src/
 !/seissol/
-!/run*/
+!/dummy_seissol/

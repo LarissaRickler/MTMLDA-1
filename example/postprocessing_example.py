@@ -8,11 +8,11 @@ import xarray as xa
 
 
 # ==================================================================================================
-chain_directory = Path("results")
-output_directory = Path("results")
-components = ["var_1", "var_2", "var_3", "var_4"]
+chain_directory = Path("../results")
+output_directory = Path("../results")
+components = ["x", "y"]
 
-dotfile_directory = Path("results") / Path("mltree")
+dotfile_directory = Path("../results") / Path("mltree")
 visualize_tree = False
 
 
@@ -22,9 +22,11 @@ def postprocess_chains(
 ) -> None:
     dataset = _load_chain_data(chain_directory, components)
     _visualize_density_trace(dataset, output_directory, components)
-    _visualize_data_pairs(dataset, output_directory, components)
     _visualize_autocorrelation(dataset, output_directory, components)
     _visualize_ess(dataset, output_directory, components)
+
+    if dataset.mcmc_data.shape[2] == 2:
+        _visualize_data_pairs(dataset, output_directory, components)
 
 
 def render_dot_files(dotfile_directory: Path) -> None:
@@ -97,9 +99,11 @@ def _visualize_ess(dataset: xa.Dataset, output_directory: Path, components: list
 def _visualize_data_pairs(
     dataset: xa.Dataset, output_directory: Path, components: list[str]
 ) -> None:
-    ax = az.plot_pair(dataset, figsize=(7, 7), kind="kde")
+    ax = az.plot_pair(dataset, figsize=(7, 7))
     figure = ax.figure
-    figure.savefig(output_directory / Path("pair_plots.pdf"))
+    ax.set_xlabel(components[0])
+    ax.set_ylabel(components[1])
+    figure.savefig(output_directory / Path("2D_data_pairs.pdf"))
 
 
 def main():

@@ -21,18 +21,17 @@ class SamplerSetupSettings:
     subsampling_rates: list
     max_tree_height: int
     rng_seed_mltree: int
+    rng_seed_node_init: int
     do_printing: bool
     mltree_path: str
     logfile_path: str
     write_mode: str
-
 
 @dataclass
 class SamplerRunSettings:
     num_samples: int
     initial_state: np.ndarray
     num_threads: int
-    rng_seed_node_init: int
     print_interval: int
     tree_render_interval: int
 
@@ -58,6 +57,7 @@ class MTMLDASampler:
         self._maximum_tree_height = setup_settings.max_tree_height
         self._accept_rate_estimator = accept_rate_estimator
         self._ground_proposal = ground_proposal
+        self._rng_node_init = np.random.default_rng(setup_settings.rng_seed_node_init)
         self._mcmc_kernel = mcmc.MLMetropolisHastingsKernel(ground_proposal)
         self._mltree_modifier = mltree.MLTreeModifier(
             setup_settings.num_levels,
@@ -69,23 +69,22 @@ class MTMLDASampler:
         self._logger = MTMLDALogger(
             setup_settings.do_printing, setup_settings.logfile_path, setup_settings.write_mode
         )
-        self._rng_node_init = None
-        self._job_handler = None
         self._start_time = None
         self._num_samples = None
         self._print_interval = None
         self._tree_render_interval = None
+        self._job_handler = None
 
     # ----------------------------------------------------------------------------------------------
     def run(self, run_settings: SamplerRunSettings) -> list[float]:
         self._start_time = time.time()
-        num_threads = run_settings.num_threads
         self._num_samples = run_settings.num_samples
         self._print_interval = run_settings.print_interval
         self._tree_render_interval = run_settings.tree_render_interval
+        num_threads = run_settings.num_threads
 
-        mltree_root = self._init_mltree(run_settings.initial_state, run_settings.rng_seed_node_init)
-        mcmc_chain = [mltree_root.state]
+        mltree_root = self._init_mltree(run_settings.initial_state)
+        mcmc_chain = [run_settings.initial_state]
         self._logger.print_statistics(
             print_header=True, samples=len(mcmc_chain), time=time.time() - self._start_time
         )
@@ -138,8 +137,7 @@ class MTMLDASampler:
         self._rng_node_init = rng_states.node_init
 
     # ----------------------------------------------------------------------------------------------
-    def _init_mltree(self, initial_state: np.ndarray, seed: float) -> mltree.MTNode:
-        self._rng_node_init = np.random.default_rng(seed)
+    def _init_mltree(self, initial_state: np.ndarray) -> mltree.MTNode:
         mltree_root = mltree.MTNode("a")
         mltree_root.state = initial_state
         mltree_root.random_draw = self._rng_node_init.uniform()
@@ -218,7 +216,7 @@ class MTMLDASampler:
             is_two_level_decision = False
         else:
             same_level_parent = mltree.MLTreeSearchFunctions.get_same_level_parent(node)
-            is_ground_level_decision = node.level == node.parent.level == 0
+            is_ground_level_decision = (node.level == 0 and node.parent.level == 0)
             is_two_level_decision = (
                 node.level - 1 == node.parent.level
                 and same_level_parent.logposterior is not None

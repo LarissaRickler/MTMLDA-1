@@ -36,7 +36,6 @@ class RandomWalkProposal(BaseProposal):
         super().__init__(seed)
         self._step_width = step_width
         self._cholesky = np.linalg.cholesky(covariance)
-        self._precision = np.linalg.inv(covariance)
 
     # ----------------------------------------------------------------------------------------------
     def propose(self, current_state: np.ndarray) -> np.ndarray:
@@ -46,13 +45,12 @@ class RandomWalkProposal(BaseProposal):
 
     # ----------------------------------------------------------------------------------------------
     def evaluate_log_probability(self, proposal: np.ndarray, current_state: np.ndarray) -> float:
-        state_diff = proposal - current_state
-        log_probability = -0.5 * state_diff.T @ self._precision @ state_diff
-        return log_probability
+        return 0
 
 
 # ==================================================================================================
 class PCNProposal(BaseProposal):
+
     def __init__(self, beta: float, covariance: np.ndarray, seed: int) -> None:
         super().__init__(seed)
         self._beta = beta
@@ -112,7 +110,7 @@ class MLMetropolisHastingsKernel:
         accept_probability = min(
             1,
             np.exp(
-                +posterior_logp_new_fine
+                + posterior_logp_new_fine
                 + posterior_logp_old_coarse
                 - posterior_logp_old_fine
                 - posterior_logp_new_coarse

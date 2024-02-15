@@ -29,6 +29,7 @@ sampler_setup_settings = sampler.SamplerSetupSettings(
     subsampling_rates=[5, 3, -1],
     max_tree_height=50,
     rng_seed_mltree=0,
+    rng_seed_node_init=0,
     do_printing=True,
     mltree_path=Path("results") / Path("mltree"),
     logfile_path=Path("results") / Path("mtmlda.log"),
@@ -39,7 +40,6 @@ sampler_run_settings = sampler.SamplerRunSettings(
     num_samples=10,
     initial_state=np.array([0, 0]),
     num_threads=8,
-    rng_seed_node_init=0,
     print_interval=1,
     tree_render_interval=1
 )

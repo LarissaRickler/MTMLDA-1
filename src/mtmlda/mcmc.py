@@ -87,15 +87,18 @@ class MLMetropolisHastingsKernel:
         proposal_logp_new_old = self._ground_proposal.evaluate_log_probability(new_state, old_state)
         proposal_logp_old_new = self._ground_proposal.evaluate_log_probability(old_state, new_state)
 
-        accept_probability = min(
-            1,
-            np.exp(
-                + posterior_logp_new
-                + proposal_logp_old_new
-                - posterior_logp_old
-                - proposal_logp_new_old
-            ),
-        )
+        if np.isneginf(posterior_logp_old):
+            accept_probability = 0
+        else:
+            accept_probability = min(
+                1,
+                np.exp(
+                    + posterior_logp_new
+                    + proposal_logp_old_new
+                    - posterior_logp_old
+                    - proposal_logp_new_old
+                ),
+            )
         accepted = node.parent.random_draw < accept_probability
         return accepted
 
@@ -106,16 +109,21 @@ class MLMetropolisHastingsKernel:
         posterior_logp_old_coarse = same_level_parent.children[0].logposterior
         posterior_logp_old_fine = same_level_parent.logposterior
         posterior_logp_new_coarse = node.parent.logposterior
+        np.seterr(all='raise')
 
-        accept_probability = min(
-            1,
-            np.exp(
-                + posterior_logp_new_fine
-                + posterior_logp_old_coarse
-                - posterior_logp_old_fine
-                - posterior_logp_new_coarse
-            ),
-        )
+        if np.isneginf(posterior_logp_new_coarse):
+            accept_probability = 0
+        else:
+            accept_probability = min(
+                1,
+                np.exp(
+                    + posterior_logp_new_fine
+                    + posterior_logp_old_coarse
+                    - posterior_logp_old_fine
+                    - posterior_logp_new_coarse
+                ),
+            )
+        
         accepted = node.parent.random_draw < accept_probability
         return accepted
 

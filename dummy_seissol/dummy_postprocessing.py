@@ -8,11 +8,11 @@ import xarray as xa
 
 
 # ==================================================================================================
-chain_directory = Path("dummy_results")
-output_directory = Path("dummy_results")
+chain_directory = Path("../dummy_results")
+output_directory = Path("../dummy_results")
 components = ["v1", "v2", "v3", "v4"]
 
-dotfile_directory = Path("dummy_results") / Path("mltree")
+dotfile_directory = Path("../dummy_results") / Path("mltree")
 visualize_tree = False
 
 

@@ -8,7 +8,7 @@ import src.mtmlda.sampler as sampler
 # ==================================================================================================
 class run_settings:
     num_chains = 4
-    result_directory_path = Path("dummy_seissol/dummy_results")
+    result_directory_path = Path("dummy_results")
     chain_file_stem = Path("chain")
     rng_state_save_file_stem = Path("rng_states")
     rng_state_load_file_stem = None
@@ -57,9 +57,9 @@ sampler_setup_settings = sampler.SamplerSetupSettings(
 
 
 sampler_run_settings = sampler.SamplerRunSettings(
-    num_samples=500,
+    num_samples=1000,
     initial_state=None,
     num_threads=8,
-    print_interval=10,
-    tree_render_interval=10,
+    print_interval=50,
+    tree_render_interval=50,
 )

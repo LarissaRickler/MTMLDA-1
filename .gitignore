@@ -211,3 +211,5 @@ pyrightconfig.json
 !/src/
 !/seissol/
 !/dummy_seissol/
+!/results/
+!/dummy_results/

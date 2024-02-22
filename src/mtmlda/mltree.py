@@ -103,18 +103,21 @@ class MLTreeModifier:
     def expand_tree(self, root: MTNode) -> None:
         # Iterate over tree, add new nodes to computed accept leaves
         for node in root.leaves:
+                
             if node.name == "a" and (node.logposterior is not None or node.computing):
                 self._add_new_children_to_node(node)
 
             if node.name == "r" and (
+                (node.parent is None)
+                or (len(node.parent.children) == 1)
+                or
                 (
                     len(node.parent.children) > 1
                     and (
                         at.util.leftsibling(node).logposterior is not None
                         or at.util.leftsibling(node).computing
                     )
-                )
-                or (len(node.parent.children) == 1)
+                )   
             ):
                 self._add_new_children_to_node(node)
 

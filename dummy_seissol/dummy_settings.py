@@ -16,7 +16,7 @@ class run_settings:
 
 
 class model_settings:
-    configs = ("model_0p1Hz", "model_0p3Hz")
+    configs = ({"meshFile": "model_0p1Hz"}, {"meshFile": "model_0p3Hz"})
     address = "http://localhost:4242"
     name = "forward"
 
@@ -28,8 +28,7 @@ class prior_settings:
 
 class likelihood_settings:
     data = np.array([0, 0, 0, 0])
-    covariance = np.block([[np.array([[1, 0.9], [0.9, 1]]), np.zeros((2, 2))],
-                           [np.zeros((2, 2)), np.array([[1, -0.9], [-0.9, 1]])]])
+    covariance = np.identity(4)
 
 
 class proposal_settings:
@@ -50,16 +49,16 @@ sampler_setup_settings = sampler.SamplerSetupSettings(
     rng_seed_mltree=None,
     rng_seed_node_init=None,
     do_printing=True,
-    mltree_path=Path("results") / Path("mltree"),
-    logfile_path=Path("results") / Path("mtmlda.log"),
+    mltree_path=Path("dummy_results") / Path("mltree"),
+    logfile_path=Path("dummy_results") / Path("mtmlda.log"),
     write_mode="w",
 )
 
 
 sampler_run_settings = sampler.SamplerRunSettings(
-    num_samples=1000,
+    num_samples=5000,
     initial_state=None,
     num_threads=8,
-    print_interval=50,
-    tree_render_interval=50,
+    print_interval=100,
+    tree_render_interval=100,
 )

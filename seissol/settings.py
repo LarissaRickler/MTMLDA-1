@@ -16,7 +16,7 @@ class run_settings:
 
 
 class model_settings:
-    configs = ("model_0p1Hz", "model_0p3Hz")
+    configs = ({"meshFile": "model_0p1Hz"}, {"meshFile": "model_0p3Hz"})
     address = "http://localhost:4242"
     name = "forward"
 

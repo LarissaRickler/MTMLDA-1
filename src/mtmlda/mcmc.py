@@ -4,6 +4,7 @@ import numpy as np
 
 from . import mltree
 
+
 # ==================================================================================================
 class BaseProposal:
     def __init__(self, seed: int) -> None:
@@ -13,7 +14,7 @@ class BaseProposal:
     @abstractmethod
     def propose(self, current_state: np.ndarray) -> None:
         pass
-    
+
     # ----------------------------------------------------------------------------------------------
     @abstractmethod
     def evaluate_log_probability(self, left_state: np.ndarray, right_state: np.ndarray) -> None:
@@ -23,7 +24,7 @@ class BaseProposal:
     @property
     def rng(self) -> np.random.Generator:
         return self._rng
-    
+
     # ----------------------------------------------------------------------------------------------
     @rng.setter
     def rng(self, rng: np.random.Generator) -> None:
@@ -75,6 +76,8 @@ class PCNProposal(BaseProposal):
 
 # ==================================================================================================
 class MLMetropolisHastingsKernel:
+    _overflow_threshold = -1000
+
     def __init__(self, ground_proposal: BaseProposal) -> None:
         self._ground_proposal = ground_proposal
 
@@ -87,44 +90,51 @@ class MLMetropolisHastingsKernel:
         proposal_logp_new_old = self._ground_proposal.evaluate_log_probability(new_state, old_state)
         proposal_logp_old_new = self._ground_proposal.evaluate_log_probability(old_state, new_state)
 
-        if np.isneginf(posterior_logp_old):
-            accept_probability = 0
+        if posterior_logp_old < self._overflow_threshold:
+            accepted = False
+            node.parent.probability_reached = 0
         else:
             accept_probability = min(
                 1,
                 np.exp(
-                    + posterior_logp_new
+                    +posterior_logp_new
                     + proposal_logp_old_new
                     - posterior_logp_old
                     - proposal_logp_new_old
                 ),
             )
-        accepted = node.parent.random_draw < accept_probability
+            accepted = node.parent.random_draw < accept_probability
+
         return accepted
 
     # ----------------------------------------------------------------------------------------------
-    @staticmethod
-    def compute_two_level_decision(node: mltree.MTNode, same_level_parent: mltree.MTNode) -> bool:
+    def compute_two_level_decision(
+        self, node: mltree.MTNode, same_level_parent: mltree.MTNode
+    ) -> bool:
         posterior_logp_new_fine = node.logposterior
         posterior_logp_old_coarse = same_level_parent.children[0].logposterior
         posterior_logp_old_fine = same_level_parent.logposterior
         posterior_logp_new_coarse = node.parent.logposterior
-        np.seterr(all='raise')
+        np.seterr(all="raise")
 
-        if np.isneginf(posterior_logp_new_coarse):
-            accept_probability = 0
+        if posterior_logp_old_fine < self._overflow_threshold:
+            accepted = False
+            same_level_parent.probability_reached = 0
+        elif posterior_logp_new_coarse < self._overflow_threshold:
+            accepted = False
+            node.parent.probability_reached = 0
         else:
             accept_probability = min(
                 1,
                 np.exp(
-                    + posterior_logp_new_fine
+                    +posterior_logp_new_fine
                     + posterior_logp_old_coarse
                     - posterior_logp_old_fine
                     - posterior_logp_new_coarse
                 ),
             )
-        
-        accepted = node.parent.random_draw < accept_probability
+            accepted = node.parent.random_draw < accept_probability
+
         return accepted
 
 

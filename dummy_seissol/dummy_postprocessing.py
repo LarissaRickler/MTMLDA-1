@@ -1,4 +1,5 @@
 import os
+import warnings
 from pathlib import Path
 
 import arviz as az
@@ -8,6 +9,7 @@ import xarray as xa
 
 
 # ==================================================================================================
+postprocess_chain = True
 chain_directory = Path("../dummy_results")
 output_directory = Path("../dummy_results")
 components = ["v1", "v2", "v3", "v4"]
@@ -29,6 +31,8 @@ def postprocess_chains(
 
 def render_dot_files(dotfile_directory: Path) -> None:
     dot_files = _get_specific_file_type(dotfile_directory, "dot")
+    dot_files = [dotfile_directory / Path(file) for file in dot_files]
+    print(dot_files)
     for file in dot_files:
         graph = pydot.graph_from_dot_file(file)[0]
         graph.write_png(file.with_suffix(".png"))
@@ -106,10 +110,12 @@ def _visualize_data_pairs(
 
 
 def main():
-    postprocess_chains(chain_directory, output_directory, components)
+    if postprocess_chain:
+        postprocess_chains(chain_directory, output_directory, components)
     if visualize_tree:
         render_dot_files(dotfile_directory)
 
 
 if __name__ == "__main__":
+    warnings.simplefilter('ignore', FutureWarning)
     main()

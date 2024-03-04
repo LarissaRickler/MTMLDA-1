@@ -106,10 +106,12 @@ class MTMLDASampler:
                             mltree_root, self._num_levels
                         )
                     ) is not None:
-                        self._generate_output(mcmc_chain, mltree_root)
+                        
                         mcmc_chain.append(mltree_root.state)
                         unique_child.parent = None
                         mltree_root = unique_child
+                        self._generate_output(mcmc_chain, mltree_root)
+
 
                     if len(mcmc_chain) >= self._num_samples:
                         break

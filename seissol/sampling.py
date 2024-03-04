@@ -23,13 +23,19 @@ def execute_mtmlda_run(
     model_settings,
     prior_settings,
     likelihood_settings,
-):
+):  
+    if process_id == 0:
+        print("Modify process-dependent settings")
     modify_process_dependent_settings(
         process_id, proposal_settings, sampler_setup_settings, sampler_run_settings, prior_settings
     )
+    if process_id == 0:
+        print("Set up models")
     models, prior = set_up_models(process_id, model_settings, prior_settings, likelihood_settings)
     sampler_run_settings.initial_state = prior.sample()
 
+    if process_id == 0:
+        print("Set up sampler")
     mtmlda_sampler = set_up_sampler(
         process_id,
         run_settings,
@@ -38,7 +44,11 @@ def execute_mtmlda_run(
         sampler_setup_settings,
         models,
     )
+    if process_id == 0:
+        print("Start sampling")
     mcmc_chain = mtmlda_sampler.run(sampler_run_settings)
+    if process_id == 0:
+        print("Save results")
     save_results(process_id, run_settings, mcmc_chain, mtmlda_sampler)
 
 

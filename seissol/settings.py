@@ -66,7 +66,7 @@ sampler_setup_settings = sampler.SamplerSetupSettings(
 
 
 sampler_run_settings = sampler.SamplerRunSettings(
-    num_samples=10,
+    num_samples=2,
     initial_state=None,
     num_threads=8,
     print_interval=1,

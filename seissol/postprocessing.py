@@ -1,4 +1,5 @@
 import os
+import warnings
 from pathlib import Path
 
 import arviz as az
@@ -8,6 +9,7 @@ import xarray as xa
 
 
 # ==================================================================================================
+postprocess_chain = True
 chain_directory = Path("../results")
 output_directory = Path("../results")
 components = ["v1", "v2", "v3", "v4"]
@@ -22,13 +24,14 @@ def postprocess_chains(
 ) -> None:
     dataset = _load_chain_data(chain_directory, components)
     _visualize_density_trace(dataset, output_directory, components)
-    _visualize_data_pairs(dataset, output_directory, components)
+    _visualize_data_pairs(dataset, output_directory)
     _visualize_autocorrelation(dataset, output_directory, components)
     _visualize_ess(dataset, output_directory, components)
 
 
 def render_dot_files(dotfile_directory: Path) -> None:
     dot_files = _get_specific_file_type(dotfile_directory, "dot")
+    dot_files = [dotfile_directory / Path(file) for file in dot_files]
     for file in dot_files:
         graph = pydot.graph_from_dot_file(file)[0]
         graph.write_png(file.with_suffix(".png"))
@@ -95,8 +98,7 @@ def _visualize_ess(dataset: xa.Dataset, output_directory: Path, components: list
 
 
 def _visualize_data_pairs(
-    dataset: xa.Dataset, output_directory: Path, components: list[str]
-) -> None:
+    dataset: xa.Dataset, output_directory: Path) -> None:
     axes = az.plot_pair(dataset, figsize=(15, 15))
     if isinstance(axes, np.ndarray):
         figure = axes[0, 0].figure
@@ -106,10 +108,12 @@ def _visualize_data_pairs(
 
 
 def main():
-    postprocess_chains(chain_directory, output_directory, components)
+    if postprocess_chain:
+        postprocess_chains(chain_directory, output_directory, components)
     if visualize_tree:
         render_dot_files(dotfile_directory)
 
 
 if __name__ == "__main__":
+    warnings.simplefilter('ignore', FutureWarning)
     main()

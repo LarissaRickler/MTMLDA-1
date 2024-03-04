@@ -24,7 +24,7 @@ def postprocess_chains(
 ) -> None:
     dataset = _load_chain_data(chain_directory, components)
     _visualize_density_trace(dataset, output_directory, components)
-    _visualize_data_pairs(dataset, output_directory, components)
+    _visualize_data_pairs(dataset, output_directory)
     _visualize_autocorrelation(dataset, output_directory, components)
     _visualize_ess(dataset, output_directory, components)
 
@@ -32,7 +32,6 @@ def postprocess_chains(
 def render_dot_files(dotfile_directory: Path) -> None:
     dot_files = _get_specific_file_type(dotfile_directory, "dot")
     dot_files = [dotfile_directory / Path(file) for file in dot_files]
-    print(dot_files)
     for file in dot_files:
         graph = pydot.graph_from_dot_file(file)[0]
         graph.write_png(file.with_suffix(".png"))
@@ -99,8 +98,7 @@ def _visualize_ess(dataset: xa.Dataset, output_directory: Path, components: list
 
 
 def _visualize_data_pairs(
-    dataset: xa.Dataset, output_directory: Path, components: list[str]
-) -> None:
+    dataset: xa.Dataset, output_directory: Path) -> None:
     axes = az.plot_pair(dataset, figsize=(15, 15))
     if isinstance(axes, np.ndarray):
         figure = axes[0, 0].figure

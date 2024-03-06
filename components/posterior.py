@@ -1,7 +1,7 @@
 from typing import Any
 
 import numpy as np
-import umbrige as ub
+import umbridge as ub
 
 
 # ==================================================================================================
@@ -26,12 +26,12 @@ class LogPosterior:
         self._log_prior = log_prior
         self._log_likelihood = log_likelihood
 
-    def __call__(self, parameter: list[list[float]]) -> list[list[float]]:
+    def __call__(self, parameter: list[list[float]], **log_likelihood_args) -> list[list[float]]:
         log_prior = self._log_prior(parameter)
         if np.isneginf(log_prior[0][0]):
             log_posterior = log_prior
         else:
-            log_likelihood = self._log_likelihood(parameter)
+            log_likelihood = self._log_likelihood(parameter, **log_likelihood_args)
             log_posterior = log_likelihood + log_prior
 
         return log_posterior

@@ -17,6 +17,10 @@ class BaseLogPrior:
     def evaluate(self, parameter: np.ndarray) -> float:
         pass
 
+    @abstractmethod
+    def sample(self) -> np.ndarray:
+        pass
+
 
 # ==================================================================================================
 class UniformLogPrior(BaseLogPrior):
@@ -34,16 +38,25 @@ class UniformLogPrior(BaseLogPrior):
         else:
             return -np.inf
         
+    def sample(self):
+        sample = self._rng.uniform(self._lower_bounds, self._upper_bounds)
+        return sample
+        
 
 # ==================================================================================================
 class GaussianLogPrior(BaseLogPrior):
     def __init__(self, mean: np.ndarray, covariance: np.ndarray, seed) -> None:
         super().__init__(seed)
         self._mean = mean
+        self._cholesky = np.linalg.cholesky(covariance)
         self._precision = np.linalg.inv(covariance)
 
     def evaluate(self, parameter: np.array) -> float:
         parameter_diff = parameter - self._mean
         log_probability = -0.5 * parameter_diff.T @ self._precision @ parameter_diff
         return log_probability
-        
+    
+    def sample(self) -> np.ndarray:
+        standard_normal_increment = self._rng.normal(size=self._mean.size)
+        sample = self._mean + self._cholesky @ standard_normal_increment
+        return sample

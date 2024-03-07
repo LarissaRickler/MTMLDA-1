@@ -33,7 +33,6 @@ class GaussianLogLikelihood(ub.Model):
 
 if __name__ == "__main__":
     port = int(os.environ["PORT"])
-    print("Hello")
     ub.serve_models(
         [
             GaussianLogLikelihood(),

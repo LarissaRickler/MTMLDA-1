@@ -10,13 +10,13 @@ import matplotlib.pyplot as plt
 
 
 # ==================================================================================================
-postprocess_chain = True
-visualize_tree = False
+postprocess_chain = False
+visualize_tree = True
 
 components = [
     "v1",
 ]
-result_directory = Path("results_example_02")
+result_directory = Path("results_seissol_sebastian")
 chain_directory = result_directory
 output_directory = result_directory
 dotfile_directory = result_directory / Path("mltree")

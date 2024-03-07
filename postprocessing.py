@@ -6,16 +6,20 @@ import arviz as az
 import numpy as np
 import pydot
 import xarray as xa
+import matplotlib.pyplot as plt
 
 
 # ==================================================================================================
 postprocess_chain = True
-chain_directory = Path("results_example_02")
-output_directory = Path("results_example_02")
-components = ["v1",]
-
-dotfile_directory = Path("results_example_02") / Path("mltree")
 visualize_tree = False
+
+components = [
+    "v1",
+]
+result_directory = Path("results_example_02")
+chain_directory = result_directory
+output_directory = result_directory
+dotfile_directory = result_directory / Path("mltree")
 
 
 # ==================================================================================================
@@ -29,6 +33,8 @@ def postprocess_chains(
     if len(components) > 1:
         _visualize_data_pairs(dataset, output_directory)
 
+
+# --------------------------------------------------------------------------------------------------
 def render_dot_files(dotfile_directory: Path) -> None:
     dot_files = _get_specific_file_type(dotfile_directory, "dot")
     dot_files = [dotfile_directory / Path(file) for file in dot_files]
@@ -36,6 +42,8 @@ def render_dot_files(dotfile_directory: Path) -> None:
         graph = pydot.graph_from_dot_file(file)[0]
         graph.write_png(file.with_suffix(".png"))
 
+
+# --------------------------------------------------------------------------------------------------
 def _load_chain_data(chain_directory: Path, components: list[str]) -> xa.Dataset:
     npy_files = _get_specific_file_type(chain_directory, "npy")
     chains = np.array([np.load(chain_directory / Path(file)) for file in npy_files])
@@ -45,6 +53,8 @@ def _load_chain_data(chain_directory: Path, components: list[str]) -> xa.Dataset
     dataset = az.convert_to_dataset(datadict, dims=dims, coords=coords)
     return dataset
 
+
+# --------------------------------------------------------------------------------------------------
 def _get_specific_file_type(directory: Path, file_type: str) -> list[str]:
     files = []
     for file in os.listdir(directory):
@@ -52,6 +62,8 @@ def _get_specific_file_type(directory: Path, file_type: str) -> list[str]:
             files.append(file)
     return files
 
+
+# --------------------------------------------------------------------------------------------------
 def _visualize_density_trace(
     dataset: xa.Dataset, output_directory: Path, components: list[str]
 ) -> None:
@@ -69,6 +81,8 @@ def _visualize_density_trace(
         trace_ax.set_ylabel(component)
         figure.savefig(output_directory / Path(f"density_trace_{component}.pdf"))
 
+
+# --------------------------------------------------------------------------------------------------
 def _visualize_autocorrelation(
     dataset: xa.Dataset, output_directory: Path, components: list[str]
 ) -> None:
@@ -77,12 +91,10 @@ def _visualize_autocorrelation(
         axes = np.array((axes,))
 
     figure = axes.flatten()[0].figure
-    for i, component in enumerate(components):
-        ax = axes.flatten()[i]
-        ax.set_title(f"Autocorrelation for {component}")
-        ax.set_xlabel("Sample number")
     figure.savefig(output_directory / Path("autocorrelation.pdf"))
 
+
+# --------------------------------------------------------------------------------------------------
 def _visualize_ess(dataset: xa.Dataset, output_directory: Path, components: list[str]) -> None:
     num_draws = dataset.mcmc_data.shape[1]
     axes = az.plot_ess(dataset, kind="evolution", min_ess=num_draws)
@@ -93,10 +105,12 @@ def _visualize_ess(dataset: xa.Dataset, output_directory: Path, components: list
     for i, component in enumerate(components):
         ax = axes.flatten()[i]
         ax.set_title(f"ESS for {component}")
+    plt.tight_layout()
     figure.savefig(output_directory / Path("ess.pdf"))
 
-def _visualize_data_pairs(
-    dataset: xa.Dataset, output_directory: Path) -> None:
+
+# --------------------------------------------------------------------------------------------------
+def _visualize_data_pairs(dataset: xa.Dataset, output_directory: Path) -> None:
     axes = az.plot_pair(dataset, figsize=(15, 15))
     if isinstance(axes, np.ndarray):
         figure = axes[0, 0].figure
@@ -114,5 +128,5 @@ def main():
 
 
 if __name__ == "__main__":
-    warnings.simplefilter('ignore', FutureWarning)
+    warnings.simplefilter("ignore", FutureWarning)
     main()

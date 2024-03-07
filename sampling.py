@@ -1,3 +1,5 @@
+import argparse
+import importlib
 import multiprocessing
 import os
 import pickle
@@ -9,6 +11,27 @@ import src.mtmlda.sampler as sampler
 
 
 # ==================================================================================================
+def process_cli_arguments():
+    argParser = argparse.ArgumentParser(
+        prog="sampling.py",
+        usage="python %(prog)s [options]",
+        description="Run file for parallel MLDA sampling",
+    )
+
+    argParser.add_argument(
+        "-app",
+        "--application",
+        type=str,
+        required=True,
+        help="Application directory in dot notation",
+    )
+
+    cliArgs = argParser.parse_args()
+    application = cliArgs.application
+    return application
+
+
+# --------------------------------------------------------------------------------------------------
 def execute_mtmlda_run(process_id, settings, component_setup):
     if process_id == 0:
         print("Modify process-dependent settings")
@@ -44,10 +67,11 @@ def execute_mtmlda_run(process_id, settings, component_setup):
     if process_id == 0:
         print("Start sampling")
     mcmc_chain = mtmlda_sampler.run(settings.sampler_run_settings)
-    
+
     if process_id == 0:
         print("Save results")
     save_results(process_id, settings.run_settings, mcmc_chain, mtmlda_sampler)
+
 
 # --------------------------------------------------------------------------------------------------
 def modify_process_dependent_settings(
@@ -62,6 +86,7 @@ def modify_process_dependent_settings(
         sampler_setup_settings.logfile_path = None
         sampler_setup_settings.mltree_path = None
         sampler_setup_settings.do_printing = False
+
 
 # --------------------------------------------------------------------------------------------------
 def set_up_sampler(
@@ -90,6 +115,7 @@ def set_up_sampler(
         mtmlda_sampler.set_rngs(rng_states)
     return mtmlda_sampler
 
+
 # --------------------------------------------------------------------------------------------------
 def save_results(process_id, run_settings, mcmc_trace, mtmlda_sampler):
     os.makedirs(run_settings.result_directory_path, exist_ok=run_settings.overwrite_results)
@@ -111,13 +137,16 @@ def save_results(process_id, run_settings, mcmc_trace, mtmlda_sampler):
 
 # ==================================================================================================
 def main():
-    from applications.example_02.settings import Settings
-    from applications.example_02.component_setup import ComponentSetup
+    application = process_cli_arguments()
+    settings_module = importlib.import_module(f"{application}.settings")
+    setup_module = importlib.import_module(f"{application}.component_setup")
+    settings = settings_module.Settings
+    component_setup = setup_module.ComponentSetup
 
-    num_chains = Settings.run_settings.num_chains
+    num_chains = settings.run_settings.num_chains
     process_ids = range(num_chains)
     execute_mtmlda_on_procs = partial(
-        execute_mtmlda_run, settings=Settings, component_setup=ComponentSetup
+        execute_mtmlda_run, settings=settings, component_setup=component_setup
     )
     with multiprocessing.Pool(processes=num_chains) as process_pool:
         process_pool.map(execute_mtmlda_on_procs, process_ids)

@@ -16,15 +16,3 @@ class ParallelRunSettings:
     rng_state_save_file_stem: Path
     rng_state_load_file_stem: Path
     overwrite_results: bool
-
-@dataclass
-class InverseProblemSettings:
-    pass
-
-@dataclass
-class SamplerComponentSettings:
-    pass
-
-@dataclass
-class InitialStateSettings:
-    pass

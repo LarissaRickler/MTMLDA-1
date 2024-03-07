@@ -38,7 +38,7 @@ class UniformLogPrior(BaseLogPrior):
         else:
             return -np.inf
         
-    def sample(self):
+    def sample(self) -> np.ndarray:
         sample = self._rng.uniform(self._lower_bounds, self._upper_bounds)
         return sample
         

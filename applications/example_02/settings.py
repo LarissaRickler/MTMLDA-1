@@ -28,17 +28,17 @@ sampler_setup_settings = general_settings.SamplerSetupSettings(
 )
 
 sampler_run_settings = general_settings.SamplerRunSettings(
-    num_samples=20,
+    num_samples=100,
     initial_state=None,
-    num_threads=3,
-    print_interval=2,
-    tree_render_interval=2,
+    num_threads=8,
+    print_interval=10,
+    tree_render_interval=10,
 )
 
 # --------------------------------------------------------------------------------------------------
 inverse_problem_settings = builder.InverseProblemSettings(
-    prior_mean=np.array((0,)),
-    prior_covariance=np.identity(1),
+    prior_mean=np.array((5e6,)),
+    prior_covariance=1e12 * np.identity(1),
     ub_model_configs=({"order": 4}, {"order": 5}),
     ub_model_address="http://localhost:4242",
     ub_model_name="forward",

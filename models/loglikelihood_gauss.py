@@ -1,3 +1,4 @@
+import argparse
 import os
 import time
 from typing import Any
@@ -5,6 +6,27 @@ from typing import Any
 import umbridge as ub
 
 
+# ==================================================================================================
+def process_cli_arguments() -> bool:
+    argParser = argparse.ArgumentParser(
+        prog="loglikelihood_gauss.py",
+        usage="python %(prog)s [options]",
+        description="Umbridge server-side client emulating log-likelihood",
+    )
+
+    argParser.add_argument(
+        "-c",
+        "--cluster",
+        action='store_true',
+        help="Run via Hyperqueue",
+    )
+
+    cliArgs = argParser.parse_args()
+    run_on_hq = cliArgs.cluster
+    return run_on_hq
+
+
+# ==================================================================================================
 class GaussianLogLikelihood(ub.Model):
     def __init__(self) -> None:
         super().__init__("forward")
@@ -31,8 +53,14 @@ class GaussianLogLikelihood(ub.Model):
         return [[log_likelihood]]
 
 
+# ==================================================================================================
 if __name__ == "__main__":
-    port = int(os.environ["PORT"])
+    run_on_hq = process_cli_arguments()
+    if run_on_hq:
+        port = int(os.environ["PORT"])
+    else:
+        port = 4242
+    
     ub.serve_models(
         [
             GaussianLogLikelihood(),

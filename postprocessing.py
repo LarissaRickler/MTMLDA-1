@@ -1,3 +1,4 @@
+import argparse
 import os
 import warnings
 from pathlib import Path
@@ -10,48 +11,70 @@ import matplotlib.pyplot as plt
 
 
 # ==================================================================================================
-postprocess_chain = False
-visualize_tree = True
+def process_cli_arguments() -> tuple[str, str]:
+    argParser = argparse.ArgumentParser(
+        prog="postprocessing.py",
+        usage="python %(prog)s [options]",
+        description="Postprocessing file for parallel MLDA sampling",
+    )
 
-components = [
-    "v1",
-]
-result_directory = Path("results_seissol_sebastian")
-chain_directory = result_directory
-output_directory = result_directory
-dotfile_directory = result_directory / Path("mltree")
+    argParser.add_argument(
+        "-dir",
+        "--chain_directory",
+        type=str,
+        required=False,
+        default=None,
+        help="MCMC chain directory",
+    )
 
+    argParser.add_argument(
+        "-tdir",
+        "--tree_directory",
+        type=str,
+        required=False,
+        default=None,
+        help="Markov tree directory",
+    )
 
-# ==================================================================================================
-def postprocess_chains(
-    chain_directory: Path, output_directory: Path, components: list[str]
-) -> None:
-    dataset = _load_chain_data(chain_directory, components)
-    _visualize_density_trace(dataset, output_directory, components)
-    _visualize_autocorrelation(dataset, output_directory, components)
-    _visualize_ess(dataset, output_directory, components)
-    if len(components) > 1:
-        _visualize_data_pairs(dataset, output_directory)
+    cliArgs = argParser.parse_args()
+    chain_directory = cliArgs.chain_directory
+    tree_directory = cliArgs.tree_directory
+
+    return chain_directory, tree_directory
 
 
 # --------------------------------------------------------------------------------------------------
-def render_dot_files(dotfile_directory: Path) -> None:
-    dot_files = _get_specific_file_type(dotfile_directory, "dot")
-    dot_files = [dotfile_directory / Path(file) for file in dot_files]
+def postprocess_chains(chain_directory: Path) -> None:
+    components, dataset = _load_chain_data(chain_directory)
+    _visualize_density_trace(dataset, chain_directory, components)
+    _visualize_autocorrelation(dataset, chain_directory, components)
+    _visualize_ess(dataset, chain_directory, components)
+    if len(components) > 1:
+        _visualize_data_pairs(dataset, chain_directory)
+
+
+# --------------------------------------------------------------------------------------------------
+def render_dot_files(tree_directory: Path) -> None:
+    dot_files = _get_specific_file_type(tree_directory, "dot")
+    dot_files = [tree_directory / Path(file) for file in dot_files]
     for file in dot_files:
         graph = pydot.graph_from_dot_file(file)[0]
         graph.write_png(file.with_suffix(".png"))
 
 
 # --------------------------------------------------------------------------------------------------
-def _load_chain_data(chain_directory: Path, components: list[str]) -> xa.Dataset:
+def _load_chain_data(chain_directory: Path) -> xa.Dataset:
     npy_files = _get_specific_file_type(chain_directory, "npy")
     chains = np.array([np.load(chain_directory / Path(file)) for file in npy_files])
+    num_components = chains[0].shape[1]
+    components = [f"component_{i}" for i in range(num_components)]
+
     datadict = {"mcmc_data": chains}
     dims = {"mcmc_data": ["components"]}
     coords = {"components": components}
     dataset = az.convert_to_dataset(datadict, dims=dims, coords=coords)
-    return dataset
+
+    return components, dataset
 
 
 # --------------------------------------------------------------------------------------------------
@@ -121,10 +144,12 @@ def _visualize_data_pairs(dataset: xa.Dataset, output_directory: Path) -> None:
 
 # ==================================================================================================
 def main():
-    if postprocess_chain:
-        postprocess_chains(chain_directory, output_directory, components)
-    if visualize_tree:
-        render_dot_files(dotfile_directory)
+    chain_directory, tree_directory = process_cli_arguments()
+
+    if chain_directory is not None:
+        postprocess_chains(Path(chain_directory))
+    if tree_directory is not None:
+        render_dot_files(Path(tree_directory))
 
 
 if __name__ == "__main__":

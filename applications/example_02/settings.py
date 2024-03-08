@@ -28,7 +28,7 @@ sampler_setup_settings = general_settings.SamplerSetupSettings(
 )
 
 sampler_run_settings = general_settings.SamplerRunSettings(
-    num_samples=100,
+    num_samples=1000,
     initial_state=None,
     num_threads=8,
     print_interval=10,
@@ -39,6 +39,7 @@ sampler_run_settings = general_settings.SamplerRunSettings(
 inverse_problem_settings = builder.InverseProblemSettings(
     prior_mean=np.array((5e6,)),
     prior_covariance=1e12 * np.identity(1),
+    prior_rng_seed=None,
     ub_model_configs=({"order": 4}, {"order": 5}),
     ub_model_address="http://localhost:4242",
     ub_model_name="forward",
@@ -46,7 +47,7 @@ inverse_problem_settings = builder.InverseProblemSettings(
 
 sampler_component_settings = builder.SamplerComponentSettings(
     proposal_step_width=0.1,
-    proposal_covariance=np.identity(1),
+    proposal_covariance=1e12 * np.identity(1),
     proposal_rng_seed=None,
     accept_rates_initial_guess=[0.5, 0.7],
     accept_rates_update_parameter=0.01,

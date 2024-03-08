@@ -17,7 +17,7 @@ def process_cli_arguments() -> bool:
     argParser.add_argument(
         "-c",
         "--cluster",
-        action='store_true',
+        action="store_true",
         help="Run via Hyperqueue",
     )
 
@@ -33,16 +33,18 @@ class GaussianLogLikelihood(ub.Model):
         self._mean = 5e6
         self._covariance = 1e12
 
-    def get_input_sizes(self, config: Any) -> list[int]:
+    def get_input_sizes(self, config: dict[str, Any] = {}) -> list[int]:
         return [1]
 
-    def get_output_sizes(self, config: Any) -> list[int]:
+    def get_output_sizes(self, config: dict[str, Any] = {}) -> list[int]:
         return [1]
 
     def supports_evaluate(self) -> bool:
         return True
 
-    def __call__(self, parameters: list[list[float]], config: Any = {}) -> list[list[float]]:
+    def __call__(
+        self, parameters: list[list[float]], config: dict[str, Any] = {}
+    ) -> list[list[float]]:
         if config["order"] == 4:
             time.sleep(0.1)
         if config["order"] == 5:
@@ -60,7 +62,7 @@ if __name__ == "__main__":
         port = int(os.environ["PORT"])
     else:
         port = 4242
-    
+
     ub.serve_models(
         [
             GaussianLogLikelihood(),

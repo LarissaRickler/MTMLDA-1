@@ -5,6 +5,7 @@ import os
 import pickle
 from collections.abc import Callable
 from functools import partial
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -14,7 +15,7 @@ from components import general_settings, abstract_builder
 
 
 # ==================================================================================================
-def process_cli_arguments() -> str:
+def process_cli_arguments() -> tuple[Path, Path]:
     argParser = argparse.ArgumentParser(
         prog="sampling.py",
         usage="python %(prog)s [options]",
@@ -26,12 +27,36 @@ def process_cli_arguments() -> str:
         "--application",
         type=str,
         required=True,
-        help="Application directory in dot notation",
+        help="Application directory",
+    )
+
+    argParser.add_argument(
+        "-s",
+        "--settings",
+        type=str,
+        required=False,
+        default="settings",
+        help="Application settings file",
+    )
+
+    argParser.add_argument(
+        "-b",
+        "--builder",
+        type=str,
+        required=False,
+        default="builder",
+        help="Application builder file",
     )
 
     cliArgs = argParser.parse_args()
-    application = cliArgs.application
-    return application
+    application_dir = cliArgs.application.replace("/", ".").strip(".")
+    
+    dirs = []
+    for module in (cliArgs.settings, cliArgs.builder):
+        module_dir = f"{application_dir}.{module}"
+        dirs.append(module_dir)
+
+    return dirs
 
 
 # --------------------------------------------------------------------------------------------------
@@ -135,9 +160,9 @@ def save_results_and_state(
 
 # ==================================================================================================
 def main() -> None:
-    application = process_cli_arguments()
-    settings_module = importlib.import_module(f"{application}.settings")
-    builder_module = importlib.import_module(f"{application}.builder")
+    settings_dir, builder_dir = process_cli_arguments()
+    settings_module = importlib.import_module(settings_dir)
+    builder_module = importlib.import_module(builder_dir)
 
     num_chains = settings_module.parallel_run_settings.num_chains
     process_ids = range(num_chains)

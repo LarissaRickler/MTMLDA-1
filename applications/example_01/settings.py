@@ -10,7 +10,7 @@ from . import builder
 # ==================================================================================================
 parallel_run_settings = general_settings.ParallelRunSettings(
     num_chains=1,
-    result_directory_path=Path("results_seissol_zihua"),
+    result_directory_path=Path("results_example_01"),
     chain_file_stem=Path("chain"),
     rng_state_save_file_stem=Path("rng_states"),
     rng_state_load_file_stem=None,
@@ -24,8 +24,8 @@ sampler_setup_settings = general_settings.SamplerSetupSettings(
     rng_seed_mltree=None,
     rng_seed_node_init=None,
     do_printing=True,
-    mltree_path=Path("results_seissol_zihua") / Path("mltree"),
-    logfile_path=Path("results_seissol_zihua") / Path("mtmlda.log"),
+    mltree_path=Path("results_example_01") / Path("mltree"),
+    logfile_path=Path("results_example_01") / Path("mtmlda.log"),
     write_mode="w",
 )
 
@@ -41,7 +41,8 @@ sampler_run_settings = general_settings.SamplerRunSettings(
 inverse_problem_settings = builder.InverseProblemSettings(
     prior_intervals=np.array([[500, 2000], [1, 20], [20e9, 30e9], [20e9, 30e9]]),
     prior_rng_seed=None,
-    likelihood_data_dir=Path("applications/seissol_zihua/data"),
+    likelihood_data=np.array([0, 0, 0, 0]),
+    likelihood_covariance = np.identity(4),
     ub_model_configs=({"meshFile": "model_0p1Hz"}, {"meshFile": "model_0p3Hz"}),
     ub_model_address="http://localhost:4242",
     ub_model_name="forward",

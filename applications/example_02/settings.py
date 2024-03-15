@@ -5,12 +5,10 @@ import numpy as np
 from components import general_settings
 from . import builder
 
-
-
 # ==================================================================================================
 parallel_run_settings = general_settings.ParallelRunSettings(
     num_chains=1,
-    result_directory_path=Path("results_seissol_zihua"),
+    result_directory_path=Path("results_example_02"),
     chain_file_stem=Path("chain"),
     rng_state_save_file_stem=Path("rng_states"),
     rng_state_load_file_stem=None,
@@ -24,32 +22,32 @@ sampler_setup_settings = general_settings.SamplerSetupSettings(
     rng_seed_mltree=None,
     rng_seed_node_init=None,
     do_printing=True,
-    mltree_path=Path("results_seissol_zihua") / Path("mltree"),
-    logfile_path=Path("results_seissol_zihua") / Path("mtmlda.log"),
+    mltree_path=Path("results_example_02") / Path("mltree"),
+    logfile_path=Path("results_example_02") / Path("mtmlda.log"),
     write_mode="w",
 )
 
 sampler_run_settings = general_settings.SamplerRunSettings(
-    num_samples=5000,
+    num_samples=1000,
     initial_state=None,
     num_threads=8,
-    print_interval=500,
-    tree_render_interval=500,
+    print_interval=10,
+    tree_render_interval=10,
 )
 
 # --------------------------------------------------------------------------------------------------
 inverse_problem_settings = builder.InverseProblemSettings(
-    prior_intervals=np.array([[500, 2000], [1, 20], [20e9, 30e9], [20e9, 30e9]]),
+    prior_mean=np.array((5e6,)),
+    prior_covariance=1e12 * np.identity(1),
     prior_rng_seed=None,
-    likelihood_data_dir=Path("applications/seissol_zihua/data"),
-    ub_model_configs=({"meshFile": "model_0p1Hz"}, {"meshFile": "model_0p3Hz"}),
+    ub_model_configs=({"order": 4}, {"order": 5}),
     ub_model_address="http://localhost:4242",
     ub_model_name="forward",
 )
 
 sampler_component_settings = builder.SamplerComponentSettings(
     proposal_step_width=0.1,
-    proposal_covariance=np.diag((np.square(1500), np.square(19), np.square(10e9), np.square(10e9))),
+    proposal_covariance=1e12 * np.identity(1),
     proposal_rng_seed=None,
     accept_rates_initial_guess=[0.5, 0.7],
     accept_rates_update_parameter=0.01,

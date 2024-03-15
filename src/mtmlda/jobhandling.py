@@ -14,6 +14,7 @@ class JobHandler:
         self._executor = executor
         self._models = models
         self._num_threads = num_threads
+        self._num_evals = [0,] * len(models)
 
     # ----------------------------------------------------------------------------------------------
     def submit_job(self, node: at.AnyNode) -> None:
@@ -21,6 +22,7 @@ class JobHandler:
         future = self._executor.submit(self._models[node.level], [node.state.tolist()])
         self._futures.append(future)
         self._futuremap[future] = node
+        self._num_evals[node.level] += 1
 
     # ----------------------------------------------------------------------------------------------
     def get_finished_jobs(self) -> tuple[list[float], list[at.AnyNode]]:
@@ -51,3 +53,8 @@ class JobHandler:
     def workers_available(self) -> bool:
         workers_available = len(self._futures) < self._num_threads
         return workers_available
+
+    # ----------------------------------------------------------------------------------------------
+    @property
+    def num_evaluations(self) -> int:
+        return self._num_evals

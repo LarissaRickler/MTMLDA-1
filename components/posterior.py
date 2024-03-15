@@ -32,7 +32,7 @@ class LogPosterior:
             log_posterior = log_prior
         else:
             log_likelihood = self._log_likelihood(parameter)
-            log_posterior = log_likelihood + log_prior
+            log_posterior = [[log_likelihood[0][0] + log_prior[0][0]]]
 
         return log_posterior
         

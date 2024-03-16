@@ -10,9 +10,9 @@ from . import builder
 # ==================================================================================================
 parallel_run_settings = general_settings.ParallelRunSettings(
     num_chains=1,
-    result_directory_path=Path("results_example_01"),
+    result_directory_path=Path("results_example_03"),
     chain_file_stem=Path("chain"),
-    rng_state_save_file_stem=Path("rng_states"),
+    rng_state_save_file_stem=None,
     rng_state_load_file_stem=None,
     overwrite_results=True,
 )
@@ -24,17 +24,17 @@ sampler_setup_settings = general_settings.SamplerSetupSettings(
     rng_seed_mltree=None,
     rng_seed_node_init=None,
     do_printing=True,
-    mltree_path=Path("results_example_01") / Path("mltree"),
-    logfile_path=Path("results_example_01") / Path("mtmlda.log"),
+    mltree_path=Path("results_example_03") / Path("mltree"),
+    logfile_path=Path("results_example_03") / Path("mtmlda.log"),
     write_mode="w",
 )
 
 sampler_run_settings = general_settings.SamplerRunSettings(
-    num_samples=5000,
+    num_samples=1000,
     initial_state=None,
-    num_threads=8,
-    print_interval=500,
-    tree_render_interval=500,
+    num_threads=1,
+    print_interval=50,
+    tree_render_interval=50,
 )
 
 # --------------------------------------------------------------------------------------------------

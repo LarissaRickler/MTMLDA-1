@@ -59,10 +59,11 @@ class ApplicationBuilder(abstract_builder.ApplicationBuilder):
                 if self._process_id == 0:
                     print("Server available\n")
                 server_available = True
-            except:
+            except Exception as exc:
+                print(exc)
                 time.sleep(10)
 
-        inverse_problem_settings.rng_seed = self._process_id
+        inverse_problem_settings.prior_rng_seed = self._process_id
         prior_component = prior.UniformLogPrior(
             inverse_problem_settings.prior_intervals, inverse_problem_settings.prior_rng_seed
         )

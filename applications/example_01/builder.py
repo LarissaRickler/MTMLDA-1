@@ -1,25 +1,20 @@
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
-from functools import partial
 from typing import Any
 
 import numpy as np
 import umbridge as ub
 
 import src.mtmlda.mcmc as mcmc
-from components import abstract_builder, prior, posterior
+from components import abstract_builder
 
 
 # ==================================================================================================
 @dataclass
 class InverseProblemSettings(abstract_builder.InverseProblemSettings):
-    prior_mean: np.ndarray
-    prior_covariance: np.ndarray
-    prior_rng_seed: int
-    ub_model_configs: dict[str, str]
     ub_model_address: str
-    ub_model_name: str
+    ub_model_names: str
 
 
 @dataclass
@@ -33,7 +28,7 @@ class SamplerComponentSettings(abstract_builder.SamplerComponentSettings):
 
 @dataclass
 class InitialStateSettings(abstract_builder.InitialStateSettings):
-    pass
+    initial_states: list[np.ndarray]
 
 
 # ==================================================================================================
@@ -42,7 +37,6 @@ class ApplicationBuilder(abstract_builder.ApplicationBuilder):
     # ----------------------------------------------------------------------------------------------
     def __init__(self, process_id: int) -> None:
         super().__init__(process_id)
-        self._prior_component = None
 
     # ----------------------------------------------------------------------------------------------
     def set_up_models(self, inverse_problem_settings: InverseProblemSettings) -> list[Callable]:
@@ -51,10 +45,20 @@ class ApplicationBuilder(abstract_builder.ApplicationBuilder):
             try:
                 if self._process_id == 0:
                     print("Calling server...")
-                likelihood_component = ub.HTTPModel(
-                    inverse_problem_settings.ub_model_address,
-                    inverse_problem_settings.ub_model_name,
-                )
+                posterior_models = [
+                    ub.HTTPModel(
+                        inverse_problem_settings.ub_model_address,
+                        inverse_problem_settings.ub_model_names[0],
+                    ),
+                    ub.HTTPModel(
+                        inverse_problem_settings.ub_model_address,
+                        inverse_problem_settings.ub_model_names[1],
+                    ),
+                    ub.HTTPModel(
+                        inverse_problem_settings.ub_model_address,
+                        inverse_problem_settings.ub_model_names[2],
+                    ),
+                ]
                 if self._process_id == 0:
                     print("Server available\n")
                 server_available = True
@@ -62,21 +66,7 @@ class ApplicationBuilder(abstract_builder.ApplicationBuilder):
                 print(exc)
                 time.sleep(10)
 
-        inverse_problem_settings.prior_rng_seed = self._process_id
-        prior_component = prior.GaussianLogPrior(
-            inverse_problem_settings.prior_mean,
-            inverse_problem_settings.prior_covariance,
-            inverse_problem_settings.prior_rng_seed,
-        )
-        self._prior_component = prior_component
-
-        model_wrapper = posterior.LogPosterior(prior_component, likelihood_component)
-        models = [
-            partial(model_wrapper, config=config)
-            for config in inverse_problem_settings.ub_model_configs
-        ]
-
-        return models
+        return posterior_models
 
     # ----------------------------------------------------------------------------------------------
     def set_up_sampler_components(
@@ -98,5 +88,5 @@ class ApplicationBuilder(abstract_builder.ApplicationBuilder):
 
     # ----------------------------------------------------------------------------------------------
     def generate_initial_state(self, initial_state_settings: InitialStateSettings) -> np.ndarray:
-        initial_state = self._prior_component.sample()
+        initial_state = initial_state_settings.initial_states[self._process_id]
         return initial_state

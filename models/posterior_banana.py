@@ -3,8 +3,8 @@ import os
 import time
 from typing import Any
 
+import numpy as np
 import umbridge as ub
-import scipy.stats as stats
 
 
 # ==================================================================================================
@@ -41,11 +41,10 @@ def process_cli_arguments() -> bool:
 # ==================================================================================================
 class BananaPosterior(ub.Model):
     def __init__(self, model_name: str, sleep_time: float) -> None:
-        self._sleep_time = sleep_time
         super().__init__(model_name)
-        mean = [0, 4]
-        covariance = [[1, 0.5], [0.5, 1]]
-        self._distribution = stats.multivariate_normal(mean, covariance)
+        self._sleep_time = sleep_time
+        self._mean = np.array([0, 0])
+        self._precision = np.identity(2)
 
     def get_input_sizes(self, config: Any = {}) -> list[int]:
         return [2]
@@ -58,11 +57,12 @@ class BananaPosterior(ub.Model):
 
     def __call__(self, parameters: list[list[float]], config: Any = {}) -> list[list[float]]:
         time.sleep(self._sleep_time)
-        transformed_input = [
-            (0.5 * parameters[0][0]),
-            (2 * parameters[0][1] + 0.4 * (parameters[0][0] ** 2 + 4)),
-        ]
-        logp = self._distribution.logpdf(transformed_input)
+        parameters = parameters[0]
+        transformed_parameters = np.zeros((2,))
+        transformed_parameters[0] = np.sqrt(20 * (parameters[0] ** 2 - 2 * parameters[1]) ** 2)
+        transformed_parameters[1] = np.sqrt(2 * (parameters[1] - 0.25) ** 4)
+        misfit = self._mean - transformed_parameters
+        logp= -0.5 * misfit.T @ self._precision @ misfit
 
         return [[logp]]
 
@@ -77,9 +77,9 @@ if __name__ == "__main__":
 
     ub.serve_models(
         [
-            BananaPosterior(model_name="banana_posterior_fine", sleep_time=sleep_times[0]),
+            BananaPosterior(model_name="banana_posterior_coarse", sleep_time=sleep_times[0]),
             BananaPosterior(model_name="banana_posterior_intermediate", sleep_time=sleep_times[1]),
-            BananaPosterior(model_name="banana_posterior_coarse", sleep_time=sleep_times[2]),
+            BananaPosterior(model_name="banana_posterior_fine", sleep_time=sleep_times[2]),
         ],
         port=port,
         max_workers=100,

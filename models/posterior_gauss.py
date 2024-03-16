@@ -72,11 +72,9 @@ if __name__ == "__main__":
 
     ub.serve_models(
         [
-            GaussianPosterior(model_name="banana_posterior_fine", sleep_time=sleep_times[0]),
-            GaussianPosterior(
-                model_name="banana_posterior_intermediate", sleep_time=sleep_times[1]
-            ),
-            GaussianPosterior(model_name="banana_posterior_coarse", sleep_time=sleep_times[2]),
+            GaussianPosterior("gaussian_posterior_coarse", sleep_times[0]),
+            GaussianPosterior("gaussian_posterior_intermediate", sleep_times[1]),
+            GaussianPosterior("gaussian_posterior_fine", sleep_times[2]),
         ],
         port=port,
         max_workers=100,

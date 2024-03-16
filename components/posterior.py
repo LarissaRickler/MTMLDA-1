@@ -31,7 +31,7 @@ class LogPosterior:
         if np.isneginf(log_prior[0][0]):
             log_posterior = log_prior
         else:
-            log_likelihood = self._log_likelihood(parameter)
+            log_likelihood = self._log_likelihood(parameter, **log_likelihood_args)
             log_posterior = [[log_likelihood[0][0] + log_prior[0][0]]]
 
         return log_posterior

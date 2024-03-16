@@ -58,9 +58,9 @@ class GaussianLogLikelihood(ub.Model):
         self, parameters: list[list[float]], config: dict[str, Any] = {}
     ) -> list[list[float]]:
         if config["order"] == 4:
-            time.sleep(0.1)
+            time.sleep(self._time_coarse)
         if config["order"] == 5:
-            time.sleep(0.5)
+            time.sleep(self._time_fine)
 
         state_diff = parameters[0][0] - self._mean
         log_likelihood = -0.5 * state_diff**2 / self._covariance

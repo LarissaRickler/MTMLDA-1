@@ -1,3 +1,5 @@
+import argparse
+import os
 import time
 from typing import Any
 
@@ -5,6 +7,38 @@ import umbridge as ub
 import scipy.stats as stats
 
 
+# ==================================================================================================
+def process_cli_arguments() -> bool:
+    argParser = argparse.ArgumentParser(
+        prog="posterior_gauss.py",
+        usage="python %(prog)s [options]",
+        description="Umbridge server-side client emulating Gaussian posterior",
+    )
+
+    argParser.add_argument(
+        "-c",
+        "--cluster",
+        action="store_true",
+        help="Run via Hyperqueue",
+    )
+
+    argParser.add_argument(
+        "-t",
+        "--sleep_times",
+        type=float,
+        required=False,
+        nargs=3,
+        default=[0.03, 0.06, 1],
+        help="Sleep times to emulate simulation",
+    )
+
+    cliArgs = argParser.parse_args()
+    run_on_hq = cliArgs.cluster
+    sleep_times = cliArgs.sleep_times
+    return run_on_hq, sleep_times
+
+
+# ==================================================================================================
 class GaussianPosterior(ub.Model):
     def __init__(self, model_name: str, sleep_time: float) -> None:
         super().__init__(model_name)
@@ -28,13 +62,22 @@ class GaussianPosterior(ub.Model):
         return [[logp]]
 
 
+# ==================================================================================================
 if __name__ == "__main__":
+    run_on_hq, sleep_times = process_cli_arguments()
+    if run_on_hq:
+        port = int(os.environ["PORT"])
+    else:
+        port = 4242
+
     ub.serve_models(
         [
-            GaussianPosterior(model_name="gauss_posterior_fine", sleep_time=0.1),
-            GaussianPosterior(model_name="gauss_posterior_intermediate", sleep_time=0.06),
-            GaussianPosterior(model_name="gauss_posterior_coarse", sleep_time=0.03),
+            GaussianPosterior(model_name="banana_posterior_fine", sleep_time=sleep_times[0]),
+            GaussianPosterior(
+                model_name="banana_posterior_intermediate", sleep_time=sleep_times[1]
+            ),
+            GaussianPosterior(model_name="banana_posterior_coarse", sleep_time=sleep_times[2]),
         ],
-        port=4243,
+        port=port,
         max_workers=100,
     )

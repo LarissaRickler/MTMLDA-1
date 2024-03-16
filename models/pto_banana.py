@@ -22,18 +22,28 @@ def process_cli_arguments() -> bool:
         help="Run via Hyperqueue",
     )
 
+    argParser.add_argument(
+        "-t",
+        "--sleep_times",
+        type=float,
+        required=False,
+        nargs=2,
+        default=[0.005, 0.05],
+        help="Sleep times to emulate simulation",
+    )
+
     cliArgs = argParser.parse_args()
     run_on_hq = cliArgs.cluster
-    return run_on_hq
+    sleep_times = cliArgs.sleep_times
+    return run_on_hq, sleep_times
 
 
 # ==================================================================================================
 class PTOModel(ub.Model):
-    _time_coarse = 0.005
-    _time_fine = 0.05
 
-    def __init__(self) -> None:
+    def __init__(self, sleep_times: list[float]) -> None:
         super().__init__("forward")
+        self._time_coarse, self._time_fine = sleep_times
         self._parameter_ranges = [[500, 2000], [1, 20], [20e9, 30e9], [20e9, 30e9]]
 
     def get_input_sizes(self, config: dict[str:Any] = {}) -> list[float]:
@@ -49,9 +59,9 @@ class PTOModel(ub.Model):
         self, parameters: list[list[float]], config: dict[str:Any] = {}
     ) -> list[list[float]]:
         if config["meshFile"] == "model_0p1Hz":
-            time.sleep(0.005)
+            time.sleep(self._time_coarse)
         if config["meshFile"] == "model_0p3Hz":
-            time.sleep(0.05)
+            time.sleep(self._time_fine)
         scaled_parameters = self._scale_input(parameters)
         observables = self._compute_observables(scaled_parameters)
         return observables
@@ -77,7 +87,7 @@ class PTOModel(ub.Model):
 
 # ==================================================================================================
 if __name__ == "__main__":
-    run_on_hq = process_cli_arguments()
+    run_on_hq, sleep_times = process_cli_arguments()
     if run_on_hq:
         port = int(os.environ["PORT"])
     else:
@@ -85,7 +95,7 @@ if __name__ == "__main__":
 
     ub.serve_models(
         [
-            PTOModel(),
+            PTOModel(sleep_times),
         ],
         port=port,
         max_workers=100,

@@ -21,15 +21,27 @@ def process_cli_arguments() -> bool:
         help="Run via Hyperqueue",
     )
 
+    argParser.add_argument(
+        "-t",
+        "--sleep_times",
+        type=float,
+        required=False,
+        nargs=2,
+        default=[0.005, 0.05],
+        help="Sleep times to emulate simulation",
+    )
+
     cliArgs = argParser.parse_args()
     run_on_hq = cliArgs.cluster
-    return run_on_hq
+    sleep_times = cliArgs.sleep_times
+    return run_on_hq, sleep_times
 
 
 # ==================================================================================================
 class GaussianLogLikelihood(ub.Model):
-    def __init__(self) -> None:
+    def __init__(self, sleep_times: list[float]) -> None:
         super().__init__("forward")
+        self._time_coarse, self._time_fine = sleep_times
         self._mean = 5e6
         self._covariance = 1e12
 
@@ -57,7 +69,7 @@ class GaussianLogLikelihood(ub.Model):
 
 # ==================================================================================================
 if __name__ == "__main__":
-    run_on_hq = process_cli_arguments()
+    run_on_hq, sleep_times = process_cli_arguments()
     if run_on_hq:
         port = int(os.environ["PORT"])
     else:
@@ -65,7 +77,7 @@ if __name__ == "__main__":
 
     ub.serve_models(
         [
-            GaussianLogLikelihood(),
+            GaussianLogLikelihood(sleep_times),
         ],
         port=port,
         max_workers=100,

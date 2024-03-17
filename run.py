@@ -10,14 +10,14 @@ from typing import Any
 
 import numpy as np
 
-import src.mtmlda.sampler as sampler
+import src.mtmlda.sampling as sampling
 from components import general_settings, abstract_builder
 
 
 # ==================================================================================================
 def process_cli_arguments() -> tuple[Path, Path]:
     argParser = argparse.ArgumentParser(
-        prog="sampling.py",
+        prog="run.py",
         usage="python %(prog)s [options]",
         description="Run file for parallel MLDA sampling",
     )
@@ -101,14 +101,14 @@ def set_up_sampler(
     ground_proposal: Any,
     accept_rate_estimator: Any,
     models: list[Callable],
-) -> sampler.MTMLDASampler:
+) -> sampling.MTMLDASampler:
     sampler_setup_settings.rng_seed_mltree = process_id
     if process_id != 0:
         sampler_setup_settings.logfile_path = None
         sampler_setup_settings.mltree_path = None
         sampler_setup_settings.do_printing = False
 
-    mtmlda_sampler = sampler.MTMLDASampler(
+    mtmlda_sampler = sampling.MTMLDASampler(
         sampler_setup_settings,
         models,
         accept_rate_estimator,
@@ -133,7 +133,7 @@ def save_results_and_state(
     process_id: int,
     parallel_run_settings: general_settings.ParallelRunSettings,
     mcmc_trace: list[np.ndarray],
-    mtmlda_sampler: sampler.MTMLDASampler,
+    mtmlda_sampler: sampling.MTMLDASampler,
 ) -> None:
     os.makedirs(
         parallel_run_settings.result_directory_path,

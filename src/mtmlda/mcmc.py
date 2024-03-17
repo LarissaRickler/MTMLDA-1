@@ -97,7 +97,7 @@ class MLMetropolisHastingsKernel:
             accept_probability = min(
                 1,
                 np.exp(
-                    +posterior_logp_new
+                    posterior_logp_new
                     + proposal_logp_old_new
                     - posterior_logp_old
                     - proposal_logp_new_old

@@ -32,8 +32,8 @@ sampler_run_settings = general_settings.SamplerRunSettings(
     num_samples=1000,
     initial_state=None,
     num_threads=1,
-    print_interval=10,
-    tree_render_interval=10,
+    print_interval=50,
+    tree_render_interval=50,
 )
 
 # --------------------------------------------------------------------------------------------------

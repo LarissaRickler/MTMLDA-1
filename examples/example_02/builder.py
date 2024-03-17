@@ -11,13 +11,13 @@ from components import abstract_builder
 
 
 # ==================================================================================================
-@dataclass
+@dataclass(kw_only=True)
 class InverseProblemSettings(abstract_builder.InverseProblemSettings):
     ub_model_address: str
     ub_model_names: str
 
 
-@dataclass
+@dataclass(kw_only=True)
 class SamplerComponentSettings(abstract_builder.SamplerComponentSettings):
     proposal_step_width: float
     proposal_covariance: np.ndarray
@@ -26,7 +26,7 @@ class SamplerComponentSettings(abstract_builder.SamplerComponentSettings):
     accept_rates_update_parameter: float
 
 
-@dataclass
+@dataclass(kw_only=True)
 class InitialStateSettings(abstract_builder.InitialStateSettings):
     initial_states: list[np.ndarray]
 

@@ -9,13 +9,14 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-import anytree as at
+import anytree as atree
 
 from . import jobhandling, mltree, mcmc
+from .mltree import MLTreeSearchFunctions as mltree_search
 
 
 # ==================================================================================================
-@dataclass
+@dataclass(kw_only=True)
 class SamplerSetupSettings:
     num_levels: int
     subsampling_rates: list
@@ -28,7 +29,7 @@ class SamplerSetupSettings:
     write_mode: str
 
 
-@dataclass
+@dataclass(kw_only=True)
 class SamplerRunSettings:
     num_samples: int
     initial_state: np.ndarray
@@ -37,7 +38,7 @@ class SamplerRunSettings:
     tree_render_interval: int
 
 
-@dataclass
+@dataclass(kw_only=True)
 class RNGStates:
     proposal: np.random.Generator
     mltree: np.random.Generator
@@ -106,7 +107,7 @@ class MTMLDASampler:
                     self._mltree_modifier.compress_resolved_subchains(mltree_root)
 
                     while (
-                        unique_child := mltree.MLTreeSearchFunctions.get_unique_fine_level_child(
+                        unique_child := mltree_search.get_unique_fine_level_child(
                             mltree_root, self._num_levels
                         )
                     ) is not None:
@@ -122,7 +123,7 @@ class MTMLDASampler:
         except BaseException as exc:
             self._logger.exception(exc)
             try:
-                self._mltree_visualizer.export_to_dot(mltree_root)
+                self._mltree_visualizer.export_to_dot(mltree_root, id="exc")
             except RecursionError as exc:
                 self._logger.exception(exc)
         finally:
@@ -145,9 +146,9 @@ class MTMLDASampler:
 
     # ----------------------------------------------------------------------------------------------
     def _init_mltree(self, initial_state: np.ndarray) -> mltree.MTNode:
-        mltree_root = mltree.MTNode("a")
+        mltree_root = mltree.MTNode(name="a")
         mltree_root.state = initial_state
-        mltree_root.random_draw = self._rng_node_init.uniform()
+        mltree_root.random_draw = self._rng_node_init.uniform(low=0, high=1, size=None)
         mltree_root.level = self._num_levels - 1
         mltree_root.subchain_index = 0
 
@@ -162,7 +163,7 @@ class MTMLDASampler:
             self._mltree_modifier.update_probability_reached(
                 mltree_root, self._accept_rate_estimator
             )
-            new_candidate = mltree.MLTreeSearchFunctions.find_max_probability_node(mltree_root)
+            new_candidate = mltree_search.find_max_probability_node(mltree_root)
             self._job_handler.submit_job(new_candidate)
 
     # ----------------------------------------------------------------------------------------------
@@ -173,70 +174,35 @@ class MTMLDASampler:
 
     # ----------------------------------------------------------------------------------------------
     def _compute_available_mcmc_decisions(self, mltree_root: mltree.MTNode) -> None:
-        trying_to_compute_mcmc_decision = True
+        computing_mcmc_decisions = True
 
-        while trying_to_compute_mcmc_decision:
-            trying_to_compute_mcmc_decision = False
+        while computing_mcmc_decisions:
+            computing_mcmc_decisions = False
 
-            for level_children in at.LevelOrderGroupIter(mltree_root):
+            for level_children in atree.LevelOrderGroupIter(mltree_root):
                 for node in level_children:
                     (
                         node_available_for_decision,
                         is_ground_level_decision,
                         is_two_level_decision,
-                    ) = self._check_if_node_is_available_for_decision(node)
+                    ) = mltree_search.check_if_node_is_available_for_decision(node)
 
-                    if node_available_for_decision and is_ground_level_decision:
-                        accepted = self._mcmc_kernel.compute_single_level_decision(node)
+                    if node_available_for_decision:
+                        if is_ground_level_decision:
+                            accepted = self._mcmc_kernel.compute_single_level_decision(node)
+                        elif is_two_level_decision:
+                            same_level_parent = mltree_search.get_same_level_parent(node)
+                            accepted = self._mcmc_kernel.compute_two_level_decision(
+                                node, same_level_parent
+                            )
                         self._accept_rate_estimator.update(accepted, node)
-                        self._discard_rejected_nodes(node, accepted)
-                        trying_to_compute_mcmc_decision = True
+                        self._mltree_modifier.discard_rejected_nodes(node, accepted)
+                        computing_mcmc_decisions = True
 
-                    if node_available_for_decision and is_two_level_decision:
-                        same_level_parent = mltree.MLTreeSearchFunctions.get_same_level_parent(node)
-                        accepted = self._mcmc_kernel.compute_two_level_decision(
-                            node, same_level_parent
-                        )
-                        self._accept_rate_estimator.update(accepted, node)
-                        self._discard_rejected_nodes(node, accepted)
-                        trying_to_compute_mcmc_decision = True
-
-                    if trying_to_compute_mcmc_decision:
+                    if computing_mcmc_decisions:
                         break
-                if trying_to_compute_mcmc_decision:
+                if computing_mcmc_decisions:
                     break
-
-    # ----------------------------------------------------------------------------------------------
-    def _check_if_node_is_available_for_decision(
-        self, node: mltree.MTNode
-    ) -> tuple[bool, bool, bool]:
-        node_available_for_decision = (
-            node.name == "a"
-            and node.parent is not None
-            and len(node.parent.children) > 1
-            and node.logposterior is not None
-            and node.parent.logposterior is not None
-        )
-
-        if not node_available_for_decision:
-            is_ground_level_decision = False
-            is_two_level_decision = False
-        else:
-            same_level_parent = mltree.MLTreeSearchFunctions.get_same_level_parent(node)
-            is_ground_level_decision = node.level == 0 and node.parent.level == 0
-            is_two_level_decision = (
-                node.level - 1 == node.parent.level
-                and same_level_parent.logposterior is not None
-                and same_level_parent.children[0].logposterior is not None
-            )
-        return node_available_for_decision, is_ground_level_decision, is_two_level_decision
-
-    # ----------------------------------------------------------------------------------------------
-    def _discard_rejected_nodes(self, node: mltree.MTNode, accepted: bool) -> None:
-        if accepted:
-            at.util.rightsibling(node).parent = None
-        else:
-            node.parent = None
 
     # ----------------------------------------------------------------------------------------------
     def _init_logging(self, do_printing, logfile_path, write_mode) -> None:
@@ -275,7 +241,7 @@ class MTMLDASampler:
         if (len(mcmc_chain) % self._tree_render_interval == 0) or (
             len(mcmc_chain) == self._num_samples
         ):
-            self._mltree_visualizer.export_to_dot(mltree_root)
+            self._mltree_visualizer.export_to_dot(mltree_root, id=f"{len(mcmc_chain)}")
 
 
 # ==================================================================================================

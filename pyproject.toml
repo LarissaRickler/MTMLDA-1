@@ -19,8 +19,7 @@ dependencies = [
 #---------------------------------------------------------------------------------------------------
 [project.optional-dependencies]
 model = [
-    "umbridge>=1.2.4",
-    "scipy>=1.11.4"
+    "umbridge>=1.2.4"
 ]
 postprocessing = [
     "arviz>=0..17.0",

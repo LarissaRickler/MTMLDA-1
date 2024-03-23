@@ -15,10 +15,19 @@ def process_cli_arguments() -> bool:
     )
 
     argParser.add_argument(
-        "-c",
-        "--cluster",
+        "-hq",
+        "--hyperqueue",
         action="store_true",
         help="Run via Hyperqueue",
+    )
+
+    argParser.add_argument(
+        "-p",
+        "--port",
+        type=float,
+        required=False,
+        default=4242,
+        help="User-defined port (if not on Hyperqueue)",
     )
 
     argParser.add_argument(
@@ -33,8 +42,10 @@ def process_cli_arguments() -> bool:
 
     cliArgs = argParser.parse_args()
     run_on_hq = cliArgs.cluster
+    local_port = cliArgs.port
     sleep_times = cliArgs.sleep_times
-    return run_on_hq, sleep_times
+    
+    return run_on_hq, local_port, sleep_times
 
 
 # ==================================================================================================
@@ -69,11 +80,11 @@ class GaussianLogLikelihood(ub.Model):
 
 # ==================================================================================================
 if __name__ == "__main__":
-    run_on_hq, sleep_times = process_cli_arguments()
+    run_on_hq, local_port, sleep_times = process_cli_arguments()
     if run_on_hq:
         port = int(os.environ["PORT"])
     else:
-        port = 4242
+        port = local_port
 
     ub.serve_models(
         [

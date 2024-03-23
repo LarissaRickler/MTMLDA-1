@@ -130,25 +130,18 @@ class MLTreeModifier:
     # ----------------------------------------------------------------------------------------------
     def expand_tree(self, root: MTNode) -> None:
         for node in root.leaves:
-            if node.name == "a" and (node.logposterior is not None or node.computing):
+            if (node.logposterior is not None or node.computing):
                 self._add_new_children_to_node(node)
+                self.update_descendants(node)
 
-            if node.name == "r" and (
-                (node.parent is None)
-                or (len(node.parent.children) == 1)
-                or (
-                    len(node.parent.children) > 1
-                    and (
-                        atree.util.leftsibling(node).logposterior is not None
-                        or atree.util.leftsibling(node).computing
-                    )
-                )
-            ):
-                self._add_new_children_to_node(node)
+    # ----------------------------------------------------------------------------------------------
+    def update_descendants(self, root: MTNode) -> None:
+        pass
 
     # ----------------------------------------------------------------------------------------------
     def compress_resolved_subchains(self, root: MTNode) -> None:
         trying_to_compress = True
+
         while trying_to_compress:
             trying_to_compress = False
 
@@ -170,8 +163,9 @@ class MLTreeModifier:
                     trying_to_compress = True
 
                     if trying_to_compress:
-                            break
+                        break
                 if trying_to_compress:
+
                     break
 
     # ----------------------------------------------------------------------------------------------
@@ -223,26 +217,28 @@ class MLTreeModifier:
             new_node.random_draw = self._rng.uniform(low=0, high=1, size=None)
         subsampling_rate = self._subsampling_rates[node.level]
 
-        if (node.subchain_index == subsampling_rate - 1):
+        if node.subchain_index == subsampling_rate - 1:
             for new_node in [accepted, rejected]:
                 new_node.level = node.level + 1
                 same_level_parent = MLTreeSearchFunctions.get_same_level_parent(new_node)
                 new_node.subchain_index = same_level_parent.subchain_index + 1
+            accepted.computing = node.computing
+            rejected.computing = node.computing
             accepted.state = node.state
             rejected.state = MLTreeSearchFunctions.get_same_level_parent(rejected).state
+        elif node.level == 0:
+            for new_node in [accepted, rejected]:
+                new_node.level = node.level
+                new_node.subchain_index = node.subchain_index + 1
+            rejected.computing = node.computing
+            rejected.state = node.state
+            accepted.state = self._ground_proposal.propose(node.state)
         else:
-            if node.level == 0:
-                for new_node in [accepted, rejected]:
-                    new_node.subchain_index = node.subchain_index + 1
-                    new_node.level = node.level
-                accepted.state = self._ground_proposal.propose(node.state)
-                rejected.state = node.state
-            else:
-                for new_node in [accepted, rejected]:
-                    new_node.subchain_index = 0
-                    new_node.level = node.level - 1
-                accepted.state = node.state
-                rejected.parent = None
+            rejected.parent = None
+            accepted.level = node.level - 1
+            accepted.subchain_index = 0
+            accepted.computing = node.computing
+            accepted.state = node.state
 
     # ----------------------------------------------------------------------------------------------
     @property
@@ -314,6 +310,6 @@ class MLTreeVisualizer:
     def _name_from_parents(node: MTNode) -> str:
         name = node.name
         current_node = node
-        while current_node :=current_node.parent:
+        while current_node := current_node.parent:
             name += current_node.name
         return name

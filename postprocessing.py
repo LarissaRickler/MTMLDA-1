@@ -146,10 +146,14 @@ def _visualize_data_pairs(dataset: xa.Dataset, output_directory: Path) -> None:
 def main():
     chain_directory, tree_directory = process_cli_arguments()
 
+    print("\n=== Start Postprocessing ===\n")
     if chain_directory is not None:
+        print("Postprocess chains ...")
         postprocess_chains(Path(chain_directory))
     if tree_directory is not None:
+        print("Render dot files ...")
         render_dot_files(Path(tree_directory))
+    print("\n============================\n")
 
 
 if __name__ == "__main__":

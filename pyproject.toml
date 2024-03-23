@@ -6,8 +6,8 @@ description = "Markov Tree Multilevel Delayed Acceptance MCMC Library"
 readme = "README.md"
 license = {text = "GNU GPLv3"}
 authors = [
-    {name = "Linus Seelinger", email = "linus.seelinger@kit.edu"},
     {name = "Maximilian Kruse", email = "maximilian.kruse@kit.edu"},
+    {name = "Linus Seelinger", email = "linus.seelinger@kit.edu"},
 ]
 
 requires-python = ">=3.11"

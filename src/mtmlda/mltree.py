@@ -1,7 +1,7 @@
 import os
 from collections.abc import Sequence
 from pathlib import Path
-from typing_extensions import Any
+from typing import Any
 
 import numpy as np
 import anytree as atree
@@ -11,7 +11,7 @@ import anytree.exporter as exporter
 # ==================================================================================================
 class MTNodeBase:
     probability_reached: float = None
-    state: float = None
+    state: np.ndarray = None
     logposterior: float = None
     logposterior_coarse: float = None
     computing: bool = False
@@ -147,13 +147,6 @@ class MLTreeModifier:
                 self._add_new_children_to_node(node)
 
     # ----------------------------------------------------------------------------------------------
-    def discard_rejected_nodes(self, node: MTNode, accepted: bool) -> None:
-        if accepted:
-            atree.util.rightsibling(node).parent = None
-        else:
-            node.parent = None
-
-    # ----------------------------------------------------------------------------------------------
     def compress_resolved_subchains(self, root: MTNode) -> None:
         trying_to_compress = True
         while trying_to_compress:
@@ -180,6 +173,14 @@ class MLTreeModifier:
                             break
                 if trying_to_compress:
                     break
+
+    # ----------------------------------------------------------------------------------------------
+    @staticmethod
+    def discard_rejected_nodes(node: MTNode, accepted: bool) -> None:
+        if accepted:
+            atree.util.rightsibling(node).parent = None
+        else:
+            node.parent = None
 
     # ----------------------------------------------------------------------------------------------
     @staticmethod

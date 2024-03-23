@@ -115,7 +115,6 @@ class MLMetropolisHastingsKernel:
         posterior_logp_old_coarse = same_level_parent.children[0].logposterior
         posterior_logp_old_fine = same_level_parent.logposterior
         posterior_logp_new_coarse = node.parent.logposterior
-        np.seterr(all="raise")
 
         if posterior_logp_old_fine < self._overflow_threshold:
             accepted = False
@@ -127,7 +126,7 @@ class MLMetropolisHastingsKernel:
             accept_probability = min(
                 1,
                 np.exp(
-                    +posterior_logp_new_fine
+                    posterior_logp_new_fine
                     + posterior_logp_old_coarse
                     - posterior_logp_old_fine
                     - posterior_logp_new_coarse

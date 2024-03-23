@@ -51,7 +51,7 @@ class MTMLDASampler:
         self,
         setup_settings: SamplerSetupSettings,
         models: Sequence[Callable],
-        accept_rate_estimator: mcmc.MLAcceptRateEstimator,
+        accept_rate_estimator: mcmc.BaseAcceptRateEstimator,
         ground_proposal: mcmc.BaseProposal,
     ) -> None:
         self._num_levels = setup_settings.num_levels

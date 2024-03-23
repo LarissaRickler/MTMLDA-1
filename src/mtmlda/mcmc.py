@@ -1,6 +1,7 @@
 from abc import abstractmethod
 
 import numpy as np
+from typing import Any
 
 from . import mltree
 
@@ -75,6 +76,35 @@ class PCNProposal(BaseProposal):
 
 
 # ==================================================================================================
+class BaseAcceptRateEstimator:
+    # ----------------------------------------------------------------------------------------------
+    @abstractmethod
+    def get_acceptance_rate(self, *args: Any, **kwargs: Any) -> float:
+        pass
+
+
+# ==================================================================================================
+class StaticAcceptRateEstimator(BaseAcceptRateEstimator):
+    def __init__(self, initial_guess: list[float], update_parameter: float) -> None:
+        self._acceptance_rates = initial_guess
+        self._update_parameter = update_parameter
+
+    # ----------------------------------------------------------------------------------------------
+    def get_acceptance_rate(self, node: mltree.MTNode) -> float:
+        acceptance_rate = self._acceptance_rates[node.level]
+        return acceptance_rate
+
+    # ----------------------------------------------------------------------------------------------
+    def update(self, accepted: bool, node: mltree.MTNode) -> None:
+        level = node.level
+        decreased_rate = (1 - self._update_parameter) * self._acceptance_rates[level]
+        if accepted:
+            self._acceptance_rates[level] = decreased_rate + self._update_parameter
+        else:
+            self._acceptance_rates[level] = decreased_rate
+
+
+# ==================================================================================================
 class MLMetropolisHastingsKernel:
     _overflow_threshold = -1000
 
@@ -135,24 +165,3 @@ class MLMetropolisHastingsKernel:
             accepted = node.parent.random_draw < accept_probability
 
         return accepted
-
-
-# ==================================================================================================
-class MLAcceptRateEstimator:
-    def __init__(self, initial_guess: list[float], update_parameter: float) -> None:
-        self._acceptance_rates = initial_guess
-        self._update_parameter = update_parameter
-
-    # ----------------------------------------------------------------------------------------------
-    def get_acceptance_rate(self, node: mltree.MTNode) -> float:
-        acceptance_rate = self._acceptance_rates[node.level]
-        return acceptance_rate
-
-    # ----------------------------------------------------------------------------------------------
-    def update(self, accepted: bool, node: mltree.MTNode) -> None:
-        level = node.level
-        decreased_rate = (1 - self._update_parameter) * self._acceptance_rates[level]
-        if accepted:
-            self._acceptance_rates[level] = decreased_rate + self._update_parameter
-        else:
-            self._acceptance_rates[level] = decreased_rate

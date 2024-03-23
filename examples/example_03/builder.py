@@ -93,7 +93,7 @@ class ApplicationBuilder(abstract_builder.ApplicationBuilder):
             sampler_component_settings.proposal_rng_seed,
         )
 
-        accept_rate_estimator = mcmc.MLAcceptRateEstimator(
+        accept_rate_estimator = mcmc.StaticAcceptRateEstimator(
             sampler_component_settings.accept_rates_initial_guess,
             sampler_component_settings.accept_rates_update_parameter,
         )

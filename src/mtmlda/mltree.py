@@ -1,7 +1,8 @@
+import itertools
 import os
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Any
+from typing import Any, Self
 
 import numpy as np
 import anytree as atree
@@ -9,7 +10,7 @@ import anytree.exporter as exporter
 
 
 # ==================================================================================================
-class MTNodeBase:
+class BaseNode:
     probability_reached: float = None
     state: np.ndarray = None
     logposterior: float = None
@@ -20,9 +21,9 @@ class MTNodeBase:
     subchain_index: int = 0
 
 
-class MTNode(MTNodeBase, atree.NodeMixin):
-    def __init__(self, name: str, parent: Path = None, children: Path = None):
-        super(MTNodeBase, self).__init__()
+class MTNode(BaseNode, atree.NodeMixin):
+    def __init__(self, name: str, parent: Self = None, children: list[Self] = None):
+        super(BaseNode, self).__init__()
         self.name = name
         self.parent = parent
         if children:
@@ -35,10 +36,12 @@ class MLTreeSearchFunctions:
     def find_max_probability_node(root: MTNode) -> MTNode:
         max_probability = 0
         max_node = None
+
         for node in root.leaves:
             if node.name == "a":
-                parent_probability_reached = 1
-                if node.parent is not None:
+                if node.parent is None:
+                    parent_probability_reached = 1
+                else:
                     parent_probability_reached = node.parent.probability_reached
                 if (
                     parent_probability_reached > max_probability
@@ -47,43 +50,29 @@ class MLTreeSearchFunctions:
                 ):
                     max_probability = parent_probability_reached
                     max_node = node
+
         return max_node
 
     # ----------------------------------------------------------------------------------------------
     @staticmethod
     def get_same_level_parent(node: MTNode) -> MTNode:
-        current_candidate = node.parent
-        while True:
-            if current_candidate is None:
-                return None
-            elif current_candidate.level == node.level:
-                return current_candidate
-            else:
-                current_candidate = current_candidate.parent
-
-    # ----------------------------------------------------------------------------------------------
-    @staticmethod
-    def get_unique_fine_level_child(node: MTNode, num_levels: int) -> MTNode:
-        current_candidate = node.children
-        while True:
-            if len(current_candidate) != 1:
-                return None
-            elif current_candidate[0].level == num_levels - 1:
-                return current_candidate[0]
-            else:
-                current_candidate = current_candidate[0].children
+        current_candidate = node
+        while (current_candidate := current_candidate.parent) is not None:
+            if current_candidate.level == node.level:
+                break
+        return current_candidate
 
     # ----------------------------------------------------------------------------------------------
     @staticmethod
     def get_unique_same_subchain_child(node: MTNode) -> MTNode:
-        current_candidate = node.children
+        current_candidates = node.children
         while True:
-            if len(current_candidate) != 1:
+            if (len(current_candidates) != 1) or (current_candidates[0].level > node.level):
                 return None
-            elif current_candidate[0].level == node.level:
-                return current_candidate[0]
+            elif current_candidates[0].level == node.level:
+                return current_candidates[0]
             else:
-                return None
+                current_candidates = current_candidates[0].children
 
     # ----------------------------------------------------------------------------------------------
     @staticmethod
@@ -130,13 +119,9 @@ class MLTreeModifier:
     # ----------------------------------------------------------------------------------------------
     def expand_tree(self, root: MTNode) -> None:
         for node in root.leaves:
-            if (node.logposterior is not None or node.computing):
+            if (node.logposterior is not None) or node.computing:
                 self._add_new_children_to_node(node)
                 self.update_descendants(node)
-
-    # ----------------------------------------------------------------------------------------------
-    def update_descendants(self, root: MTNode) -> None:
-        pass
 
     # ----------------------------------------------------------------------------------------------
     def compress_resolved_subchains(self, root: MTNode) -> None:
@@ -165,8 +150,17 @@ class MLTreeModifier:
                     if trying_to_compress:
                         break
                 if trying_to_compress:
-
                     break
+
+    # ----------------------------------------------------------------------------------------------
+    @staticmethod
+    def update_descendants(root: MTNode) -> None:
+        for level_children in itertools.islice(atree.LevelOrderGroupIter(root), 1, None):
+            for child in level_children:
+                same_level_parent = MLTreeSearchFunctions.get_same_level_parent(child)
+                if child.name == "r" and same_level_parent is not None:
+                    child.computing = same_level_parent.computing
+                    child.logposterior = same_level_parent.logposterior
 
     # ----------------------------------------------------------------------------------------------
     @staticmethod
@@ -195,18 +189,6 @@ class MLTreeModifier:
                     node.probability_reached = (
                         1 - acceptance_rate_estimate
                     ) * node.parent.probability_reached
-                else:
-                    raise ValueError(f"Invalid node name: {node.name}")
-
-    # ----------------------------------------------------------------------------------------------
-    @staticmethod
-    def propagate_log_posterior_to_reject_children(root: MTNode) -> None:
-        for level_children in atree.LevelOrderGroupIter(root):
-            for child in level_children:
-                same_level_parent = MLTreeSearchFunctions.get_same_level_parent(child)
-                if child.name == "r" and same_level_parent is not None:
-                    child.computing = same_level_parent.computing
-                    child.logposterior = same_level_parent.logposterior
 
     # ----------------------------------------------------------------------------------------------
     def _add_new_children_to_node(self, node: MTNode) -> None:
@@ -222,22 +204,22 @@ class MLTreeModifier:
                 new_node.level = node.level + 1
                 same_level_parent = MLTreeSearchFunctions.get_same_level_parent(new_node)
                 new_node.subchain_index = same_level_parent.subchain_index + 1
-            accepted.computing = node.computing
-            rejected.computing = node.computing
+
+            rejected.state = same_level_parent.state
             accepted.state = node.state
-            rejected.state = MLTreeSearchFunctions.get_same_level_parent(rejected).state
+
         elif node.level == 0:
             for new_node in [accepted, rejected]:
                 new_node.level = node.level
                 new_node.subchain_index = node.subchain_index + 1
-            rejected.computing = node.computing
+
             rejected.state = node.state
             accepted.state = self._ground_proposal.propose(node.state)
+
         else:
             rejected.parent = None
             accepted.level = node.level - 1
             accepted.subchain_index = 0
-            accepted.computing = node.computing
             accepted.state = node.state
 
     # ----------------------------------------------------------------------------------------------

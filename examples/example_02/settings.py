@@ -20,6 +20,7 @@ sampler_setup_settings = general_settings.SamplerSetupSettings(
     num_levels=3,
     subsampling_rates=[5, 3, -1],
     max_tree_height=50,
+    underflow_threshold=-1000,
     rng_seed_mltree=None,
     rng_seed_node_init=None,
     do_printing=True,
@@ -32,8 +33,8 @@ sampler_run_settings = general_settings.SamplerRunSettings(
     num_samples=1000,
     initial_state=None,
     num_threads=1,
-    print_interval=50,
-    tree_render_interval=50,
+    print_interval=1,
+    tree_render_interval=100,
 )
 
 # --------------------------------------------------------------------------------------------------

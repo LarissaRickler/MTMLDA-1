@@ -21,6 +21,7 @@ class SamplerSetupSettings:
     num_levels: int
     subsampling_rates: list
     max_tree_height: int
+    underflow_threshold: float
     rng_seed_mltree: int
     rng_seed_node_init: int
     do_printing: bool
@@ -58,10 +59,13 @@ class MTMLDASampler:
         self._models = models
         self._subsampling_rates = setup_settings.subsampling_rates
         self._maximum_tree_height = setup_settings.max_tree_height
+        self._underflow_threshold = setup_settings.underflow_threshold
+
         self._accept_rate_estimator = accept_rate_estimator
         self._ground_proposal = ground_proposal
         self._rng_node_init = np.random.default_rng(setup_settings.rng_seed_node_init)
         self._mcmc_kernel = mcmc.MLMetropolisHastingsKernel(ground_proposal)
+
         self._mltree_modifier = mltree.MLTreeModifier(
             setup_settings.num_levels,
             ground_proposal,
@@ -102,24 +106,13 @@ class MTMLDASampler:
                 while True:
                     self._extend_tree_and_launch_jobs(mltree_root)
                     self._update_tree_from_finished_jobs()
-                    self._mltree_modifier.propagate_log_posterior_to_reject_children(mltree_root)
                     self._compute_available_mcmc_decisions(mltree_root)
                     self._mltree_modifier.compress_resolved_subchains(mltree_root)
-
-                    while (
-                        unique_child := mltree_search.get_unique_fine_level_child(
-                            mltree_root, self._num_levels
-                        )
-                    ) is not None:
-
-                        mcmc_chain.append(mltree_root.state)
-                        self._generate_output(mcmc_chain, mltree_root)
-                        unique_child.parent = None
-                        mltree_root = unique_child
+                    mcmc_chain, mltree_root = self._propagate_chain(mcmc_chain, mltree_root)
 
                     if len(mcmc_chain) >= self._num_samples:
                         break
-
+                    
         except BaseException as exc:
             self._logger.exception(exc)
             try:
@@ -128,6 +121,7 @@ class MTMLDASampler:
                 self._logger.exception(exc)
         finally:
             return mcmc_chain
+            
 
     # ----------------------------------------------------------------------------------------------
     def get_rngs(self) -> RNGStates:
@@ -170,7 +164,11 @@ class MTMLDASampler:
     def _update_tree_from_finished_jobs(self) -> None:
         results, nodes = self._job_handler.get_finished_jobs()
         for result, node in zip(results, nodes):
-            node.logposterior = result
+            if result < self._underflow_threshold:
+                node.parent = None
+            else:
+                node.logposterior = result
+                self._mltree_modifier.update_descendants(node)
 
     # ----------------------------------------------------------------------------------------------
     def _compute_available_mcmc_decisions(self, mltree_root: mltree.MTNode) -> None:
@@ -203,6 +201,20 @@ class MTMLDASampler:
                         break
                 if computing_mcmc_decisions:
                     break
+
+    # ----------------------------------------------------------------------------------------------
+    def _propagate_chain(
+        self, mcmc_chain: Sequence[np.ndarray], mltree_root: mltree.MTNode
+    ) -> tuple[Sequence[np.ndarray], mltree.MTNode]:
+        while (
+            unique_child := mltree_search.get_unique_same_subchain_child(mltree_root)
+        ) is not None:
+            mcmc_chain.append(mltree_root.state)
+            self._generate_output(mcmc_chain, mltree_root)
+            unique_child.parent = None
+            mltree_root = unique_child
+
+        return mcmc_chain, mltree_root
 
     # ----------------------------------------------------------------------------------------------
     def _init_logging(self, do_printing, logfile_path, write_mode) -> None:

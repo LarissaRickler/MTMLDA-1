@@ -106,7 +106,6 @@ class StaticAcceptRateEstimator(BaseAcceptRateEstimator):
 
 # ==================================================================================================
 class MLMetropolisHastingsKernel:
-    _overflow_threshold = -1000
 
     def __init__(self, ground_proposal: BaseProposal) -> None:
         self._ground_proposal = ground_proposal
@@ -120,48 +119,36 @@ class MLMetropolisHastingsKernel:
         proposal_logp_new_old = self._ground_proposal.evaluate_log_probability(new_state, old_state)
         proposal_logp_old_new = self._ground_proposal.evaluate_log_probability(old_state, new_state)
 
-        if posterior_logp_old < self._overflow_threshold:
-            accepted = False
-            node.parent.probability_reached = 0
-        else:
-            accept_probability = min(
-                1,
-                np.exp(
-                    posterior_logp_new
-                    + proposal_logp_old_new
-                    - posterior_logp_old
-                    - proposal_logp_new_old
-                ),
-            )
-            accepted = node.parent.random_draw < accept_probability
+        accept_probability = min(
+            1,
+            np.exp(
+                posterior_logp_new
+                + proposal_logp_old_new
+                - posterior_logp_old
+                - proposal_logp_new_old
+            ),
+        )
+        accepted = node.parent.random_draw < accept_probability
 
         return accepted
 
     # ----------------------------------------------------------------------------------------------
-    def compute_two_level_decision(
-        self, node: mltree.MTNode, same_level_parent: mltree.MTNode
-    ) -> bool:
+    @staticmethod
+    def compute_two_level_decision(node: mltree.MTNode, same_level_parent: mltree.MTNode) -> bool:
         posterior_logp_new_fine = node.logposterior
         posterior_logp_old_coarse = same_level_parent.children[0].logposterior
         posterior_logp_old_fine = same_level_parent.logposterior
         posterior_logp_new_coarse = node.parent.logposterior
 
-        if posterior_logp_old_fine < self._overflow_threshold:
-            accepted = False
-            same_level_parent.probability_reached = 0
-        elif posterior_logp_new_coarse < self._overflow_threshold:
-            accepted = False
-            node.parent.probability_reached = 0
-        else:
-            accept_probability = min(
-                1,
-                np.exp(
-                    posterior_logp_new_fine
-                    + posterior_logp_old_coarse
-                    - posterior_logp_old_fine
-                    - posterior_logp_new_coarse
-                ),
-            )
-            accepted = node.parent.random_draw < accept_probability
+        accept_probability = min(
+            1,
+            np.exp(
+                posterior_logp_new_fine
+                + posterior_logp_old_coarse
+                - posterior_logp_old_fine
+                - posterior_logp_new_coarse
+            ),
+        )
+        accepted = node.parent.random_draw < accept_probability
 
         return accepted

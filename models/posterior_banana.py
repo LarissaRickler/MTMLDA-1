@@ -16,8 +16,8 @@ def process_cli_arguments() -> bool:
     )
 
     argParser.add_argument(
-        "-c",
-        "--cluster",
+        "-hq",
+        "--hyperqueue",
         action="store_true",
         help="Run via Hyperqueue",
     )
@@ -73,13 +73,13 @@ class BananaPosterior(ub.Model):
         transformed_parameters[0] = np.sqrt(20 * (parameters[0] ** 2 - 2 * parameters[1]) ** 2)
         transformed_parameters[1] = np.sqrt(2 * (parameters[1] - 0.25) ** 4)
         misfit = self._mean - transformed_parameters
-        logp= -0.5 * misfit.T @ self._precision @ misfit
+        logp = -0.5 * misfit.T @ self._precision @ misfit
 
         return [[logp]]
 
 
 # ==================================================================================================
-if __name__ == "__main__":
+def main():
     run_on_hq, local_port, sleep_times = process_cli_arguments()
     if run_on_hq:
         port = int(os.environ["PORT"])
@@ -95,3 +95,7 @@ if __name__ == "__main__":
         port=port,
         max_workers=100,
     )
+
+
+if __name__ == "__main__":
+    main()

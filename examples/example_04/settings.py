@@ -1,8 +1,8 @@
 from pathlib import Path
 
 import numpy as np
-
 from components import general_settings
+
 from . import builder
 
 # ==================================================================================================

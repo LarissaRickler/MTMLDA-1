@@ -4,10 +4,10 @@ import warnings
 from pathlib import Path
 
 import arviz as az
+import matplotlib.pyplot as plt
 import numpy as np
 import pydot
 import xarray as xa
-import matplotlib.pyplot as plt
 
 
 # ==================================================================================================

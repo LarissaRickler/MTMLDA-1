@@ -3,10 +3,10 @@ from pathlib import Path
 
 import src.mtmlda.sampling as sampling
 
-
 # ==================================================================================================
 SamplerSetupSettings = sampling.SamplerSetupSettings
 SamplerRunSettings = sampling.SamplerRunSettings
+
 
 @dataclass(kw_only=True)
 class ParallelRunSettings:

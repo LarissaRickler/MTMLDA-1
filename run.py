@@ -9,9 +9,8 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-
 import src.mtmlda.sampling as sampling
-from components import general_settings, abstract_builder
+from components import abstract_builder, general_settings
 
 
 # ==================================================================================================
@@ -50,7 +49,7 @@ def process_cli_arguments() -> tuple[Path, Path]:
 
     cliArgs = argParser.parse_args()
     application_dir = cliArgs.application.replace("/", ".").strip(".")
-    
+
     dirs = []
     for module in (cliArgs.settings, cliArgs.builder):
         module_dir = f"{application_dir}.{module}"
@@ -77,26 +76,25 @@ def execute_mtmlda_run(
     ground_proposal, accept_rate_estimator = app_builder.set_up_sampler_components(
         sampler_component_settings
     )
-
     mtmlda_sampler = set_up_sampler(
         process_id,
-        parallel_run_settings,
         sampler_setup_settings,
         ground_proposal,
         accept_rate_estimator,
         models,
     )
 
+    set_rng_states(process_id, parallel_run_settings, mtmlda_sampler)
     sampler_run_settings.rng_seed_node_init = process_id
     sampler_run_settings.initial_state = initial_state
     mcmc_chain = mtmlda_sampler.run(sampler_run_settings)
-    save_results_and_state(process_id, parallel_run_settings, mcmc_chain, mtmlda_sampler)
+    save_rng_states(process_id, parallel_run_settings, mtmlda_sampler)
+    save_chain(process_id, parallel_run_settings, mcmc_chain)
 
 
 # --------------------------------------------------------------------------------------------------
 def set_up_sampler(
     process_id: int,
-    parallel_run_settings: general_settings.ParallelRunSettings,
     sampler_setup_settings: general_settings.SamplerSetupSettings,
     ground_proposal: Any,
     accept_rate_estimator: Any,
@@ -115,6 +113,11 @@ def set_up_sampler(
         ground_proposal,
     )
 
+    return mtmlda_sampler
+
+
+# --------------------------------------------------------------------------------------------------
+def set_rng_states(process_id, parallel_run_settings, mtmlda_sampler):
     if parallel_run_settings.rng_state_load_file_stem is not None:
         rng_state_file = (
             parallel_run_settings.result_directory_path
@@ -125,15 +128,30 @@ def set_up_sampler(
         with rng_state_file.open("rb") as rng_state_file:
             rng_states = pickle.load(rng_state_file)
         mtmlda_sampler.set_rngs(rng_states)
-    return mtmlda_sampler
 
 
 # --------------------------------------------------------------------------------------------------
-def save_results_and_state(
+def save_rng_states(process_id, parallel_run_settings, mtmlda_sampler):
+    if parallel_run_settings.rng_state_save_file_stem is not None:
+        os.makedirs(
+            parallel_run_settings.result_directory_path,
+            exist_ok=parallel_run_settings.overwrite_results,
+        )
+        rng_state_file = (
+            parallel_run_settings.result_directory_path
+            / parallel_run_settings.rng_state_save_file_stem.with_name(
+                f"{parallel_run_settings.rng_state_save_file_stem.name}_{process_id}.pkl"
+            )
+        )
+        with rng_state_file.open("wb") as rng_state_file:
+            pickle.dump(mtmlda_sampler.get_rngs(), rng_state_file)
+
+
+# --------------------------------------------------------------------------------------------------
+def save_chain(
     process_id: int,
     parallel_run_settings: general_settings.ParallelRunSettings,
     mcmc_trace: list[np.ndarray],
-    mtmlda_sampler: sampling.MTMLDASampler,
 ) -> None:
     os.makedirs(
         parallel_run_settings.result_directory_path,
@@ -146,16 +164,6 @@ def save_results_and_state(
         )
     )
     np.save(chain_file, mcmc_trace)
-
-    if parallel_run_settings.rng_state_save_file_stem is not None:
-        rng_state_file = (
-            parallel_run_settings.result_directory_path
-            / parallel_run_settings.rng_state_save_file_stem.with_name(
-                f"{parallel_run_settings.rng_state_save_file_stem.name}_{process_id}.pkl"
-            )
-        )
-        with rng_state_file.open("wb") as rng_state_file:
-            pickle.dump(mtmlda_sampler.get_rngs(), rng_state_file)
 
 
 # ==================================================================================================
@@ -181,6 +189,7 @@ def main() -> None:
     with multiprocessing.Pool(processes=num_chains) as process_pool:
         process_pool.map(execute_mtmlda_on_procs, process_ids)
     print("\n======================\n")
+
 
 if __name__ == "__main__":
     main()

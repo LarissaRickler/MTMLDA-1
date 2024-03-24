@@ -8,10 +8,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-import numpy as np
 import anytree as atree
+import numpy as np
 
-from . import jobhandling, mltree, mcmc
+from . import jobhandling, mcmc, mltree
 from .mltree import MLTreeSearchFunctions as mltree_search
 
 
@@ -112,7 +112,7 @@ class MTMLDASampler:
 
                     if len(mcmc_chain) >= self._num_samples:
                         break
-                    
+
         except BaseException as exc:
             self._logger.exception(exc)
             try:
@@ -121,7 +121,6 @@ class MTMLDASampler:
                 self._logger.exception(exc)
         finally:
             return mcmc_chain
-            
 
     # ----------------------------------------------------------------------------------------------
     def get_rngs(self) -> RNGStates:

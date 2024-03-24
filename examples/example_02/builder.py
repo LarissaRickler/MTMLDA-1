@@ -4,9 +4,8 @@ from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
-import umbridge as ub
-
 import src.mtmlda.mcmc as mcmc
+import umbridge as ub
 from components import abstract_builder
 
 

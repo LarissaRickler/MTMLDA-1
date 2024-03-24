@@ -1,11 +1,9 @@
 from pathlib import Path
 
 import numpy as np
-
 from components import general_settings
+
 from . import builder
-
-
 
 # ==================================================================================================
 parallel_run_settings = general_settings.ParallelRunSettings(
@@ -43,7 +41,7 @@ inverse_problem_settings = builder.InverseProblemSettings(
     prior_intervals=np.array([[500, 2000], [1, 20], [20e9, 30e9], [20e9, 30e9]]),
     prior_rng_seed=None,
     likelihood_data=np.array([0, 0, 0, 0]),
-    likelihood_covariance = np.identity(4),
+    likelihood_covariance=np.identity(4),
     ub_model_configs=({"meshFile": "model_0p1Hz"}, {"meshFile": "model_0p3Hz"}),
     ub_model_address="http://localhost:4242",
     ub_model_name="forward",

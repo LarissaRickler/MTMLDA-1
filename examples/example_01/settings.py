@@ -1,10 +1,9 @@
 from pathlib import Path
 
 import numpy as np
-
 from components import general_settings
-from . import builder
 
+from . import builder
 
 # ==================================================================================================
 parallel_run_settings = general_settings.ParallelRunSettings(
@@ -49,12 +48,10 @@ inverse_problem_settings = builder.InverseProblemSettings(
 
 sampler_component_settings = builder.SamplerComponentSettings(
     proposal_step_width=0.1,
-    proposal_covariance=0.1*np.identity(2),
+    proposal_covariance=0.1 * np.identity(2),
     proposal_rng_seed=None,
     accept_rates_initial_guess=[0.5, 0.7, 0.8],
     accept_rates_update_parameter=0.01,
 )
 
-initial_state_settings = builder.InitialStateSettings(
-    initial_states=[np.array((0, 0))]
-)
+initial_state_settings = builder.InitialStateSettings(initial_states=[np.array((0, 0))])

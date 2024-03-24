@@ -16,8 +16,8 @@ def process_cli_arguments() -> bool:
     )
 
     argParser.add_argument(
-        "-c",
-        "--cluster",
+        "-hq",
+        "--hyperqueue",
         action="store_true",
         help="Run via Hyperqueue",
     )
@@ -74,7 +74,7 @@ class GaussianPosterior(ub.Model):
 
 
 # ==================================================================================================
-if __name__ == "__main__":
+def main():
     run_on_hq, local_port, sleep_times = process_cli_arguments()
     if run_on_hq:
         port = int(os.environ["PORT"])
@@ -90,3 +90,7 @@ if __name__ == "__main__":
         port=port,
         max_workers=100,
     )
+
+
+if __name__ == "__main__":
+    main()

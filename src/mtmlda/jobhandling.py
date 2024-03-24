@@ -1,5 +1,5 @@
-from collections.abc import Callable, Sequence
 import concurrent.futures as concurrent
+from collections.abc import Callable, Sequence
 
 import anytree as at
 
@@ -14,7 +14,9 @@ class JobHandler:
         self._executor = executor
         self._models = models
         self._num_threads = num_threads
-        self._num_evals = [0,] * len(models)
+        self._num_evals = [
+            0,
+        ] * len(models)
 
     # ----------------------------------------------------------------------------------------------
     def submit_job(self, node: at.AnyNode) -> None:
@@ -36,7 +38,7 @@ class JobHandler:
             node = self._futuremap.pop(future)
             node.computing = False
             nodes.append(node)
-            
+
             if not self._some_job_is_done():
                 break
 

@@ -37,11 +37,11 @@ class UniformLogPrior(BaseLogPrior):
             return 0
         else:
             return -np.inf
-        
+
     def sample(self) -> np.ndarray:
         sample = self._rng.uniform(self._lower_bounds, self._upper_bounds)
         return sample
-        
+
 
 # ==================================================================================================
 class GaussianLogPrior(BaseLogPrior):
@@ -55,7 +55,7 @@ class GaussianLogPrior(BaseLogPrior):
         parameter_diff = parameter - self._mean
         log_probability = -0.5 * parameter_diff.T @ self._precision @ parameter_diff
         return log_probability
-    
+
     def sample(self) -> np.ndarray:
         standard_normal_increment = self._rng.normal(size=self._mean.size)
         sample = self._mean + self._cholesky @ standard_normal_increment

@@ -11,7 +11,7 @@ def process_cli_arguments() -> bool:
     argParser = argparse.ArgumentParser(
         prog="loglikelihood_gauss.py",
         usage="python %(prog)s [options]",
-        description="Umbridge server-side client emulating log-likelihood",
+        description="Umbridge server-side client emulating Gaussian log-likelihood",
     )
 
     argParser.add_argument(
@@ -44,7 +44,7 @@ def process_cli_arguments() -> bool:
     run_on_hq = cliArgs.cluster
     local_port = cliArgs.port
     sleep_times = cliArgs.sleep_times
-    
+
     return run_on_hq, local_port, sleep_times
 
 
@@ -79,7 +79,7 @@ class GaussianLogLikelihood(ub.Model):
 
 
 # ==================================================================================================
-if __name__ == "__main__":
+def main():
     run_on_hq, local_port, sleep_times = process_cli_arguments()
     if run_on_hq:
         port = int(os.environ["PORT"])
@@ -93,3 +93,7 @@ if __name__ == "__main__":
         port=port,
         max_workers=100,
     )
+
+
+if __name__ == "__main__":
+    main()

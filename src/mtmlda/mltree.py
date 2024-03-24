@@ -4,9 +4,9 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, Self
 
-import numpy as np
 import anytree as atree
 import anytree.exporter as exporter
+import numpy as np
 
 
 # ==================================================================================================

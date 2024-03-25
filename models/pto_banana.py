@@ -42,7 +42,7 @@ def process_cli_arguments() -> bool:
     )
 
     cliArgs = argParser.parse_args()
-    run_on_hq = cliArgs.cluster
+    run_on_hq = cliArgs.hyperqueue
     local_port = cliArgs.port
     sleep_times = cliArgs.sleep_times
 

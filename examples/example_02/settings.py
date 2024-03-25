@@ -7,7 +7,7 @@ from . import builder
 
 # ==================================================================================================
 parallel_run_settings = general_settings.ParallelRunSettings(
-    num_chains=1,
+    num_chains=4,
     result_directory_path=Path("results_example_02"),
     chain_file_stem=Path("chain"),
     rng_state_save_file_stem=None,
@@ -29,10 +29,10 @@ sampler_setup_settings = general_settings.SamplerSetupSettings(
 )
 
 sampler_run_settings = general_settings.SamplerRunSettings(
-    num_samples=1000,
+    num_samples=2500,
     initial_state=None,
-    num_threads=1,
-    print_interval=1,
+    num_threads=8,
+    print_interval=100,
     tree_render_interval=100,
 )
 
@@ -54,4 +54,11 @@ sampler_component_settings = builder.SamplerComponentSettings(
     accept_rates_update_parameter=0.01,
 )
 
-initial_state_settings = builder.InitialStateSettings(initial_states=[np.array((0, 0))])
+initial_state_settings = builder.InitialStateSettings(
+    initial_states=[
+        np.array((-0.1, -0.1)),
+        np.array((-0.1, +0.1)),
+        np.array((+0.1, -0.1)),
+        np.array((+0.1, +0.1)),
+    ]
+)

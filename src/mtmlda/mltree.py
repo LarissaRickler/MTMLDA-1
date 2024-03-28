@@ -246,17 +246,23 @@ class MLTreeVisualizer:
 
     # ----------------------------------------------------------------------------------------------
     def __init__(self, result_directory_path: Path = None) -> None:
+        self._id_counter = 0
         self._result_dir = result_directory_path
         if self._result_dir is not None:
             os.makedirs(result_directory_path, exist_ok=True)
 
     # ----------------------------------------------------------------------------------------------
-    def export_to_dot(self, mltree_root: MTNode, id: str) -> None:
+    def export_to_dot(self, mltree_root: MTNode) -> int:
         if self._result_dir is not None:
             tree_exporter = exporter.DotExporter(
                 mltree_root, nodenamefunc=self._name_from_parents, nodeattrfunc=self._node_attr_func
             )
-            tree_exporter.to_dotfile(self._result_dir / Path(f"mltree_{id}.dot"))
+            tree_exporter.to_dotfile(self._result_dir / Path(f"mltree_{self._id_counter}.dot"))
+            id_to_return = self._id_counter
+            self._id_counter += 1
+            return id_to_return
+        else:
+            return None
 
     # ----------------------------------------------------------------------------------------------
     @classmethod

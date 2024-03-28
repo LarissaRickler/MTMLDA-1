@@ -93,6 +93,7 @@ class PTOModel(ub.Model):
         observables[1] = np.sqrt(2 * (parameters[1] - 0.25) ** 4)
         observables[2] = np.sqrt(20 * (parameters[3] ** 2 - 2 * parameters[2]) ** 2)
         observables[3] = np.sqrt(2 * (parameters[2] - 0.25) ** 4)
+
         return [observables]
 
 

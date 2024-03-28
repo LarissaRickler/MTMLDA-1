@@ -22,18 +22,22 @@ sampler_setup_settings = general_settings.SamplerSetupSettings(
     underflow_threshold=-1000,
     rng_seed_mltree=None,
     rng_seed_node_init=None,
-    do_printing=True,
-    mltree_path=Path("results_example_01") / Path("mltree"),
-    logfile_path=Path("results_example_01") / Path("mtmlda.log"),
-    write_mode="w",
+    mltree_path=Path("results_example_01") / Path("mltree")
 )
 
 sampler_run_settings = general_settings.SamplerRunSettings(
-    num_samples=2500,
+    num_samples=2,
     initial_state=None,
     num_threads=8,
-    print_interval=100,
-    tree_render_interval=100,
+    print_interval=1,
+    tree_render_interval=1,
+)
+
+logger_settings = general_settings.LoggerSettings(
+    do_printing=True,
+    logfile_path=Path("results_example_01") / Path("mtmlda"),
+    debugfile_path=Path("results_example_01") / Path("mtmlda_debug"),
+    write_mode="w",
 )
 
 # --------------------------------------------------------------------------------------------------
@@ -56,7 +60,7 @@ sampler_component_settings = builder.SamplerComponentSettings(
 
 initial_state_settings = builder.InitialStateSettings(
     initial_states=[
-        np.array((-0.1, -0.1)),
+        np.array((-10, -0.1)),
         np.array((-0.1, +0.1)),
         np.array((+0.1, -0.1)),
         np.array((+0.1, +0.1)),

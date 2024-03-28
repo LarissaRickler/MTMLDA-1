@@ -1,11 +1,13 @@
 from dataclasses import dataclass
 from pathlib import Path
 
+import src.mtmlda.logging as logging
 import src.mtmlda.sampling as sampling
 
 # ==================================================================================================
 SamplerSetupSettings = sampling.SamplerSetupSettings
 SamplerRunSettings = sampling.SamplerRunSettings
+LoggerSettings = logging.LoggerSettings
 
 
 @dataclass(kw_only=True)

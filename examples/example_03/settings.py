@@ -22,18 +22,22 @@ sampler_setup_settings = general_settings.SamplerSetupSettings(
     underflow_threshold=-1000,
     rng_seed_mltree=None,
     rng_seed_node_init=None,
-    do_printing=True,
-    mltree_path=Path("results_example_03") / Path("mltree"),
-    logfile_path=Path("results_example_03") / Path("mtmlda.log"),
-    write_mode="w",
+    mltree_path=None,
 )
 
 sampler_run_settings = general_settings.SamplerRunSettings(
-    num_samples=2500,
+    num_samples=1000,
     initial_state=None,
     num_threads=8,
     print_interval=100,
     tree_render_interval=100,
+)
+
+logger_settings = general_settings.LoggerSettings(
+    do_printing=True,
+    logfile_path=Path("results_example_03") / Path("mtmlda"),
+    debugfile_path=None,
+    write_mode="w",
 )
 
 # --------------------------------------------------------------------------------------------------

@@ -8,7 +8,7 @@ from . import builder
 # ==================================================================================================
 parallel_run_settings = general_settings.ParallelRunSettings(
     num_chains=1,
-    result_directory_path=Path("results_seissol_sebastian"),
+    result_directory_path=Path("results_seissol_zihua_1D"),
     chain_file_stem=Path("chain"),
     rng_state_save_file_stem=None,
     rng_state_load_file_stem=None,
@@ -35,15 +35,14 @@ sampler_run_settings = general_settings.SamplerRunSettings(
 
 logger_settings = general_settings.LoggerSettings(
     do_printing=True,
-    logfile_path=Path("results_seissol_sebastian") / Path("mtmlda"),
-    debugfile_path=Path("results_seissol_sebastian") / Path("mtmlda_debug"),
+    logfile_path=Path("results_seissol_zihua_1D") / Path("mtmlda"),
+    debugfile_path=Path("results_seissol_zihua_1D") / Path("mtmlda_debug"),
     write_mode="w",
 )
 
 # --------------------------------------------------------------------------------------------------
 inverse_problem_settings = builder.InverseProblemSettings(
-    prior_mean=np.array((5e6,)),
-    prior_covariance=1e12 * np.identity(1),
+    prior_intervals=np.array([[1e6, 9e6],]),
     prior_rng_seed=None,
     ub_model_configs=({"order": 4}, {"order": 5}),
     ub_model_address="http://localhost:4242",

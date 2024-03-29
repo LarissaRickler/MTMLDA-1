@@ -67,6 +67,7 @@ class ApplicationBuilder(abstract_builder.ApplicationBuilder):
             inverse_problem_settings.prior_intervals, inverse_problem_settings.prior_rng_seed
         )
         self._prior_component = prior_component
+        
         likelihood_component = posterior.GaussianLLFromPTOMap(
             pto_model,
             inverse_problem_settings.likelihood_data,

@@ -1,34 +1,29 @@
-import logging
-import os
-import sys
 import time
 from collections.abc import Callable, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any
 
+import anytree as atree
 import numpy as np
-import anytree as at
 
-from . import jobhandling, mltree, mcmc
+from . import jobhandling, logging, mcmc, mltree
+from .mltree import MLTreeSearchFunctions as mltree_search
 
 
 # ==================================================================================================
-@dataclass
+@dataclass(kw_only=True)
 class SamplerSetupSettings:
     num_levels: int
     subsampling_rates: list
     max_tree_height: int
+    underflow_threshold: float
     rng_seed_mltree: int
     rng_seed_node_init: int
-    do_printing: bool
     mltree_path: str
-    logfile_path: str
-    write_mode: str
 
 
-@dataclass
+@dataclass(kw_only=True)
 class SamplerRunSettings:
     num_samples: int
     initial_state: np.ndarray
@@ -37,7 +32,7 @@ class SamplerRunSettings:
     tree_render_interval: int
 
 
-@dataclass
+@dataclass(kw_only=True)
 class RNGStates:
     proposal: np.random.Generator
     mltree: np.random.Generator
@@ -49,18 +44,22 @@ class MTMLDASampler:
     def __init__(
         self,
         setup_settings: SamplerSetupSettings,
+        logger_settings: logging.LoggerSettings,
         models: Sequence[Callable],
-        accept_rate_estimator: mcmc.MLAcceptRateEstimator,
+        accept_rate_estimator: mcmc.BaseAcceptRateEstimator,
         ground_proposal: mcmc.BaseProposal,
     ) -> None:
         self._num_levels = setup_settings.num_levels
         self._models = models
         self._subsampling_rates = setup_settings.subsampling_rates
         self._maximum_tree_height = setup_settings.max_tree_height
+        self._underflow_threshold = setup_settings.underflow_threshold
+
         self._accept_rate_estimator = accept_rate_estimator
         self._ground_proposal = ground_proposal
         self._rng_node_init = np.random.default_rng(setup_settings.rng_seed_node_init)
         self._mcmc_kernel = mcmc.MLMetropolisHastingsKernel(ground_proposal)
+
         self._mltree_modifier = mltree.MLTreeModifier(
             setup_settings.num_levels,
             ground_proposal,
@@ -68,9 +67,7 @@ class MTMLDASampler:
             setup_settings.rng_seed_mltree,
         )
         self._mltree_visualizer = mltree.MLTreeVisualizer(setup_settings.mltree_path)
-        self._logger = self._init_logging(
-            setup_settings.do_printing, setup_settings.logfile_path, setup_settings.write_mode
-        )
+        self._logger = self._init_logging(logger_settings)
 
         self._start_time = None
         self._num_samples = None
@@ -93,28 +90,17 @@ class MTMLDASampler:
         try:
             with ThreadPoolExecutor(max_workers=num_threads) as executor:
                 self._job_handler = jobhandling.JobHandler(executor, self._models, num_threads)
-                self._logger.print_header()
+                self._logger.print_headers()
                 logging_components = self._get_logging_components(mcmc_chain)
                 self._logger.print_statistics(logging_components)
 
                 # --- Main MCMC Loop ---
                 while True:
                     self._extend_tree_and_launch_jobs(mltree_root)
-                    self._update_tree_from_finished_jobs()
-                    self._mltree_modifier.propagate_log_posterior_to_reject_children(mltree_root)
+                    self._update_tree_from_finished_jobs(mltree_root)
                     self._compute_available_mcmc_decisions(mltree_root)
                     self._mltree_modifier.compress_resolved_subchains(mltree_root)
-
-                    while (
-                        unique_child := mltree.MLTreeSearchFunctions.get_unique_fine_level_child(
-                            mltree_root, self._num_levels
-                        )
-                    ) is not None:
-
-                        mcmc_chain.append(mltree_root.state)
-                        self._generate_output(mcmc_chain, mltree_root)
-                        unique_child.parent = None
-                        mltree_root = unique_child
+                    mcmc_chain, mltree_root = self._propagate_chain(mcmc_chain, mltree_root)
 
                     if len(mcmc_chain) >= self._num_samples:
                         break
@@ -122,7 +108,7 @@ class MTMLDASampler:
         except BaseException as exc:
             self._logger.exception(exc)
             try:
-                self._mltree_visualizer.export_to_dot(mltree_root)
+                self._export_debug_tree(mltree_root)
             except RecursionError as exc:
                 self._logger.exception(exc)
         finally:
@@ -145,9 +131,9 @@ class MTMLDASampler:
 
     # ----------------------------------------------------------------------------------------------
     def _init_mltree(self, initial_state: np.ndarray) -> mltree.MTNode:
-        mltree_root = mltree.MTNode("a")
+        mltree_root = mltree.MTNode(name="a")
         mltree_root.state = initial_state
-        mltree_root.random_draw = self._rng_node_init.uniform()
+        mltree_root.random_draw = self._rng_node_init.uniform(low=0, high=1, size=None)
         mltree_root.level = self._num_levels - 1
         mltree_root.subchain_index = 0
 
@@ -162,84 +148,76 @@ class MTMLDASampler:
             self._mltree_modifier.update_probability_reached(
                 mltree_root, self._accept_rate_estimator
             )
-            new_candidate = mltree.MLTreeSearchFunctions.find_max_probability_node(mltree_root)
+            new_candidate = mltree_search.find_max_probability_node(mltree_root)
             self._job_handler.submit_job(new_candidate)
+            self._logger.print_debug_info("submitted", new_candidate)
+            self._export_debug_tree(mltree_root)
 
     # ----------------------------------------------------------------------------------------------
-    def _update_tree_from_finished_jobs(self) -> None:
+    def _update_tree_from_finished_jobs(self, mltree_root) -> None:
         results, nodes = self._job_handler.get_finished_jobs()
         for result, node in zip(results, nodes):
-            node.logposterior = result
+            if result < self._underflow_threshold:
+                node.parent = None
+            else:
+                node.logposterior = result
+                self._mltree_modifier.update_descendants(node)
+                self._logger.print_debug_info("returned", node)
+            self._export_debug_tree(mltree_root)
 
     # ----------------------------------------------------------------------------------------------
     def _compute_available_mcmc_decisions(self, mltree_root: mltree.MTNode) -> None:
-        trying_to_compute_mcmc_decision = True
+        computing_mcmc_decisions = True
 
-        while trying_to_compute_mcmc_decision:
-            trying_to_compute_mcmc_decision = False
+        while computing_mcmc_decisions:
+            computing_mcmc_decisions = False
 
-            for level_children in at.LevelOrderGroupIter(mltree_root):
+            for level_children in atree.LevelOrderGroupIter(mltree_root):
                 for node in level_children:
                     (
                         node_available_for_decision,
                         is_ground_level_decision,
                         is_two_level_decision,
-                    ) = self._check_if_node_is_available_for_decision(node)
+                    ) = mltree_search.check_if_node_is_available_for_decision(node)
 
-                    if node_available_for_decision and is_ground_level_decision:
-                        accepted = self._mcmc_kernel.compute_single_level_decision(node)
+                    if node_available_for_decision:
+                        if is_ground_level_decision:
+                            accepted = self._mcmc_kernel.compute_single_level_decision(node)
+                            self._logger.print_debug_info(f"1lmcmc: {accepted}", node)
+                        elif is_two_level_decision:
+                            same_level_parent = mltree_search.get_same_level_parent(node)
+                            accepted = self._mcmc_kernel.compute_two_level_decision(
+                                node, same_level_parent
+                            )
+                            self._logger.print_debug_info(f"2lmcmc: {accepted}", node)
                         self._accept_rate_estimator.update(accepted, node)
-                        self._discard_rejected_nodes(node, accepted)
-                        trying_to_compute_mcmc_decision = True
+                        self._mltree_modifier.discard_rejected_nodes(node, accepted)
+                        computing_mcmc_decisions = True
 
-                    if node_available_for_decision and is_two_level_decision:
-                        same_level_parent = mltree.MLTreeSearchFunctions.get_same_level_parent(node)
-                        accepted = self._mcmc_kernel.compute_two_level_decision(
-                            node, same_level_parent
-                        )
-                        self._accept_rate_estimator.update(accepted, node)
-                        self._discard_rejected_nodes(node, accepted)
-                        trying_to_compute_mcmc_decision = True
-
-                    if trying_to_compute_mcmc_decision:
+                    if computing_mcmc_decisions:
+                        self._export_debug_tree(mltree_root)
                         break
-                if trying_to_compute_mcmc_decision:
+                if computing_mcmc_decisions:
                     break
 
     # ----------------------------------------------------------------------------------------------
-    def _check_if_node_is_available_for_decision(
-        self, node: mltree.MTNode
-    ) -> tuple[bool, bool, bool]:
-        node_available_for_decision = (
-            node.name == "a"
-            and node.parent is not None
-            and len(node.parent.children) > 1
-            and node.logposterior is not None
-            and node.parent.logposterior is not None
-        )
+    def _propagate_chain(
+        self, mcmc_chain: Sequence[np.ndarray], mltree_root: mltree.MTNode
+    ) -> tuple[Sequence[np.ndarray], mltree.MTNode]:
+        while (
+            unique_child := mltree_search.get_unique_same_subchain_child(mltree_root)
+        ) is not None:
+            mcmc_chain.append(mltree_root.state)
+            self._print_statistics(mcmc_chain)
+            unique_child.parent = None
+            mltree_root = unique_child
+            self._logger.print_debug_new_samples(len(mcmc_chain))
+            self._export_debug_tree(mltree_root)
 
-        if not node_available_for_decision:
-            is_ground_level_decision = False
-            is_two_level_decision = False
-        else:
-            same_level_parent = mltree.MLTreeSearchFunctions.get_same_level_parent(node)
-            is_ground_level_decision = node.level == 0 and node.parent.level == 0
-            is_two_level_decision = (
-                node.level - 1 == node.parent.level
-                and same_level_parent.logposterior is not None
-                and same_level_parent.children[0].logposterior is not None
-            )
-        return node_available_for_decision, is_ground_level_decision, is_two_level_decision
+        return mcmc_chain, mltree_root
 
     # ----------------------------------------------------------------------------------------------
-    def _discard_rejected_nodes(self, node: mltree.MTNode, accepted: bool) -> None:
-        if accepted:
-            at.util.rightsibling(node).parent = None
-        else:
-            node.parent = None
-
-    # ----------------------------------------------------------------------------------------------
-    def _init_logging(self, do_printing, logfile_path, write_mode) -> None:
+    def _init_logging(self, logger_settings: logging.LoggerSettings) -> None:
         logging_components = {}
         logging_components["time"] = {"id": "Time[s]", "width": 12, "format": "12.3e"}
         logging_components["samples"] = {"id": "#Samples", "width": 12, "format": "12.3e"}
@@ -249,7 +227,8 @@ class MTMLDASampler:
                 "width": 12,
                 "format": "12.3e",
             }
-        logger = MTMLDALogger(do_printing, logfile_path, write_mode, logging_components)
+
+        logger = logging.MTMLDALogger(logger_settings, logging_components)
 
         return logger
 
@@ -265,72 +244,12 @@ class MTMLDASampler:
         return logging_components
 
     # ----------------------------------------------------------------------------------------------
-    def _generate_output(
-        self, mcmc_chain: Sequence[np.ndarray], mltree_root: mltree.MTNode
-    ) -> None:
+    def _print_statistics(self, mcmc_chain: Sequence[np.ndarray]) -> None:
         if (len(mcmc_chain) % self._print_interval == 0) or (len(mcmc_chain) == self._num_samples):
             logging_components = self._get_logging_components(mcmc_chain)
             self._logger.print_statistics(logging_components)
 
-        if (len(mcmc_chain) % self._tree_render_interval == 0) or (
-            len(mcmc_chain) == self._num_samples
-        ):
-            self._mltree_visualizer.export_to_dot(mltree_root)
-
-
-# ==================================================================================================
-class MTMLDALogger:
-
     # ----------------------------------------------------------------------------------------------
-    def __init__(
-        self,
-        do_printing: bool,
-        logfile_path: Path,
-        write_mode: str,
-        components: dict[str, dict[str, Any]] = None,
-    ) -> None:
-        self._components = components
-        self._pylogger = logging.getLogger(__name__)
-        self._pylogger.setLevel(logging.INFO)
-        formatter = logging.Formatter("%(message)s")
-
-        if not self._pylogger.hasHandlers():
-            if do_printing:
-                console_handler = logging.StreamHandler(sys.stdout)
-                console_handler.setFormatter
-                console_handler.setFormatter(formatter)
-                self._pylogger.addHandler(console_handler)
-
-            if logfile_path is not None:
-                os.makedirs(logfile_path.parent, exist_ok=True)
-                file_handler = logging.FileHandler(logfile_path, mode=write_mode)
-                file_handler.setFormatter(formatter)
-                self._pylogger.addHandler(file_handler)
-
-    # ----------------------------------------------------------------------------------------------
-    def print_header(self) -> None:
-        header_str = ""
-        for component in self._components.keys():
-            component_name = self._components[component]["id"]
-            component_width = self._components[component]["width"]
-            header_str += f"{component_name:{component_width}}| "
-        separator = "-" * len(header_str)
-        self._pylogger.info(header_str)
-        self._pylogger.info(separator)
-
-    # ----------------------------------------------------------------------------------------------
-    def print_statistics(self, info_dict: dict[str, Any]) -> None:
-        output_str = ""
-
-        for component, value in info_dict.items():
-            component_format = self._components[component]["format"]
-            output_str += f"{value:<{component_format}}| "
-        self._pylogger.info(output_str)
-
-    # ----------------------------------------------------------------------------------------------
-    def info(self, message: str) -> None:
-        self._pylogger.info(message)
-
-    # ----------------------------------------------------------------------------------------------
-    def exception(self, message: str) -> None:
-        self._pylogger.exception(message)
+    def _export_debug_tree(self, root: mltree.MTNode) -> None:
+        tree_id = self._mltree_visualizer.export_to_dot(root)
+        self._logger.print_debug_tree_export(tree_id)

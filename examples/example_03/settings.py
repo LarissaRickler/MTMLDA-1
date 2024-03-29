@@ -1,15 +1,13 @@
 from pathlib import Path
 
 import numpy as np
-
 from components import general_settings
+
 from . import builder
-
-
 
 # ==================================================================================================
 parallel_run_settings = general_settings.ParallelRunSettings(
-    num_chains=1,
+    num_chains=4,
     result_directory_path=Path("results_example_03"),
     chain_file_stem=Path("chain"),
     rng_state_save_file_stem=None,
@@ -21,20 +19,25 @@ sampler_setup_settings = general_settings.SamplerSetupSettings(
     num_levels=2,
     subsampling_rates=[5, -1],
     max_tree_height=50,
+    underflow_threshold=-1000,
     rng_seed_mltree=None,
     rng_seed_node_init=None,
-    do_printing=True,
-    mltree_path=Path("results_example_03") / Path("mltree"),
-    logfile_path=Path("results_example_03") / Path("mtmlda.log"),
-    write_mode="w",
+    mltree_path=None,
 )
 
 sampler_run_settings = general_settings.SamplerRunSettings(
     num_samples=1000,
     initial_state=None,
-    num_threads=1,
-    print_interval=50,
-    tree_render_interval=50,
+    num_threads=8,
+    print_interval=100,
+    tree_render_interval=100,
+)
+
+logger_settings = general_settings.LoggerSettings(
+    do_printing=True,
+    logfile_path=Path("results_example_03") / Path("mtmlda"),
+    debugfile_path=None,
+    write_mode="w",
 )
 
 # --------------------------------------------------------------------------------------------------
@@ -42,7 +45,7 @@ inverse_problem_settings = builder.InverseProblemSettings(
     prior_intervals=np.array([[500, 2000], [1, 20], [20e9, 30e9], [20e9, 30e9]]),
     prior_rng_seed=None,
     likelihood_data=np.array([0, 0, 0, 0]),
-    likelihood_covariance = np.identity(4),
+    likelihood_covariance=np.identity(4),
     ub_model_configs=({"meshFile": "model_0p1Hz"}, {"meshFile": "model_0p3Hz"}),
     ub_model_address="http://localhost:4242",
     ub_model_name="forward",

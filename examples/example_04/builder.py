@@ -5,14 +5,13 @@ from functools import partial
 from typing import Any
 
 import numpy as np
-import umbridge as ub
-
 import src.mtmlda.mcmc as mcmc
-from components import abstract_builder, prior, posterior
+import umbridge as ub
+from components import abstract_builder, posterior, prior
 
 
 # ==================================================================================================
-@dataclass
+@dataclass(kw_only=True)
 class InverseProblemSettings(abstract_builder.InverseProblemSettings):
     prior_mean: np.ndarray
     prior_covariance: np.ndarray
@@ -22,7 +21,7 @@ class InverseProblemSettings(abstract_builder.InverseProblemSettings):
     ub_model_name: str
 
 
-@dataclass
+@dataclass(kw_only=True)
 class SamplerComponentSettings(abstract_builder.SamplerComponentSettings):
     proposal_step_width: float
     proposal_covariance: np.ndarray
@@ -31,7 +30,7 @@ class SamplerComponentSettings(abstract_builder.SamplerComponentSettings):
     accept_rates_update_parameter: float
 
 
-@dataclass
+@dataclass(kw_only=True)
 class InitialStateSettings(abstract_builder.InitialStateSettings):
     pass
 
@@ -89,7 +88,7 @@ class ApplicationBuilder(abstract_builder.ApplicationBuilder):
             sampler_component_settings.proposal_rng_seed,
         )
 
-        accept_rate_estimator = mcmc.MLAcceptRateEstimator(
+        accept_rate_estimator = mcmc.StaticAcceptRateEstimator(
             sampler_component_settings.accept_rates_initial_guess,
             sampler_component_settings.accept_rates_update_parameter,
         )

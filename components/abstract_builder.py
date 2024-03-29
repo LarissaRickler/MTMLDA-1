@@ -7,15 +7,17 @@ import numpy as np
 
 
 # ==================================================================================================
-@dataclass
+@dataclass(kw_only=True)
 class InverseProblemSettings:
     pass
 
-@dataclass
+
+@dataclass(kw_only=True)
 class SamplerComponentSettings:
     pass
 
-@dataclass
+
+@dataclass(kw_only=True)
 class InitialStateSettings:
     pass
 
@@ -27,9 +29,7 @@ class ApplicationBuilder:
         self._process_id = process_id
 
     @abstractmethod
-    def set_up_models(
-        self, inverse_problem_settings: InverseProblemSettings
-    ) -> list[Callable]:
+    def set_up_models(self, inverse_problem_settings: InverseProblemSettings) -> list[Callable]:
         pass
 
     @abstractmethod
@@ -39,7 +39,5 @@ class ApplicationBuilder:
         pass
 
     @abstractmethod
-    def generate_initial_state(
-        self, initial_state_settings: InitialStateSettings
-    ) -> np.ndarray:
+    def generate_initial_state(self, initial_state_settings: InitialStateSettings) -> np.ndarray:
         pass

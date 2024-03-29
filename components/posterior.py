@@ -35,4 +35,3 @@ class LogPosterior:
             log_posterior = [[log_likelihood[0][0] + log_prior[0][0]]]
 
         return log_posterior
-        

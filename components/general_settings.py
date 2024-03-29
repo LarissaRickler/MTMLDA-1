@@ -1,14 +1,16 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-import src.mtmlda.sampler as sampler
-
+import src.mtmlda.logging as logging
+import src.mtmlda.sampling as sampling
 
 # ==================================================================================================
-SamplerSetupSettings = sampler.SamplerSetupSettings
-SamplerRunSettings = sampler.SamplerRunSettings
+SamplerSetupSettings = sampling.SamplerSetupSettings
+SamplerRunSettings = sampling.SamplerRunSettings
+LoggerSettings = logging.LoggerSettings
 
-@dataclass
+
+@dataclass(kw_only=True)
 class ParallelRunSettings:
     num_chains: int
     result_directory_path: Path

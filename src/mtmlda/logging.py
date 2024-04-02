@@ -12,7 +12,7 @@ from . import mltree
 
 
 # ==================================================================================================
-@dataclass(kw_only=True)
+@dataclass
 class LoggerSettings:
     do_printing: bool
     logfile_path: str

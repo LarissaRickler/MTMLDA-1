@@ -7,17 +7,17 @@ import numpy as np
 
 
 # ==================================================================================================
-@dataclass(kw_only=True)
+@dataclass
 class InverseProblemSettings:
     pass
 
 
-@dataclass(kw_only=True)
+@dataclass
 class SamplerComponentSettings:
     pass
 
 
-@dataclass(kw_only=True)
+@dataclass
 class InitialStateSettings:
     pass
 

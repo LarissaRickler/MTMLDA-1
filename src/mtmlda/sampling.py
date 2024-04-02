@@ -12,7 +12,7 @@ from .mltree import MLTreeSearchFunctions as mltree_search
 
 
 # ==================================================================================================
-@dataclass(kw_only=True)
+@dataclass
 class SamplerSetupSettings:
     num_levels: int
     subsampling_rates: list
@@ -23,7 +23,7 @@ class SamplerSetupSettings:
     mltree_path: str
 
 
-@dataclass(kw_only=True)
+@dataclass
 class SamplerRunSettings:
     num_samples: int
     initial_state: np.ndarray
@@ -32,7 +32,7 @@ class SamplerRunSettings:
     tree_render_interval: int
 
 
-@dataclass(kw_only=True)
+@dataclass
 class RNGStates:
     proposal: np.random.Generator
     mltree: np.random.Generator

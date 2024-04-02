@@ -10,7 +10,7 @@ SamplerRunSettings = sampling.SamplerRunSettings
 LoggerSettings = logging.LoggerSettings
 
 
-@dataclass(kw_only=True)
+@dataclass
 class ParallelRunSettings:
     num_chains: int
     result_directory_path: Path

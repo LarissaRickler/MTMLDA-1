@@ -2,7 +2,8 @@ import itertools
 import os
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, Self
+from typing import Any
+from typing_extensions import Self
 
 import anytree as atree
 import anytree.exporter as exporter

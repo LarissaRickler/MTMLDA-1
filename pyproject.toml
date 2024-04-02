@@ -10,10 +10,10 @@ authors = [
     {name = "Linus Seelinger", email = "linus.seelinger@kit.edu"},
 ]
 
-requires-python = ">=3.11"
+requires-python = ">=3.9"
 dependencies = [
-    "anytree>=2.12.1",
-    "numpy>=1.26.3"
+    "anytree>=2.12",
+    "numpy>=1.26"
 ]
 
 #---------------------------------------------------------------------------------------------------
@@ -22,22 +22,22 @@ model = [
     "umbridge>=1.2.4"
 ]
 postprocessing = [
-    "arviz>=0..17.0",
-    "pydot>=2.0.0"
+    "arviz>=0.17",
+    "pydot>=2.0"
 ]
 notebook = [
-    "jupyter>=1.0.0",
-    "pandas>=2.1.4"
+    "jupyter>=1.0",
+    "pandas>=2.2"
 ]
 style = [
-    "ruff>=0.0.292",
-    "black>=24.1.0",
-    "mypy>=1.8.0",
+    "ruff>=0.3",
+    "black>=24.3",
+    "mypy>=1.9",
 ]
 
 #---------------------------------------------------------------------------------------------------
 [build-system]
-requires = ["setuptools>=65", "wheel"]
+requires = ["setuptools>=58", "wheel"]
 build-backend = "setuptools.build_meta"
 
 

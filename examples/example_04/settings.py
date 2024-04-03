@@ -26,7 +26,7 @@ sampler_setup_settings = general_settings.SamplerSetupSettings(
 )
 
 sampler_run_settings = general_settings.SamplerRunSettings(
-    num_samples=1000,
+    num_samples=2500,
     initial_state=None,
     num_threads=8,
     print_interval=100,

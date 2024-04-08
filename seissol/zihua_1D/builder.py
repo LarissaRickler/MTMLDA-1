@@ -11,7 +11,7 @@ from components import abstract_builder, posterior, prior
 
 
 # ==================================================================================================
-@dataclass(kw_only=True)
+@dataclass
 class InverseProblemSettings(abstract_builder.InverseProblemSettings):
     prior_intervals: np.ndarray
     prior_rng_seed: int
@@ -20,7 +20,7 @@ class InverseProblemSettings(abstract_builder.InverseProblemSettings):
     ub_model_name: str
 
 
-@dataclass(kw_only=True)
+@dataclass
 class SamplerComponentSettings(abstract_builder.SamplerComponentSettings):
     proposal_step_width: float
     proposal_covariance: np.ndarray
@@ -29,7 +29,7 @@ class SamplerComponentSettings(abstract_builder.SamplerComponentSettings):
     accept_rates_update_parameter: float
 
 
-@dataclass(kw_only=True)
+@dataclass
 class InitialStateSettings(abstract_builder.InitialStateSettings):
     pass
 

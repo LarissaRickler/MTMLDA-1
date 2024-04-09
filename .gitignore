@@ -209,4 +209,5 @@ pyrightconfig.json
 !/components/
 !/examples/
 !/models/
+!/seissol/
 !/src/

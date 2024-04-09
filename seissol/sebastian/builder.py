@@ -13,10 +13,9 @@ from components import abstract_builder, posterior, prior
 # ==================================================================================================
 @dataclass
 class InverseProblemSettings(abstract_builder.InverseProblemSettings):
-    prior_intervals: np.ndarray
+    prior_mean: np.ndarray
+    prior_covariance: np.ndarray
     prior_rng_seed: int
-    likelihood_data: np.ndarray
-    likelihood_covariance: np.ndarray
     ub_model_configs: dict[str, str]
     ub_model_address: str
     ub_model_name: str
@@ -51,28 +50,23 @@ class ApplicationBuilder(abstract_builder.ApplicationBuilder):
             try:
                 if self._process_id == 0:
                     print("Calling server...")
-                pto_model = ub.HTTPModel(
+                likelihood_component = ub.HTTPModel(
                     inverse_problem_settings.ub_model_address,
                     inverse_problem_settings.ub_model_name,
                 )
                 if self._process_id == 0:
                     print("Server available\n")
                 server_available = True
-            except Exception as exc:
-                print(exc)
+            except:
                 time.sleep(10)
 
         inverse_problem_settings.prior_rng_seed = self._process_id
-        prior_component = prior.UniformLogPrior(
-            inverse_problem_settings.prior_intervals, inverse_problem_settings.prior_rng_seed
+        prior_component = prior.GaussianLogPrior(
+            inverse_problem_settings.prior_mean,
+            inverse_problem_settings.prior_covariance,
+            inverse_problem_settings.prior_rng_seed,
         )
         self._prior_component = prior_component
-        
-        likelihood_component = posterior.GaussianLLFromPTOMap(
-            pto_model,
-            inverse_problem_settings.likelihood_data,
-            inverse_problem_settings.likelihood_covariance,
-        )
 
         model_wrapper = posterior.LogPosterior(prior_component, likelihood_component)
         models = [

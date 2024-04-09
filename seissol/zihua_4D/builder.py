@@ -2,6 +2,7 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from functools import partial
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -15,8 +16,7 @@ from components import abstract_builder, posterior, prior
 class InverseProblemSettings(abstract_builder.InverseProblemSettings):
     prior_intervals: np.ndarray
     prior_rng_seed: int
-    likelihood_data: np.ndarray
-    likelihood_covariance: np.ndarray
+    likelihood_data_dir: Path
     ub_model_configs: dict[str, str]
     ub_model_address: str
     ub_model_name: str
@@ -58,20 +58,17 @@ class ApplicationBuilder(abstract_builder.ApplicationBuilder):
                 if self._process_id == 0:
                     print("Server available\n")
                 server_available = True
-            except Exception as exc:
-                print(exc)
+            except:
                 time.sleep(10)
 
-        inverse_problem_settings.prior_rng_seed = self._process_id
+        inverse_problem_settings.rng_seed = self._process_id
         prior_component = prior.UniformLogPrior(
             inverse_problem_settings.prior_intervals, inverse_problem_settings.prior_rng_seed
         )
         self._prior_component = prior_component
-        
-        likelihood_component = posterior.GaussianLLFromPTOMap(
-            pto_model,
-            inverse_problem_settings.likelihood_data,
-            inverse_problem_settings.likelihood_covariance,
+
+        likelihood_component = self._set_up_likelihood(
+            inverse_problem_settings.likelihood_data_dir, pto_model
         )
 
         model_wrapper = posterior.LogPosterior(prior_component, likelihood_component)
@@ -104,3 +101,21 @@ class ApplicationBuilder(abstract_builder.ApplicationBuilder):
     def generate_initial_state(self, initial_state_settings: InitialStateSettings) -> np.ndarray:
         initial_state = self._prior_component.sample()
         return initial_state
+
+    # ----------------------------------------------------------------------------------------------
+    def _set_up_likelihood(self, data_directory: Path, pto_model: ub.HTTPModel) -> None:
+        space_data, space_variance = np.load(data_directory / Path("space_data.npz")).values()
+        time_data, time_variance = np.load(data_directory / Path("time_data.npz")).values()
+        data = np.concatenate((space_data, time_data))
+
+        space_covariance = np.diag(space_variance)
+        time_covariance = np.diag(time_variance)
+        covariance = np.block(
+            [
+                [space_covariance, np.zeros((space_data.size, time_data.size))],
+                [np.zeros((time_data.size, space_data.size)), time_covariance],
+            ]
+        )
+
+        likelihood_component = posterior.GaussianLLFromPTOMap(pto_model, data, covariance)
+        return likelihood_component

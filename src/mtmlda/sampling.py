@@ -159,6 +159,7 @@ class MTMLDASampler:
         for result, node in zip(results, nodes):
             if result < self._underflow_threshold:
                 node.parent = None
+                self._logger.print_debug_info("discarded", node)
             else:
                 node.logposterior = result
                 self._mltree_modifier.update_descendants(node)

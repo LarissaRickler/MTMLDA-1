@@ -89,11 +89,12 @@ class MTMLDALogger:
                 logp_str = f"{node.logposterior:<12.3e}"
 
             node_str = (
-                f"L: {node.level:<3} | "
-                f"I: {node.subchain_index:<3} | "
-                f"S: ({state_str}) | "
-                f"P: {logp_str} | "
-                f"R: {node.probability_reached:<12.3e}"
+                f"Lvl: {node.level:<3} | "
+                f"Idx: {node.subchain_index:<3} | "
+                f"St: ({state_str}) | "
+                f"Dr: {node.random_draw:<5.3f} | "
+                f"Pr: {logp_str} | "
+                f"Re: {node.probability_reached:<12.3e}"
             )
             info_str = f"[{info}]"
             output_str = f"{info_str:15} {node_str}"
@@ -138,11 +139,12 @@ class MTMLDALogger:
     def _print_debug_header(self) -> None:
         debug_header_str = (
             "Explanation of abbreviations:\n\n"
-            "L: level\n"
-            "I: subchain index\n"
-            "S: state\n"
-            "P: log posterior\n"
-            "R: probability reached\n"
+            "Lvl: Subchain Level\n"
+            "Idx: Subchain index\n"
+            "St: State\n"
+            "Dr: Random draw\n"
+            "Pr: Log posterior\n"
+            "Re: Probability reached\n"
         )
         self.debug(debug_header_str)
         self.print_debug_new_samples(sample=1)

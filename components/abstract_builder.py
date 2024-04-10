@@ -24,7 +24,6 @@ class InitialStateSettings:
 
 # ==================================================================================================
 class ApplicationBuilder:
-
     def __init__(self, process_id: int) -> None:
         self._process_id = process_id
 

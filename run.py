@@ -10,7 +10,7 @@ from typing import Any
 
 import numpy as np
 import src.mtmlda.sampling as sampling
-from components import abstract_builder, general_settings
+from components import abstract_builder, general_settings, rng
 
 
 # ==================================================================================================
@@ -70,7 +70,6 @@ def execute_mtmlda_run(
     sampler_component_settings: abstract_builder.SamplerComponentSettings,
     initial_state_settings: abstract_builder.InitialStateSettings,
 ) -> None:
-
     app_builder = application_builder(process_id)
     models = app_builder.set_up_models(inverse_problem_settings)
     initial_state = app_builder.generate_initial_state(initial_state_settings)
@@ -87,7 +86,6 @@ def execute_mtmlda_run(
     )
 
     set_rng_states(process_id, parallel_run_settings, mtmlda_sampler)
-    sampler_run_settings.rng_seed_node_init = process_id
     sampler_run_settings.initial_state = initial_state
     mcmc_chain = mtmlda_sampler.run(sampler_run_settings)
     save_rng_states(process_id, parallel_run_settings, mtmlda_sampler)
@@ -103,7 +101,12 @@ def set_up_sampler(
     accept_rate_estimator: Any,
     models: list[Callable],
 ) -> sampling.MTMLDASampler:
-    sampler_setup_settings.rng_seed_mltree = process_id
+    sampler_setup_settings.rng_seed_mltree = rng.distribute_seeds_to_processes(
+        sampler_setup_settings.rng_seed_mltree, process_id
+    )
+    sampler_setup_settings.rng_seed_node_init = rng.distribute_seeds_to_processes(
+        sampler_setup_settings.rng_seed_node_init, process_id
+    )
 
     logger_settings.logfile_path = _append_string_to_path(
         logger_settings.logfile_path, f"chain_{process_id}.log"
@@ -179,9 +182,11 @@ def save_chain(
     )
     np.save(chain_file, mcmc_trace)
 
+
 def _append_string_to_path(path: Path, string: int) -> Path:
     extended_path = path.with_name(f"{path.name}_{string}")
     return extended_path
+
 
 # ==================================================================================================
 def main() -> None:

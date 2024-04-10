@@ -51,7 +51,6 @@ def process_cli_arguments() -> bool:
 
 # ==================================================================================================
 class PTOModel(ub.Model):
-
     def __init__(self, sleep_times: list[float]) -> None:
         super().__init__("forward")
         self._time_coarse, self._time_fine = sleep_times

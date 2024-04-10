@@ -52,7 +52,6 @@ class RandomWalkProposal(BaseProposal):
 
 # ==================================================================================================
 class PCNProposal(BaseProposal):
-
     def __init__(self, beta: float, covariance: np.ndarray, seed: int) -> None:
         super().__init__(seed)
         self._beta = beta
@@ -106,7 +105,6 @@ class StaticAcceptRateEstimator(BaseAcceptRateEstimator):
 
 # ==================================================================================================
 class MLMetropolisHastingsKernel:
-
     def __init__(self, ground_proposal: BaseProposal) -> None:
         self._ground_proposal = ground_proposal
 

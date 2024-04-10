@@ -6,7 +6,6 @@ from components import general_settings
 from . import builder
 
 
-
 # ==================================================================================================
 parallel_run_settings = general_settings.ParallelRunSettings(
     num_chains=1,
@@ -22,8 +21,8 @@ sampler_setup_settings = general_settings.SamplerSetupSettings(
     subsampling_rates=[5, -1],
     max_tree_height=50,
     underflow_threshold=-1e4,
-    rng_seed_mltree=None,
-    rng_seed_node_init=None,
+    rng_seed_mltree=1,
+    rng_seed_node_init=2,
     mltree_path=None,
 )
 
@@ -45,7 +44,7 @@ logger_settings = general_settings.LoggerSettings(
 # --------------------------------------------------------------------------------------------------
 inverse_problem_settings = builder.InverseProblemSettings(
     prior_intervals=np.array([[500, 2000], [1, 20], [20e9, 30e9], [20e9, 30e9]]),
-    prior_rng_seed=None,
+    prior_rng_seed=3,
     likelihood_data_dir=Path("seissol/zihua_4D/data"),
     ub_model_configs=({"meshFile": "model_0p1Hz"}, {"meshFile": "model_0p3Hz"}),
     ub_model_address="http://localhost:4242",
@@ -55,7 +54,7 @@ inverse_problem_settings = builder.InverseProblemSettings(
 sampler_component_settings = builder.SamplerComponentSettings(
     proposal_step_width=0.1,
     proposal_covariance=np.diag((np.square(1500), np.square(19), np.square(10e9), np.square(10e9))),
-    proposal_rng_seed=None,
+    proposal_rng_seed=4,
     accept_rates_initial_guess=[0.5, 0.7],
     accept_rates_update_parameter=0.01,
 )

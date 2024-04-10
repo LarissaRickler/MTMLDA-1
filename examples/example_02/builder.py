@@ -6,7 +6,7 @@ from typing import Any
 import numpy as np
 import src.mtmlda.mcmc as mcmc
 import umbridge as ub
-from components import abstract_builder
+from components import abstract_builder, rng
 
 
 # ==================================================================================================
@@ -32,7 +32,6 @@ class InitialStateSettings(abstract_builder.InitialStateSettings):
 
 # ==================================================================================================
 class ApplicationBuilder(abstract_builder.ApplicationBuilder):
-
     # ----------------------------------------------------------------------------------------------
     def __init__(self, process_id: int) -> None:
         super().__init__(process_id)
@@ -71,11 +70,13 @@ class ApplicationBuilder(abstract_builder.ApplicationBuilder):
     def set_up_sampler_components(
         self, sampler_component_settings: SamplerComponentSettings
     ) -> tuple[Any, Any]:
-        sampler_component_settings.proposal_rng_seed = self._process_id
+        proposal_rng_seed = rng.distribute_seeds_to_processes(
+            sampler_component_settings.proposal_rng_seed, self._process_id
+        )
         ground_proposal = mcmc.RandomWalkProposal(
             sampler_component_settings.proposal_step_width,
             sampler_component_settings.proposal_covariance,
-            sampler_component_settings.proposal_rng_seed,
+            proposal_rng_seed,
         )
 
         accept_rate_estimator = mcmc.StaticAcceptRateEstimator(

@@ -20,9 +20,9 @@ sampler_setup_settings = general_settings.SamplerSetupSettings(
     subsampling_rates=[5, 3, -1],
     max_tree_height=50,
     underflow_threshold=-1000,
-    rng_seed_mltree=None,
-    rng_seed_node_init=None,
-    mltree_path=Path("results_example_01") / Path("mltree")
+    rng_seed_mltree=1,
+    rng_seed_node_init=2,
+    mltree_path=Path("results_example_01") / Path("mltree"),
 )
 
 sampler_run_settings = general_settings.SamplerRunSettings(
@@ -53,7 +53,7 @@ inverse_problem_settings = builder.InverseProblemSettings(
 sampler_component_settings = builder.SamplerComponentSettings(
     proposal_step_width=0.1,
     proposal_covariance=0.1 * np.identity(2),
-    proposal_rng_seed=None,
+    proposal_rng_seed=3,
     accept_rates_initial_guess=[0.5, 0.7, 0.8],
     accept_rates_update_parameter=0.01,
 )

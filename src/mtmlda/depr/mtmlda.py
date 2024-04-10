@@ -38,7 +38,6 @@ class MTNode(MTNodeBase, NodeMixin):
 
 # Basic strategy for estimating probability of needing a node: Simply go by estimated acceptance rate
 def update_probability_reached2(root, acceptance_rate_estimate):
-
     for level_children in LevelOrderGroupIter(root):
         for node in level_children:
             if node.parent == None:
@@ -59,12 +58,10 @@ def update_probability_reached2(root, acceptance_rate_estimate):
 
 # Advanced strategy using a coarse model to estimate acceptance rate
 def update_probability_reached3(root, acceptance_rate_estimate):
-
     model_coarse = umbridge.HTTPModel("http://localhost:4243", "posterior_coarse")
 
     for level_children in LevelOrderGroupIter(root):
         for node in level_children:
-
             if node.name == "r" and node.parent is not None:
                 node.logposterior_coarse = node.parent.logposterior_coarse
             if node.logposterior_coarse is None:
@@ -88,12 +85,10 @@ def update_probability_reached3(root, acceptance_rate_estimate):
 
 
 def update_probability_reached(root, acceptance_rate_estimate):
-
     model_coarse = umbridge.HTTPModel("http://localhost:4243", "posterior_coarse")
 
     for level_children in LevelOrderGroupIter(root):
         for node in level_children:
-
             if node.name == "r" and node.parent is not None:
                 node.logposterior_coarse = node.parent.logposterior_coarse
             if node.logposterior_coarse is None:
@@ -279,7 +274,6 @@ def get_unique_fine_level_child(node):
 def resolve_decision():
     for level_children in LevelOrderGroupIter(root):
         for node in level_children:
-
             if (
                 node.name == "a"
                 and node.parent is not None
@@ -391,7 +385,6 @@ with ThreadPoolExecutor(max_workers=num_workers) as executor:
     futuremap = {}
 
     def submit_next_job(root, acceptance_rate_estimate):
-
         expand_tree(root)
         # Update (estimated) probability of reaching each node
         update_probability_reached2(root, acceptance_rate_estimate)
@@ -420,7 +413,6 @@ with ThreadPoolExecutor(max_workers=num_workers) as executor:
         print_graph(root)
 
     while True:
-
         # Wait for model evaluation to finish
         # while some_job_is_done():
         for future in as_completed(futures):

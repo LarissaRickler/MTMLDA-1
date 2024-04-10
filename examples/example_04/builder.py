@@ -37,7 +37,6 @@ class InitialStateSettings(abstract_builder.InitialStateSettings):
 
 # ==================================================================================================
 class ApplicationBuilder(abstract_builder.ApplicationBuilder):
-
     # ----------------------------------------------------------------------------------------------
     def __init__(self, process_id: int) -> None:
         super().__init__(process_id)
@@ -61,11 +60,11 @@ class ApplicationBuilder(abstract_builder.ApplicationBuilder):
                 print(exc)
                 time.sleep(10)
 
-        inverse_problem_settings.prior_rng_seed = self._process_id
+        prior_rng_seed = int(inverse_problem_settings.prior_rng_seed * self._process_id)
         prior_component = prior.GaussianLogPrior(
             inverse_problem_settings.prior_mean,
             inverse_problem_settings.prior_covariance,
-            inverse_problem_settings.prior_rng_seed,
+            prior_rng_seed,
         )
         self._prior_component = prior_component
 
@@ -81,11 +80,11 @@ class ApplicationBuilder(abstract_builder.ApplicationBuilder):
     def set_up_sampler_components(
         self, sampler_component_settings: SamplerComponentSettings
     ) -> tuple[Any, Any]:
-        sampler_component_settings.proposal_rng_seed = self._process_id
+        proposal_rng_seed = int(sampler_component_settings.proposal_rng_seed * self._process_id)
         ground_proposal = mcmc.RandomWalkProposal(
             sampler_component_settings.proposal_step_width,
             sampler_component_settings.proposal_covariance,
-            sampler_component_settings.proposal_rng_seed,
+            proposal_rng_seed,
         )
 
         accept_rate_estimator = mcmc.StaticAcceptRateEstimator(

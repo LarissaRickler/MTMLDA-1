@@ -5,14 +5,16 @@ from components import general_settings
 
 from . import builder
 
+
 # ==================================================================================================
 parallel_run_settings = general_settings.ParallelRunSettings(
     num_chains=4,
-    result_directory_path=Path("results_example_01"),
-    chain_file_stem=Path("chain"),
-    rng_state_save_file_stem=None,
-    rng_state_load_file_stem=None,
-    overwrite_results=True,
+    chain_save_path=Path("results_example_01/chain"),
+    chain_load_path=None,
+    rng_state_save_path=None,
+    rng_state_load_path=None,
+    overwrite_chain=True,
+    overwrite_rng_states=True,
 )
 
 sampler_setup_settings = general_settings.SamplerSetupSettings(
@@ -22,7 +24,7 @@ sampler_setup_settings = general_settings.SamplerSetupSettings(
     underflow_threshold=-1000,
     rng_seed_mltree=1,
     rng_seed_node_init=2,
-    mltree_path=Path("results_example_01") / Path("mltree"),
+    mltree_path=Path("results_example_01/mltree"),
 )
 
 sampler_run_settings = general_settings.SamplerRunSettings(
@@ -35,8 +37,8 @@ sampler_run_settings = general_settings.SamplerRunSettings(
 
 logger_settings = general_settings.LoggerSettings(
     do_printing=True,
-    logfile_path=Path("results_example_01") / Path("mtmlda"),
-    debugfile_path=Path("results_example_01") / Path("mtmlda_debug"),
+    logfile_path=Path("results_example_01/mtmlda"),
+    debugfile_path=Path("results_example_01/mtmlda_debug"),
     write_mode="w",
 )
 

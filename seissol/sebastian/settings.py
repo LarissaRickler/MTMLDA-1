@@ -7,12 +7,13 @@ from . import builder
 
 # ==================================================================================================
 parallel_run_settings = general_settings.ParallelRunSettings(
-    num_chains=1,
-    result_directory_path=Path("results_seissol_sebastian"),
-    chain_file_stem=Path("chain"),
-    rng_state_save_file_stem=None,
-    rng_state_load_file_stem=None,
-    overwrite_results=True,
+    num_chains=4,
+    chain_save_path=Path("results_seissol_sebastian/chain"),
+    chain_load_path=None,
+    rng_state_save_path=None,
+    rng_state_load_path=None,
+    overwrite_chain=True,
+    overwrite_rng_states=True,
 )
 
 sampler_setup_settings = general_settings.SamplerSetupSettings(

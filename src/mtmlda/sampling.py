@@ -16,20 +16,20 @@ from .mltree import MLTreeSearchFunctions as mltree_search
 class SamplerSetupSettings:
     num_levels: int
     subsampling_rates: list
-    max_tree_height: int
-    underflow_threshold: float
-    rng_seed_mltree: int
-    rng_seed_node_init: int
-    mltree_path: str
+    max_tree_height: int = 50
+    underflow_threshold: float = -1000
+    rng_seed_mltree: int = 0
+    rng_seed_node_init: int = 0
+    mltree_path: str = None
 
 
 @dataclass
 class SamplerRunSettings:
     num_samples: int
     initial_state: np.ndarray
-    num_threads: int
-    print_interval: int
-    tree_render_interval: int
+    num_threads: int = 1
+    print_interval: int = 1
+    tree_render_interval: int = 1
 
 
 @dataclass

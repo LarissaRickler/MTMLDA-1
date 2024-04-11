@@ -246,11 +246,11 @@ class MLTreeVisualizer:
     _color_visited = "mediumaquamarine"
 
     # ----------------------------------------------------------------------------------------------
-    def __init__(self, result_directory_path: Path = None) -> None:
+    def __init__(self, result_directory: Path = None) -> None:
         self._id_counter = 0
-        self._result_dir = result_directory_path
+        self._result_dir = result_directory
         if self._result_dir is not None:
-            os.makedirs(result_directory_path, exist_ok=True)
+            os.makedirs(result_directory, exist_ok=True)
 
     # ----------------------------------------------------------------------------------------------
     def export_to_dot(self, mltree_root: MTNode) -> int:

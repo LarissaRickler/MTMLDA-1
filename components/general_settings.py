@@ -13,8 +13,9 @@ LoggerSettings = logging.LoggerSettings
 @dataclass
 class ParallelRunSettings:
     num_chains: int
-    result_directory_path: Path
-    chain_file_stem: Path
-    rng_state_save_file_stem: Path
-    rng_state_load_file_stem: Path
-    overwrite_results: bool
+    chain_save_path: Path
+    chain_load_path: Path = None
+    rng_state_save_path: Path = None
+    rng_state_load_path: Path = None
+    overwrite_chain: bool = True
+    overwrite_rng_states: bool = True

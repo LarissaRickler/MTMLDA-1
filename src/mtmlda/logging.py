@@ -14,10 +14,10 @@ from . import mltree
 # ==================================================================================================
 @dataclass
 class LoggerSettings:
-    do_printing: bool
-    logfile_path: str
-    debugfile_path: str
-    write_mode: str
+    do_printing: bool = True
+    logfile_path: str = None
+    debugfile_path: str = None
+    write_mode: str = "w"
 
 
 # ==================================================================================================

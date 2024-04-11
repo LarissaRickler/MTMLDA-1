@@ -8,11 +8,12 @@ from . import builder
 # ==================================================================================================
 parallel_run_settings = general_settings.ParallelRunSettings(
     num_chains=4,
-    result_directory_path=Path("results_example_04"),
-    chain_file_stem=Path("chain"),
-    rng_state_save_file_stem=None,
-    rng_state_load_file_stem=None,
-    overwrite_results=True,
+    chain_save_path=Path("results_example_04/chain"),
+    chain_load_path=None,
+    rng_state_save_path=None,
+    rng_state_load_path=None,
+    overwrite_chain=True,
+    overwrite_rng_states=True,
 )
 
 sampler_setup_settings = general_settings.SamplerSetupSettings(
@@ -26,7 +27,7 @@ sampler_setup_settings = general_settings.SamplerSetupSettings(
 )
 
 sampler_run_settings = general_settings.SamplerRunSettings(
-    num_samples=2500,
+    num_samples=200,
     initial_state=None,
     num_threads=8,
     print_interval=100,

@@ -8,7 +8,8 @@ from typing import Any
 import numpy as np
 import src.mtmlda.mcmc as mcmc
 import umbridge as ub
-from components import abstract_builder, posterior, prior, rng
+import utilities.utilities as utils
+from components import abstract_builder, posterior, prior
 
 
 # ==================================================================================================
@@ -60,7 +61,7 @@ class ApplicationBuilder(abstract_builder.ApplicationBuilder):
             except:
                 time.sleep(10)
 
-        prior_rng_seed = rng.distribute_seeds_to_processes(
+        prior_rng_seed = utils.distribute_rng_seeds_to_processes(
             inverse_problem_settings.prior_rng_seed, self._process_id
         )
         prior_component = prior.UniformLogPrior(
@@ -84,7 +85,7 @@ class ApplicationBuilder(abstract_builder.ApplicationBuilder):
     def set_up_sampler_components(
         self, sampler_component_settings: SamplerComponentSettings
     ) -> tuple[Any, Any]:
-        proposal_rng_seed = rng.distribute_seeds_to_processes(
+        proposal_rng_seed = utils.distribute_rng_seeds_to_processes(
             sampler_component_settings.proposal_rng_seed, self._process_id
         )
         ground_proposal = mcmc.RandomWalkProposal(

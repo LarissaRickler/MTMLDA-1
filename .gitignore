@@ -210,3 +210,4 @@ pyrightconfig.json
 !/examples/
 !/seissol/
 !/src/
+!/utilities/

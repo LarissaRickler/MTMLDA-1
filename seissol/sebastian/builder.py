@@ -6,7 +6,6 @@ from typing import Any
 
 import numpy as np
 import src.mtmlda.mcmc as mcmc
-import umbridge as ub
 import utilities.utilities as utils
 from components import abstract_builder, posterior, prior
 
@@ -20,6 +19,9 @@ class InverseProblemSettings(abstract_builder.InverseProblemSettings):
     ub_model_configs: dict[str, str]
     ub_model_address: str
     ub_model_name: str
+    use_surrogate: bool
+    ub_surrogate_address: str
+    ub_surrogate_name: str
 
 
 @dataclass
@@ -45,21 +47,12 @@ class ApplicationBuilder(abstract_builder.ApplicationBuilder):
 
     # ----------------------------------------------------------------------------------------------
     def set_up_models(self, inverse_problem_settings: InverseProblemSettings) -> list[Callable]:
-        server_available = False
-        while not server_available:
-            try:
-                if self._process_id == 0:
-                    print("Calling server...")
-                likelihood_component = ub.HTTPModel(
-                    inverse_problem_settings.ub_model_address,
-                    inverse_problem_settings.ub_model_name,
-                )
-                if self._process_id == 0:
-                    print("Server available\n")
-                server_available = True
-            except:
-                time.sleep(10)
-
+        likelihood_component = utils.request_umbridge_server(
+            self._process_id,
+            inverse_problem_settings.ub_model_address,
+            inverse_problem_settings.ub_model_name,
+        )
+        
         prior_rng_seed = utils.distribute_rng_seeds_to_processes(
             inverse_problem_settings.prior_rng_seed, self._process_id
         )
@@ -75,6 +68,18 @@ class ApplicationBuilder(abstract_builder.ApplicationBuilder):
             partial(model_wrapper, config=config)
             for config in inverse_problem_settings.ub_model_configs
         ]
+
+        if inverse_problem_settings.use_surrogate:
+            surrogate_component = utils.request_umbridge_server(
+                self._process_id,
+                inverse_problem_settings.ub_surrogate_address,
+                inverse_problem_settings.ub_surrogate_name,
+            )
+            surrogate_wrapper = posterior.LogPosterior(prior_component, surrogate_component)
+            surrogate_call = partial(
+                surrogate_wrapper, config=inverse_problem_settings.ub_model_configs[0]
+            )
+            models = [surrogate_call] + models
 
         return models
 

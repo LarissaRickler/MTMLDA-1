@@ -1,9 +1,11 @@
 import os
 import pickle
+import time
 from pathlib import Path
 from typing import Union
 
 import numpy as np
+import umbridge as ub
 
 
 # ==================================================================================================
@@ -50,3 +52,20 @@ def save_rng_states(process_id, save_path, rng_states, exist_ok):
     rng_state_file = append_string_to_path(save_path, f"{process_id}.pkl")
     with rng_state_file.open("wb") as rng_state_file:
         pickle.dump(rng_states, rng_state_file)
+
+
+# --------------------------------------------------------------------------------------------------
+def request_umbridge_server(process_id, address: str, name: str) -> ub.HTTPModel:
+    server_available = False
+    while not server_available:
+        try:
+            if process_id == 0:
+                print(f"Calling server {name} at {address}...")
+            ub_server = ub.HTTPModel(address, name)
+            if process_id == 0:
+                print("Server available\n")
+            server_available = True
+        except:
+            time.sleep(10)
+
+    return ub_server

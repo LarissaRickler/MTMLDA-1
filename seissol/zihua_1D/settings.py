@@ -52,6 +52,9 @@ inverse_problem_settings = builder.InverseProblemSettings(
     ub_model_configs=({"order": 4}, {"order": 5}),
     ub_model_address="http://localhost:4242",
     ub_model_name="forward",
+    use_surrogate=True,
+    ub_surrogate_address="http://localhost:4243",
+    ub_surrogate_name="surrogate",
 )
 
 sampler_component_settings = builder.SamplerComponentSettings(

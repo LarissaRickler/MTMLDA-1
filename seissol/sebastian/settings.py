@@ -7,7 +7,7 @@ from . import builder
 
 # ==================================================================================================
 parallel_run_settings = general_settings.ParallelRunSettings(
-    num_chains=1,
+    num_chains=4,
     chain_save_path=Path("results_seissol_sebastian/chain"),
     chain_load_path=None,
     rng_state_save_path=None,
@@ -29,7 +29,7 @@ sampler_setup_settings = general_settings.SamplerSetupSettings(
 sampler_run_settings = general_settings.SamplerRunSettings(
     num_samples=3,
     initial_state=None,
-    num_threads=1,
+    num_threads=8,
     print_interval=1,
     tree_render_interval=1,
 )

@@ -208,7 +208,7 @@ class MTMLDASampler:
         while (
             unique_child := mltree_search.get_unique_same_subchain_child(mltree_root)
         ) is not None:
-            mcmc_chain.append(mltree_root.state)
+            mcmc_chain.append(unique_child.state)
             self._print_statistics(mcmc_chain)
             unique_child.parent = None
             mltree_root = unique_child

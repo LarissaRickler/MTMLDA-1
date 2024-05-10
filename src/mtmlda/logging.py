@@ -1,14 +1,13 @@
 import logging
 import os
 import sys
-
+from collections.abc import Iterable
 from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
 from typing import Any
 
 import numpy as np
-
-from . import mltree
 
 
 # ==================================================================================================
@@ -21,6 +20,94 @@ class LoggerSettings:
 
 
 # ==================================================================================================
+class EntryType(Enum):
+    BASIC = 0
+    RUNNING = 1
+    ACCUMULATIVE = 2
+
+
+# --------------------------------------------------------------------------------------------------
+@dataclass
+class StatisticsEntry:
+    str_format: str = None
+    str_name: str = None
+
+
+@dataclass
+class BasicStatisticsEntry(StatisticsEntry):
+    value: Any = None
+
+
+@dataclass
+class RunningStatisticsEntry(StatisticsEntry):
+    value: list[Any] = ()
+
+
+@dataclass
+class AccumulativeStatisticsEntry(StatisticsEntry):
+    value: list[Any] = ()
+    num_recordings: int = 0
+    average: float = 0
+
+
+# ==================================================================================================
+class Statistics:
+    # ----------------------------------------------------------------------------------------------
+    def __init__(self) -> None:
+        self._entries = {}
+
+    # ----------------------------------------------------------------------------------------------
+    def add_entry(self, identifier, type, str_format, str_name=None):
+        if type == EntryType.BASIC:
+            self._entries[identifier] = BasicStatisticsEntry(
+                str_format=str_format, str_name=str_name
+            )
+        elif type == EntryType.RUNNING:
+            self._entries[identifier] = RunningStatisticsEntry(
+                str_format=str_format, str_name=str_name
+            )
+        elif type == EntryType.ACCUMULATIVE:
+            self._entries[identifier] = AccumulativeStatisticsEntry(
+                str_format=str_format, str_name=str_name
+            )
+
+    # ----------------------------------------------------------------------------------------------
+    def set_value(self, identifier, value):
+        entry = self._entries[identifier]
+        if isinstance(entry, BasicStatisticsEntry):
+            self._entries[identifier].value = value
+        elif isinstance(entry, (RunningStatisticsEntry, AccumulativeStatisticsEntry)):
+            self._entries[identifier].value.append(value)
+
+    # ----------------------------------------------------------------------------------------------
+    def get_statistics(self):
+        for entry_id in self._entries.keys():
+            entry = self._entries[entry_id]
+            if isinstance(entry, BasicStatisticsEntry):
+                value = entry.value
+            elif isinstance(entry, RunningStatisticsEntry):
+                value = np.column_stack(entry.value)
+                value = np.mean(entry.value, axis=-1)
+                self._entries[entry_id].value = ()
+            elif isinstance(entry, AccumulativeStatisticsEntry):
+                value = np.column_stack(entry.value)
+                new_average = np.mean(entry.value, axis=-1)
+                num_new_recordings = len(entry.value)
+                record_ratio = num_new_recordings / (num_new_recordings + entry.num_recordings)
+                value = record_ratio * new_average + (1 - record_ratio) * entry.average
+                self._entries[entry_id].average = value
+                self._entries[entry_id].num_recordings += num_new_recordings
+                self._entries[entry_id].value = ()
+
+            yield entry_id, value, entry.str_format
+
+    # ----------------------------------------------------------------------------------------------
+    @property
+    def entries(self):
+        return self._entries
+
+
+# ==================================================================================================
 class MTMLDALogger:
     _debug_header_width = 80
 
@@ -28,11 +115,9 @@ class MTMLDALogger:
     def __init__(
         self,
         logger_settings: LoggerSettings,
-        components: dict[str, Any],
     ) -> None:
         self._logfile_path = logger_settings.logfile_path
         self._debugfile_path = logger_settings.debugfile_path
-        self._components = components
         self._pylogger = logging.getLogger(__name__)
         self._pylogger.setLevel(logging.DEBUG)
         formatter = logging.Formatter("%(message)s")
@@ -64,42 +149,34 @@ class MTMLDALogger:
                 self._pylogger.addHandler(debug_handler)
 
     # ----------------------------------------------------------------------------------------------
-    def print_headers(self) -> None:
-        self._print_log_header()
-        if self._debugfile_path is not None:
-            self._print_debug_header()
-
-    # ----------------------------------------------------------------------------------------------
-    def print_statistics(self, info_dict: dict[str, Any]) -> None:
+    def log_run_statistics(self, statistics: Statistics) -> None:
         output_str = ""
 
-        for component, value in info_dict.items():
-            component_format = self._components[component]["format"]
-            output_str += f"{value:<{component_format}}| "
-        self._pylogger.info(output_str)
+        for _, value, entry in statistics.get_entries():
+            value_str = self._process_value_str(value, entry)
+            output_str += f"{value_str}| "
+        self.info(output_str)
 
     # ----------------------------------------------------------------------------------------------
-    def print_debug_info(self, info: str, node: mltree.MTNode) -> None:
-        if self._debugfile_path is not None:
-            state_str = [f"{state:<12.3e}" for state in np.nditer(node.state)]
-            state_str = ",".join(state_str)
-            if node.logposterior is None:
-                logp_str = f"{'None':12}"
-            else:
-                logp_str = f"{node.logposterior:<12.3e}"
+    def log_debug_statistics(self, statistics: Statistics, info) -> None:
+        output_str = ""
+        for identifier, value, entry in statistics.get_entries():
+            value_str = self._process_value_str(value, entry)
+            output_str += f"{identifier}: {value_str}| "
 
-            node_str = (
-                f"Lvl: {node.level:<3} | "
-                f"Idx: {node.subchain_index:<3} | "
-                f"St: ({state_str}) | "
-                f"Dr: {node.random_draw:<5.3f} | "
-                f"Pr: {logp_str} | "
-                f"Re: {node.probability_reached:<12.3e}"
-            )
-            info_str = f"[{info}]"
-            output_str = f"{info_str:15} {node_str}"
-            self.debug(output_str)
+        info_str = f"[{info}]"
+        output_str = f"{info_str:15} {output_str}"
+        self.debug(output_str)
 
+    # ----------------------------------------------------------------------------------------------
+    def print_log_header(self, statistics: Statistics) -> None:
+        log_header_str = ""
+        for entry in statistics.entries:
+            log_header_str += entry.str_name
+        self.info(log_header_str)
+        self.info("-" * (len(log_header_str) - 1))
+
+    # ----------------------------------------------------------------------------------------------
     def print_debug_new_samples(self, sample: int) -> None:
         if self._debugfile_path is not None:
             output_str = f" New chain segment, sample {sample:<8.3e} ".center(
@@ -107,6 +184,7 @@ class MTMLDALogger:
             )
             self.debug(f"\n{output_str}\n")
 
+    # ----------------------------------------------------------------------------------------------
     def print_debug_tree_export(self, tree_id: int) -> None:
         if (self._debugfile_path is not None) and (tree_id is not None):
             output_str = f"-> Export tree with Id {tree_id}"
@@ -125,29 +203,15 @@ class MTMLDALogger:
         self._pylogger.exception(message)
 
     # ----------------------------------------------------------------------------------------------
-    def _print_log_header(self) -> None:
-        log_header_str = ""
-        for component in self._components.keys():
-            component_name = self._components[component]["id"]
-            component_width = self._components[component]["width"]
-            log_header_str += f"{component_name:{component_width}}| "
-        separator = "-" * (len(log_header_str) - 1)
-        self._pylogger.info(log_header_str)
-        self._pylogger.info(separator)
-
-    # ----------------------------------------------------------------------------------------------
-    def _print_debug_header(self) -> None:
-        debug_header_str = (
-            "Explanation of abbreviations:\n\n"
-            "Lvl: Subchain Level\n"
-            "Idx: Subchain index\n"
-            "St: State\n"
-            "Dr: Random draw\n"
-            "Pr: Log posterior\n"
-            "Re: Probability reached\n"
-        )
-        self.debug(debug_header_str)
-        self.print_debug_new_samples(sample=1)
+    def _process_value_str(self, value: Any, str_format: str) -> str:
+        if isinstance(value, Iterable):
+            value_str = [f"{val:{str_format}}" for val in value]
+            value_str = f"({",".join(value_str)})"
+        elif value is None:
+            value_str = np.nan
+        else:
+            value_str = f"{value:{str_format}}"
+        return value_str
 
 
 # ==================================================================================================

@@ -3,7 +3,6 @@ import os
 import sys
 from collections.abc import Iterable
 from dataclasses import dataclass
-from enum import Enum
 from pathlib import Path
 from typing import Any
 
@@ -20,91 +19,54 @@ class LoggerSettings:
 
 
 # ==================================================================================================
-class EntryType(Enum):
-    BASIC = 0
-    RUNNING = 1
-    ACCUMULATIVE = 2
+class Statistic:
+    def __init__(self, str_id, str_format):
+        self.str_id = str_id
+        self.str_format = str_format
+        self._value: Any = None
 
+    def set_value(self, value):
+        self._value = value
+
+    def get_value(self):
+        return self._value
 
 # --------------------------------------------------------------------------------------------------
-@dataclass
-class StatisticsEntry:
-    str_format: str = None
-    str_name: str = None
+class RunningStatistic(Statistic):
+    def __init__(self, str_id, str_format):
+        super().__init__(str_id, str_format)
+        self._value = []
 
+    def set_value(self, new_value):
+        self.value.append(new_value)
 
-@dataclass
-class BasicStatisticsEntry(StatisticsEntry):
-    value: Any = None
+    def get_value(self):
+        value = np.column_stack(self._value)
+        value = np.mean(value, axis=-1)
+        self._value = []
+        return value
 
+# --------------------------------------------------------------------------------------------------
+class AccumulativeStatistic(Statistic):
+    def __init__(self, str_id, str_format):
+        super().__init__(str_id, str_format)
+        self._value = []
+        self._num_recordings = 0
+        self._average = 0
 
-@dataclass
-class RunningStatisticsEntry(StatisticsEntry):
-    value: list[Any] = ()
+    def set_value(self, new_value):
+        self.value.append(new_value)
 
-
-@dataclass
-class AccumulativeStatisticsEntry(StatisticsEntry):
-    value: list[Any] = ()
-    num_recordings: int = 0
-    average: float = 0
-
-
-# ==================================================================================================
-class Statistics:
-    # ----------------------------------------------------------------------------------------------
-    def __init__(self) -> None:
-        self._entries = {}
-
-    # ----------------------------------------------------------------------------------------------
-    def add_entry(self, identifier, type, str_format, str_name=None):
-        if type == EntryType.BASIC:
-            self._entries[identifier] = BasicStatisticsEntry(
-                str_format=str_format, str_name=str_name
-            )
-        elif type == EntryType.RUNNING:
-            self._entries[identifier] = RunningStatisticsEntry(
-                str_format=str_format, str_name=str_name
-            )
-        elif type == EntryType.ACCUMULATIVE:
-            self._entries[identifier] = AccumulativeStatisticsEntry(
-                str_format=str_format, str_name=str_name
-            )
-
-    # ----------------------------------------------------------------------------------------------
-    def set_value(self, identifier, value):
-        entry = self._entries[identifier]
-        if isinstance(entry, BasicStatisticsEntry):
-            self._entries[identifier].value = value
-        elif isinstance(entry, (RunningStatisticsEntry, AccumulativeStatisticsEntry)):
-            self._entries[identifier].value.append(value)
-
-    # ----------------------------------------------------------------------------------------------
-    def get_statistics(self):
-        for entry_id in self._entries.keys():
-            entry = self._entries[entry_id]
-            if isinstance(entry, BasicStatisticsEntry):
-                value = entry.value
-            elif isinstance(entry, RunningStatisticsEntry):
-                value = np.column_stack(entry.value)
-                value = np.mean(entry.value, axis=-1)
-                self._entries[entry_id].value = ()
-            elif isinstance(entry, AccumulativeStatisticsEntry):
-                value = np.column_stack(entry.value)
-                new_average = np.mean(entry.value, axis=-1)
-                num_new_recordings = len(entry.value)
-                record_ratio = num_new_recordings / (num_new_recordings + entry.num_recordings)
-                value = record_ratio * new_average + (1 - record_ratio) * entry.average
-                self._entries[entry_id].average = value
-                self._entries[entry_id].num_recordings += num_new_recordings
-                self._entries[entry_id].value = ()
-
-            yield entry_id, value, entry.str_format
-
-    # ----------------------------------------------------------------------------------------------
-    @property
-    def entries(self):
-        return self._entries
+    def get_value(self):
+        value = np.column_stack(self._value)
+        num_new_recordings = len(self._value)
+        new_average = np.mean(value, axis=-1)
+        record_ratio = num_new_recordings / (num_new_recordings + self._num_recordings)
+        value = record_ratio * new_average + (1 - record_ratio) * self._average
+        self._average = value
+        self._num_recordings += num_new_recordings
+        self._value = ()
+        return value
 
 
 # ==================================================================================================
@@ -149,35 +111,35 @@ class MTMLDALogger:
                 self._pylogger.addHandler(debug_handler)
 
     # ----------------------------------------------------------------------------------------------
-    def log_run_statistics(self, statistics: Statistics) -> None:
+    def log_run_statistics(self, statistics: dict[str, Statistic]) -> None:
         output_str = ""
 
-        for _, value, entry in statistics.get_entries():
-            value_str = self._process_value_str(value, entry)
+        for statistic in statistics.values():
+            value_str = self._process_value_str(statistic.get_value(), statistic.str_format)
             output_str += f"{value_str}| "
         self.info(output_str)
 
     # ----------------------------------------------------------------------------------------------
-    def log_debug_statistics(self, statistics: Statistics, info) -> None:
+    def log_debug_statistics(self, info: str, statistics: dict[str, Statistic]) -> None:
         output_str = ""
-        for identifier, value, entry in statistics.get_entries():
-            value_str = self._process_value_str(value, entry)
-            output_str += f"{identifier}: {value_str}| "
+        for statistic in statistics.values():
+            value_str = self._process_value_str(statistic.get_value(), statistic.str_format)
+            output_str += f"{statistic.str_id}: {value_str}| "
 
         info_str = f"[{info}]"
         output_str = f"{info_str:15} {output_str}"
         self.debug(output_str)
 
     # ----------------------------------------------------------------------------------------------
-    def print_log_header(self, statistics: Statistics) -> None:
+    def log_header(self, statistics: dict[str, Statistic]) -> None:
         log_header_str = ""
-        for entry in statistics.entries:
-            log_header_str += entry.str_name
+        for statistic in statistics.values():
+            log_header_str += f"{statistic.str_id}| "
         self.info(log_header_str)
         self.info("-" * (len(log_header_str) - 1))
 
     # ----------------------------------------------------------------------------------------------
-    def print_debug_new_samples(self, sample: int) -> None:
+    def log_debug_new_samples(self, sample: int) -> None:
         if self._debugfile_path is not None:
             output_str = f" New chain segment, sample {sample:<8.3e} ".center(
                 self._debug_header_width, "="
@@ -185,7 +147,7 @@ class MTMLDALogger:
             self.debug(f"\n{output_str}\n")
 
     # ----------------------------------------------------------------------------------------------
-    def print_debug_tree_export(self, tree_id: int) -> None:
+    def log_debug_tree_export(self, tree_id: int) -> None:
         if (self._debugfile_path is not None) and (tree_id is not None):
             output_str = f"-> Export tree with Id {tree_id}"
             self.debug(output_str)
@@ -206,9 +168,9 @@ class MTMLDALogger:
     def _process_value_str(self, value: Any, str_format: str) -> str:
         if isinstance(value, Iterable):
             value_str = [f"{val:{str_format}}" for val in value]
-            value_str = f"({",".join(value_str)})"
+            value_str = f"({','.join(value_str)})"
         elif value is None:
-            value_str = np.nan
+            value_str = f"{np.nan:{str_format}}"
         else:
             value_str = f"{value:{str_format}}"
         return value_str

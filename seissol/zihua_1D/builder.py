@@ -6,7 +6,6 @@ from typing import Any
 
 import numpy as np
 import src.mtmlda.mcmc as mcmc
-import umbridge as ub
 import utilities.utilities as utils
 from components import abstract_builder, posterior, prior
 
@@ -52,7 +51,7 @@ class ApplicationBuilder(abstract_builder.ApplicationBuilder):
             inverse_problem_settings.ub_model_address,
             inverse_problem_settings.ub_model_name,
         )
-        
+
         prior_rng_seed = utils.distribute_rng_seeds_to_processes(
             inverse_problem_settings.prior_rng_seed, self._process_id
         )

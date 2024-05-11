@@ -28,7 +28,6 @@ def load_chain(process_id: int, load_path: Path) -> None:
     chain = np.load(chain_file)
     return chain
 
-
 # --------------------------------------------------------------------------------------------------
 def save_chain(
     process_id: int, save_path: Path, mcmc_trace: list[np.ndarray], exist_ok: bool
@@ -37,6 +36,19 @@ def save_chain(
     chain_file = append_string_to_path(save_path, f"{process_id}.npy")
     np.save(chain_file, mcmc_trace)
 
+# --------------------------------------------------------------------------------------------------
+def load_node(process_id, load_path):
+    node_file = append_string_to_path(load_path, f"{process_id}.pkl")
+    with node_file.open("rb") as node_file:
+        node = pickle.load(node_file)
+    return node
+
+# --------------------------------------------------------------------------------------------------
+def save_node(process_id, save_path, node, exist_ok):
+    os.makedirs(save_path.parent, exist_ok=exist_ok)
+    node_file = append_string_to_path(save_path, f"{process_id}.pkl")
+    with node_file.open("wb") as node_file:
+        pickle.dump(node, node_file)
 
 # --------------------------------------------------------------------------------------------------
 def load_rng_states(process_id, load_path):

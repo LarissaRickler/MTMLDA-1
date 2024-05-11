@@ -2,12 +2,12 @@ import time
 from collections.abc import Callable, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
+from typing import Union
 
 import anytree as atree
 import numpy as np
 
 from . import jobhandling, logging, mcmc, mltree
-from .logging import EntryType as entry_type
 from .mltree import MLTreeSearchFunctions as mltree_search
 
 
@@ -27,6 +27,7 @@ class SamplerSetupSettings:
 class SamplerRunSettings:
     num_samples: int
     initial_state: np.ndarray
+    initial_node: mltree.MTNode = None
     num_threads: int = 1
     print_interval: int = 1
     tree_render_interval: int = 1
@@ -83,16 +84,16 @@ class MTMLDASampler:
         self._print_interval = run_settings.print_interval
         self._tree_render_interval = run_settings.tree_render_interval
         num_threads = run_settings.num_threads
-
-        mltree_root = self._init_mltree(run_settings.initial_state)
+        mltree_root = self._init_mltree(run_settings.initial_state, run_settings.initial_node)
         mcmc_chain = [run_settings.initial_state]
 
         try:
             with ThreadPoolExecutor(max_workers=num_threads) as executor:
                 self._job_handler = jobhandling.JobHandler(executor, self._models, num_threads)
-                self._logger.print_log_header(self._run_statistics)
-                self._run_statistics = self._update_run_statistics(mcmc_chain)
+                self._logger.log_header(self._run_statistics)
+                self._update_run_statistics(mcmc_chain)
                 self._logger.log_run_statistics(self._run_statistics)
+                self._logger.log_debug_new_samples(len(mcmc_chain))
 
                 # --- Main MCMC Loop ---
                 while True:
@@ -112,7 +113,7 @@ class MTMLDASampler:
             except RecursionError as exc:
                 self._logger.exception(exc)
         finally:
-            return mcmc_chain
+            return mcmc_chain, mltree_root
 
     # ----------------------------------------------------------------------------------------------
     def get_rngs(self) -> RNGStates:
@@ -130,12 +131,19 @@ class MTMLDASampler:
         self._rng_node_init = rng_states.node_init
 
     # ----------------------------------------------------------------------------------------------
-    def _init_mltree(self, initial_state: np.ndarray) -> mltree.MTNode:
+    def _init_mltree(self, initial_state: np.ndarray, initial_node) -> mltree.MTNode:
         mltree_root = mltree.MTNode(name="a")
-        mltree_root.state = initial_state
-        mltree_root.random_draw = self._rng_node_init.uniform(low=0, high=1, size=None)
         mltree_root.level = self._num_levels - 1
         mltree_root.subchain_index = 0
+
+        if initial_node is not None:
+            mltree_root.state = initial_node.state
+            mltree_root.logposterior = initial_node.logposterior
+            mltree_root.random_draw = initial_node.random_draw
+        else:
+            mltree_root.state = initial_state
+            mltree_root.random_draw = self._rng_node_init.uniform(low=0, high=1, size=None)
+        
 
         return mltree_root
 
@@ -212,56 +220,52 @@ class MTMLDASampler:
             self._log_run_statistics(mcmc_chain)
             unique_child.parent = None
             mltree_root = unique_child
-            self._logger.print_debug_new_samples(len(mcmc_chain))
+            self._logger.log_debug_new_samples(len(mcmc_chain))
             self._export_debug_tree(mltree_root)
 
         return mcmc_chain, mltree_root
 
     # ----------------------------------------------------------------------------------------------
-    def _init_statistics(self) -> None:
-        run_statistics = logging.Statistics()
-        run_statistics.add_entry("time", entry_type.BASIC, "<12.3e", f"{"Time[s]":<12}")
-        run_statistics.add_entry("num_samples", "<12.3e", entry_type.BASIC, f"{"#Samples":<12}")
+    def _init_statistics(self) -> tuple[dict[str, logging.Statistic], dict[str, logging.Statistic]]:
+        run_statistics = {}
+        run_statistics["time"] = logging.Statistic(f"{'Time[s]':<12}", "<12.3e")
+        run_statistics["num_samples"] = logging.Statistic(f"{'#Samples':<12}", "<12.3e")
         for i in range(self._num_levels):
-            run_statistics.add_entry(
-                f"evals_l{i}", "<12.3e", entry_type.BASIC, f"{f"#Evals L{i}":<12}"
-            )
+            run_statistics[f"evals_l{i}"] = logging.Statistic(f"{f'#Evals L{i}':<12}", "<12.3e")
         for i in range(self._num_levels):
-            run_statistics.add_entry(
-                f"accept_rate_l{i}", "<12.3e", entry_type.BASIC, f"{f"#ARE L{i}":<12}"
-            )
+            run_statistics[f"accept_rate_l{i}"] = logging.Statistic(f"{f'#ARE L{i}':<12}", "<12.3e")
 
-        debug_statistics = logging.Statistics()
-        debug_statistics.add_entry("level", "<3", entry_type.BASIC)
-        debug_statistics.add_entry("index", "<3", entry_type.BASIC)
-        debug_statistics.add_entry("state", "<12.3e", entry_type.BASIC)
-        debug_statistics.add_entry("draw", "<5.3f", entry_type.BASIC)
-        debug_statistics.add_entry("logp", "<12.3e", entry_type.BASIC)
-        debug_statistics.add_entry("reached", "<12.3e", entry_type.BASIC)
+        debug_statistics = {}
+        debug_statistics["level"] = logging.Statistic(f"{'level':<6}", "<3")
+        debug_statistics["index"] = logging.Statistic(f"{'index':<6}", "<3")
+        debug_statistics["state"] = logging.Statistic(f"{'state':<6}", "<12.3e")
+        debug_statistics["draw"] = logging.Statistic(f"{'draw':<5}", "<5.3f")
+        debug_statistics["logp"] = logging.Statistic(f"{'logp':<5}", "<12.3e")
+        debug_statistics["reached"] = logging.Statistic(f"{'reached':<8}", "<12.3e")
 
         return run_statistics, debug_statistics
 
     # ----------------------------------------------------------------------------------------------
-    def _update_run_statistics(self, mcmc_chain: list[np.ndarray]) -> logging.Statistics:
-        self._run_statistics.set_value("time", time.time() - self._start_time)
-        self._run_statistics.set_value("num_samples", len(mcmc_chain))
+    def _update_run_statistics(self, mcmc_chain: list[np.ndarray]) -> dict[str, logging.Statistic]:
+        self._run_statistics["time"].set_value(time.time() - self._start_time)
+        self._run_statistics["num_samples"].set_value(len(mcmc_chain))
         for i in range(self._num_levels):
-            self._run_statistics.set_value(f"evals_l{i}", self._job_handler.num_evaluations[i])
+            self._run_statistics[f"evals_l{i}"].set_value(self._job_handler.num_evaluations[i])
         for i in range(self._num_levels):
-            self._run_statistics.set_value(
-                f"accept_rate_l{i}", self._accept_rate_estimator.get_acceptance_rate(i)
+            self._run_statistics[f"accept_rate_l{i}"].set_value(
+                self._accept_rate_estimator.get_acceptance_rate(i)
             )
 
         return self._run_statistics
 
     # ----------------------------------------------------------------------------------------------
-    def _update_debug_statistics(self, node: mltree.MTNode) -> logging.Statistics:
-        self._debug_statistics.set_value("level", node.level)
-        self._debug_statistics.set_value("index", node.subchain_index)
-        self._debug_statistics.set_value("state", node.state)
-        self._debug_statistics.set_value("draw", node.random_draw)
-        self._debug_statistics.set_value("logp", node.logposterior)
-        self._debug_statistics.set_value("reached", node.probability_reached)
+    def _update_debug_statistics(self, node: mltree.MTNode) -> dict[str, logging.Statistic]:
+        self._debug_statistics["level"].set_value(node.level)
+        self._debug_statistics["index"].set_value(node.subchain_index)
+        self._debug_statistics["state"].set_value(node.state)
+        self._debug_statistics["draw"].set_value(node.random_draw)
+        self._debug_statistics["logp"].set_value(node.logposterior)
+        self._debug_statistics["reached"].set_value(node.probability_reached)
 
         return self._debug_statistics
 
@@ -274,9 +278,9 @@ class MTMLDASampler:
     # ----------------------------------------------------------------------------------------------
     def _log_debug_statistics(self, info: str, node: mltree.MTNode) -> None:
         self._debug_statistics = self._update_debug_statistics(node)
-        self._logger.log_debug_statistics(self._debug_statistics, info)
+        self._logger.log_debug_statistics(info, self._debug_statistics)
 
     # ----------------------------------------------------------------------------------------------
     def _export_debug_tree(self, root: mltree.MTNode) -> None:
         tree_id = self._mltree_visualizer.export_to_dot(root)
-        self._logger.print_debug_tree_export(tree_id)
+        self._logger.log_debug_tree_export(tree_id)

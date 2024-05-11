@@ -11,9 +11,12 @@ parallel_run_settings = general_settings.ParallelRunSettings(
     num_chains=4,
     chain_save_path=Path("results_seissol_zihua_4D/chain"),
     chain_load_path=None,
+    node_save_path=Path("results_seissol_zihua_1D/final_node"),
+    node_load_path=None,
     rng_state_save_path=None,
     rng_state_load_path=None,
     overwrite_chain=True,
+    overwrite_node=True,
     overwrite_rng_states=True,
 )
 
@@ -50,13 +53,16 @@ inverse_problem_settings = builder.InverseProblemSettings(
     ub_model_configs=({"meshFile": "model_0p1Hz"}, {"meshFile": "model_0p3Hz"}),
     ub_model_address="http://localhost:4242",
     ub_model_name="forward",
+    use_surrogate=False,
+    ub_surrogate_address="http://localhost:4243",
+    ub_surrogate_name="surrogate",
 )
 
 sampler_component_settings = builder.SamplerComponentSettings(
-    proposal_step_width=0.1,
+    proposal_step_width=0.5,
     proposal_covariance=np.diag((np.square(1500), np.square(19), np.square(10e9), np.square(10e9))),
     proposal_rng_seed=4,
-    accept_rates_initial_guess=[0.5, 0.7],
+    accept_rates_initial_guess=[0.5, 0.8],
     accept_rates_update_parameter=0.01,
 )
 

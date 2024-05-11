@@ -176,7 +176,7 @@ class MLTreeModifier:
     def update_probability_reached(root: MTNode, acceptance_rate_estimator: Any) -> None:
         for level_children in atree.LevelOrderGroupIter(root):
             for node in level_children:
-                acceptance_rate_estimate = acceptance_rate_estimator.get_acceptance_rate(node)
+                acceptance_rate_estimate = acceptance_rate_estimator.get_acceptance_rate(node.level)
 
                 if node.parent == None:
                     node.probability_reached = 1.0

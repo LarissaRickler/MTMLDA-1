@@ -89,8 +89,8 @@ class StaticAcceptRateEstimator(BaseAcceptRateEstimator):
         self._update_parameter = update_parameter
 
     # ----------------------------------------------------------------------------------------------
-    def get_acceptance_rate(self, node: mltree.MTNode) -> float:
-        acceptance_rate = self._acceptance_rates[node.level]
+    def get_acceptance_rate(self, level: int) -> float:
+        acceptance_rate = self._acceptance_rates[level]
         return acceptance_rate
 
     # ----------------------------------------------------------------------------------------------

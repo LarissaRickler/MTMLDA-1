@@ -21,6 +21,9 @@ class InverseProblemSettings(abstract_builder.InverseProblemSettings):
     ub_model_configs: dict[str, str]
     ub_model_address: str
     ub_model_name: str
+    use_surrogate: bool
+    ub_surrogate_address: str
+    ub_surrogate_name: str
 
 
 @dataclass
@@ -78,6 +81,18 @@ class ApplicationBuilder(abstract_builder.ApplicationBuilder):
             partial(model_wrapper, config=config)
             for config in inverse_problem_settings.ub_model_configs
         ]
+
+        if inverse_problem_settings.use_surrogate:
+            surrogate_component = utils.request_umbridge_server(
+                self._process_id,
+                inverse_problem_settings.ub_surrogate_address,
+                inverse_problem_settings.ub_surrogate_name,
+            )
+            surrogate_wrapper = posterior.LogPosterior(prior_component, surrogate_component)
+            surrogate_call = partial(
+                surrogate_wrapper, config=inverse_problem_settings.ub_model_configs[0]
+            )
+            models = [surrogate_call] + models
 
         return models
 

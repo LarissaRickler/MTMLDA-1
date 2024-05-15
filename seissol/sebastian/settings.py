@@ -5,6 +5,7 @@ import numpy as np
 from components import general_settings
 from . import builder
 
+USE_SURROGATE = False
 # ==================================================================================================
 parallel_run_settings = general_settings.ParallelRunSettings(
     num_chains=4,
@@ -20,8 +21,8 @@ parallel_run_settings = general_settings.ParallelRunSettings(
 )
 
 sampler_setup_settings = general_settings.SamplerSetupSettings(
-    num_levels=2,
-    subsampling_rates=[5, -1],
+    num_levels=3 if USE_SURROGATE else 2,
+    subsampling_rates=[5, 3, -1] if USE_SURROAGE else [5, -1],
     max_tree_height=50,
     underflow_threshold=-1000,
     rng_seed_mltree=1,
@@ -50,9 +51,9 @@ inverse_problem_settings = builder.InverseProblemSettings(
     prior_covariance=1e12 * np.identity(1),
     prior_rng_seed=3,
     ub_model_configs=({"order": 4}, {"order": 5}),
-    ub_model_address="http://localhost:4242",
-    ub_model_name="forward",
-    use_surrogate=False,
+    ub_model_address="http://localhost:4343",
+    ub_model_name="QueuingModel",
+    use_surrogate=USE_SURROGATE,
     ub_surrogate_address="http://localhost:4243",
     ub_surrogate_name="surrogate",
 )
@@ -61,7 +62,7 @@ sampler_component_settings = builder.SamplerComponentSettings(
     proposal_step_width=0.5,
     proposal_covariance=1e12 * np.identity(1),
     proposal_rng_seed=4,
-    accept_rates_initial_guess=[0.5, 0.8],
+    accept_rates_initial_guess=[0.5, 0.7, 0.8] if USE_SURROGATE else [0.5, 0.8],
     accept_rates_update_parameter=0.01,
 )
 

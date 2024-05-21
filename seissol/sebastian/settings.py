@@ -5,7 +5,7 @@ import numpy as np
 from components import general_settings
 from . import builder
 
-USE_SURROGATE = False
+USE_SURROGATE = True
 # ==================================================================================================
 parallel_run_settings = general_settings.ParallelRunSettings(
     num_chains=4,
@@ -22,7 +22,7 @@ parallel_run_settings = general_settings.ParallelRunSettings(
 
 sampler_setup_settings = general_settings.SamplerSetupSettings(
     num_levels=3 if USE_SURROGATE else 2,
-    subsampling_rates=[5, 3, -1] if USE_SURROAGE else [5, -1],
+    subsampling_rates=[5, 3, -1] if USE_SURROGATE else [5, -1],
     max_tree_height=50,
     underflow_threshold=-1000,
     rng_seed_mltree=1,
@@ -31,9 +31,9 @@ sampler_setup_settings = general_settings.SamplerSetupSettings(
 )
 
 sampler_run_settings = general_settings.SamplerRunSettings(
-    num_samples=3,
+    num_samples=10,
     initial_state=None,
-    num_threads=4,
+    num_threads=8,
     print_interval=1,
     tree_render_interval=1,
 )

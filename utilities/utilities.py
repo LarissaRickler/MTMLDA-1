@@ -2,7 +2,7 @@ import os
 import pickle
 import time
 from pathlib import Path
-from typing import Union
+from typing import Any, Union
 
 import numpy as np
 import umbridge as ub
@@ -28,6 +28,7 @@ def load_chain(process_id: int, load_path: Path) -> None:
     chain = np.load(chain_file)
     return chain
 
+
 # --------------------------------------------------------------------------------------------------
 def save_chain(
     process_id: int, save_path: Path, mcmc_trace: list[np.ndarray], exist_ok: bool
@@ -36,34 +37,21 @@ def save_chain(
     chain_file = append_string_to_path(save_path, f"{process_id}.npy")
     np.save(chain_file, mcmc_trace)
 
-# --------------------------------------------------------------------------------------------------
-def load_node(process_id, load_path):
-    node_file = append_string_to_path(load_path, f"{process_id}.pkl")
-    with node_file.open("rb") as node_file:
-        node = pickle.load(node_file)
-    return node
 
 # --------------------------------------------------------------------------------------------------
-def save_node(process_id, save_path, node, exist_ok):
+def load_pickle(process_id: int, load_path: Path):
+    load_file = append_string_to_path(load_path, f"{process_id}.pkl")
+    with load_file.open("rb") as load_file:
+        object = pickle.load(load_file)
+    return object
+
+
+# --------------------------------------------------------------------------------------------------
+def save_pickle(process_id: int, save_path: Path, object: Any, exist_ok: bool):
     os.makedirs(save_path.parent, exist_ok=exist_ok)
-    node_file = append_string_to_path(save_path, f"{process_id}.pkl")
-    with node_file.open("wb") as node_file:
-        pickle.dump(node, node_file)
-
-# --------------------------------------------------------------------------------------------------
-def load_rng_states(process_id, load_path):
-    rng_state_file = append_string_to_path(load_path, f"{process_id}.pkl")
-    with rng_state_file.open("rb") as rng_state_file:
-        rng_states = pickle.load(rng_state_file)
-    return rng_states
-
-
-# --------------------------------------------------------------------------------------------------
-def save_rng_states(process_id, save_path, rng_states, exist_ok):
-    os.makedirs(save_path.parent, exist_ok=exist_ok)
-    rng_state_file = append_string_to_path(save_path, f"{process_id}.pkl")
-    with rng_state_file.open("wb") as rng_state_file:
-        pickle.dump(rng_states, rng_state_file)
+    save_file = append_string_to_path(save_path, f"{process_id}.pkl")
+    with save_file.open("wb") as save_file:
+        pickle.dump(object, save_file)
 
 
 # --------------------------------------------------------------------------------------------------

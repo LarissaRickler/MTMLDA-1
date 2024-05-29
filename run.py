@@ -83,7 +83,7 @@ def execute_mtmlda_run(
     )
 
     if parallel_run_settings.rng_state_load_path is not None:
-        rng_states = utils.load_rng_states(process_id, parallel_run_settings.rng_state_load_path)
+        rng_states = utils.load_pickle(process_id, parallel_run_settings.rng_state_load_path)
         mtmlda_sampler.set_rngs(rng_states)
     
     if parallel_run_settings.chain_load_path is not None:
@@ -92,7 +92,7 @@ def execute_mtmlda_run(
     else:
         initial_state = app_builder.generate_initial_state(initial_state_settings)
     if parallel_run_settings.node_load_path is not None:
-        initial_node = utils.load_node(process_id, parallel_run_settings.node_load_path)
+        initial_node = utils.load_pickle(process_id, parallel_run_settings.node_load_path)
         sampler_run_settings.initial_node = initial_node
     sampler_run_settings.initial_state = initial_state
 
@@ -100,7 +100,7 @@ def execute_mtmlda_run(
     rng_states = mtmlda_sampler.get_rngs()
 
     if parallel_run_settings.rng_state_save_path is not None:
-        utils.save_rng_states(
+        utils.save_pickle(
             process_id,
             parallel_run_settings.rng_state_save_path,
             rng_states,
@@ -114,7 +114,7 @@ def execute_mtmlda_run(
             exist_ok=parallel_run_settings.overwrite_chain,
         )
     if parallel_run_settings.node_save_path is not None:
-        utils.save_node(
+        utils.save_pickle(
             process_id,
             parallel_run_settings.node_save_path,
             final_node,

@@ -187,7 +187,9 @@ def main() -> None:
     )
     with multiprocessing.Pool(processes=num_chains) as process_pool:
         process_pool.map(execute_mtmlda_on_procs, process_ids)
-    print("\n======================\n")
+    print("\n======================")
+    print(" Sampling done!")
+    print("======================\n")
 
 
 if __name__ == "__main__":

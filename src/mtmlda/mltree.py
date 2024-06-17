@@ -1,3 +1,5 @@
+"""_summary_."""
+
 import itertools
 import os
 from collections.abc import Sequence
@@ -12,6 +14,23 @@ import numpy as np
 
 # ==================================================================================================
 class BaseNode:
+    """Markov tree node base class.
+
+    The class contains all MCMC-related information for a node in the Markov tree.
+
+    Attributes:
+        probability_reached (float): The probability of reaching the node in the Markov tree
+        state (np.ndarray): The state of the Markov chain associated with the node
+        logposterior (float): The log-posterior probability of the state associated with the node
+        logposterior_coarse (float): The log-posterior of the node state, but on the next coarser
+            level of the model hierarchy
+        computing (bool): Whether the log-posterior for the node's state is currently being computed
+        random_draw (float): The random number used to decide whether to accept or reject the
+            MCMC move associated with the node
+        level (int): The level of the node in the multilevel hierarchy
+        subchain_index (int): The index of the node within the subchain of its level
+    """
+
     probability_reached: float = None
     state: np.ndarray = None
     logposterior: float = None
@@ -23,7 +42,20 @@ class BaseNode:
 
 
 class MTNode(BaseNode, atree.NodeMixin):
+    """Markov tree node implementaiton.
+
+    The class inherits MCMC-related information from '`BaseNode`' and is equiped with `Anytree`'s
+    node functionality via a mixin.
+    """
+
     def __init__(self, name: str, parent: Self = None, children: list[Self] = None):
+        """Node constructor.
+
+        Args:
+            name (str): Identifier of the node
+            parent (Self, optional): Paranet of the node. Defaults to None.
+            children (list[Self], optional): Children of the node. Defaults to None.
+        """
         super(BaseNode, self).__init__()
         self.name = name
         self.parent = parent
@@ -33,8 +65,36 @@ class MTNode(BaseNode, atree.NodeMixin):
 
 # ==================================================================================================
 class MLTreeSearchFunctions:
+    """Collection of functions for analyzing a Markov tree without modification.
+
+    This class is only a namespace for the contained functions, all methods are static. The search
+    functions iterate over an existing Markov tree and find nodes that fulfill certain criteria.
+
+    Methods:
+        find_max_probability_node: Find the node with the maximum probability of being reached
+        get_same_level_parent: Find the parent node of the same level as the input node,
+            if it exists
+        get_unique_same_subchain_child: Find the unique child of a node with the same level, if it
+            exists (i.e. if all intermdeiate MCMC decisions have been carried out)
+        check_if_node_is_available_for_decision: Check if a node is available for an MCMC decision,
+            depending on if its log-posterior and those of "adjacent nodes" have been computed
+    """
+
     @staticmethod
     def find_max_probability_node(root: MTNode) -> MTNode:
+        """Find node in the Markov tree with the maximum probability of being needed.
+
+        More precisely, the method looks for the node that is most likely to be needed in the
+        progression of the Markov tree. This is the node whose parent has the highest probability
+        of being reached. The method only checks for accept nodes whose log-posterior has not been
+        computed yet.
+
+        Args:
+            root (MTNode): Current root node of the Markov tree
+
+        Returns:
+            MTNode: Maximum probable node
+        """
         max_probability = 0
         max_node = None
 
@@ -52,11 +112,20 @@ class MLTreeSearchFunctions:
                     max_probability = parent_probability_reached
                     max_node = node
 
+        assert max_node is not None, "No node found with maximum probability"
         return max_node
 
     # ----------------------------------------------------------------------------------------------
     @staticmethod
     def get_same_level_parent(node: MTNode) -> MTNode:
+        """_summary_.
+
+        Args:
+            node (MTNode): _description_
+
+        Returns:
+            MTNode: _description_
+        """
         current_candidate = node
         while (current_candidate := current_candidate.parent) is not None:
             if current_candidate.level == node.level:
@@ -66,6 +135,14 @@ class MLTreeSearchFunctions:
     # ----------------------------------------------------------------------------------------------
     @staticmethod
     def get_unique_same_subchain_child(node: MTNode) -> MTNode:
+        """_summary_.
+
+        Args:
+            node (MTNode): _description_
+
+        Returns:
+            MTNode: _description_
+        """
         current_candidates = node.children
         while True:
             if (len(current_candidates) != 1) or (current_candidates[0].level > node.level):
@@ -78,6 +155,14 @@ class MLTreeSearchFunctions:
     # ----------------------------------------------------------------------------------------------
     @staticmethod
     def check_if_node_is_available_for_decision(node: MTNode) -> tuple[bool, bool, bool]:
+        """_summary_.
+
+        Args:
+            node (MTNode): _description_
+
+        Returns:
+            tuple[bool, bool, bool]: _description_
+        """
         decision_prerequisites_fulfilled = (
             node.name == "a"
             and node.parent is not None
@@ -112,6 +197,8 @@ class MLTreeModifier:
         subsampling_rates: Sequence[int],
         rng_seed: float,
     ) -> None:
+        if not len(subsampling_rates) == num_levels:
+            raise ValueError("Subsampling rates must be provided for all levels")
         self._num_levels = num_levels
         self._ground_proposal = ground_proposal
         self._subsampling_rates = subsampling_rates

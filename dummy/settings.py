@@ -38,11 +38,11 @@ sampler_setup_settings = general_settings.SamplerSetupSettings(
 )
 
 sampler_run_settings = general_settings.SamplerRunSettings(
-    num_samples=5000,
+    num_samples=1000,
     initial_state=None,
     initial_node=None,
     num_threads=1,
-    print_interval=50,
+    print_interval=10,
     tree_render_interval=1,
 )
 

@@ -1,3 +1,4 @@
+import datetime
 from pathlib import Path
 
 import numpy as np
@@ -7,9 +8,15 @@ from . import builder
 
 
 # ==================================================================================================
+timestamp = datetime.datetime.now()
+timestamp = f"{timestamp.year:04d}{timestamp.month:02d}{timestamp.day:02d}" \
+            f"_{timestamp.hour:02d}{timestamp.minute:02d}{timestamp.second:02d}"
+result_directory = f"{timestamp}_inno4scale001"
+
+
 parallel_run_settings = general_settings.ParallelRunSettings(
-    num_chains=4,
-    chain_save_path=Path("results_dummy/chain"),
+    num_chains=1,
+    chain_save_path=Path(f"{result_directory}/chain"),
     chain_load_path=None,
     node_save_path=None,
     node_load_path=None,
@@ -31,7 +38,7 @@ sampler_setup_settings = general_settings.SamplerSetupSettings(
 )
 
 sampler_run_settings = general_settings.SamplerRunSettings(
-    num_samples=1000,
+    num_samples=5000,
     initial_state=None,
     initial_node=None,
     num_threads=1,
@@ -41,7 +48,7 @@ sampler_run_settings = general_settings.SamplerRunSettings(
 
 logger_settings = general_settings.LoggerSettings(
     do_printing=True,
-    logfile_path=Path("results_dummy/mtmlda"),
+    logfile_path=Path(f"{result_directory}/mtmlda"),
     debugfile_path=None,
     write_mode="w",
 )

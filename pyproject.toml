@@ -4,7 +4,7 @@ name = "mtmlda"
 version = "0.1.0"
 description = "Markov Tree Multilevel Delayed Acceptance MCMC Library"
 readme = "README.md"
-license = {text = "GNU GPLv3"}
+license = {text = "MIT License"}
 authors = [
     {name = "Maximilian Kruse", email = "maximilian.kruse@kit.edu"},
     {name = "Linus Seelinger", email = "linus.seelinger@kit.edu"},

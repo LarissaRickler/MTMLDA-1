@@ -246,7 +246,7 @@ class MLTreeModifier:
         for level_children in itertools.islice(atree.LevelOrderGroupIter(root), 1, None):
             for child in level_children:
                 same_level_parent = MLTreeSearchFunctions.get_same_level_parent(child)
-                if child.name == "r" and same_level_parent is not None:
+                if same_level_parent is not None and child.state == same_level_parent.state:
                     child.computing = same_level_parent.computing
                     child.logposterior = same_level_parent.logposterior
 

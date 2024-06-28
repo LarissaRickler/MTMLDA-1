@@ -402,7 +402,7 @@ class MLMetropolisHastingsKernel:
     def compute_two_level_decision(node: mltree.MTNode, same_level_parent: mltree.MTNode) -> bool:
         """Compute between level MCMC decision.
 
-        THis decision rule is specific to the multilevel setting. Note that it does not utilize the
+        This decision rule is specific to the multilevel setting. Note that it does not utilize the
         proposal, but only the node containing the proposal and its same-level parent.
 
         Args:

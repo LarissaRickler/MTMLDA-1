@@ -4,7 +4,7 @@ import itertools
 import os
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Any
+from typing import Any, Union
 from typing_extensions import Self
 
 import anytree as atree
@@ -53,7 +53,7 @@ class MTNode(BaseNode, atree.NodeMixin):
 
         Args:
             name (str): Identifier of the node
-            parent (Self, optional): Paranet of the node. Defaults to None.
+            parent (Self, optional): Parent of the node. Defaults to None.
             children (list[Self], optional): Children of the node. Defaults to None.
         """
         super(BaseNode, self).__init__()
@@ -117,14 +117,14 @@ class MLTreeSearchFunctions:
 
     # ----------------------------------------------------------------------------------------------
     @staticmethod
-    def get_same_level_parent(node: MTNode) -> MTNode:
-        """_summary_.
+    def get_same_level_parent(node: MTNode) -> Union[MTNode, None]:
+        """Find next parent with same level in the MLDA hierarchy.
 
         Args:
-            node (MTNode): _description_
+            node (MTNode): Node to search parent for
 
         Returns:
-            MTNode: _description_
+            MTNode: Same level parent node, can be None
         """
         current_candidate = node
         while (current_candidate := current_candidate.parent) is not None:
@@ -134,14 +134,17 @@ class MLTreeSearchFunctions:
 
     # ----------------------------------------------------------------------------------------------
     @staticmethod
-    def get_unique_same_subchain_child(node: MTNode) -> MTNode:
-        """_summary_.
+    def get_unique_same_level_child(node: MTNode) -> Union[MTNode, None]:
+        """Get the unique child on the the same level of the MLDA hierarchy.
+
+        Uniqueness refers to the path in the Markov tree, meaning that all MCMC decisions between
+        a node and the same level child have to be carried out.
 
         Args:
-            node (MTNode): _description_
+            node (MTNode): Node to get unique child for
 
         Returns:
-            MTNode: _description_
+            MTNode: Unique same level child, can be None
         """
         current_candidates = node.children
         while True:
@@ -155,13 +158,25 @@ class MLTreeSearchFunctions:
     # ----------------------------------------------------------------------------------------------
     @staticmethod
     def check_if_node_is_available_for_decision(node: MTNode) -> tuple[bool, bool, bool]:
-        """_summary_.
+        """Check if a node is available for MCMC descicion.
+
+        A node has to fulfill some general criteria to be available for an MCMC decision. These are
+        checked with the `decision_prerequisites_fulfilled` conditional. After that, we distinguish
+        two different cases. On the groundlevel of the MLDA hierarchy, the node's posterior and its
+        immediate parent's posterior (which also has to be on the ground level) have to be computed.
+        For the second case of a two-level decision, we require four posterior values to be
+        available. Fristly, we need the values for the first and last node of the coarser subchain.
+        Secondly, we need the values for the current finer level state and the proposal on that
+        level.
+        The method returns three booleans, indicating if the node is generally available for a
+        decision, if it is a ground level decision, or if it is a two-level decision.
 
         Args:
-            node (MTNode): _description_
+            node (MTNode): Node to check
 
         Returns:
-            tuple[bool, bool, bool]: _description_
+            tuple[bool, bool, bool]: Booleans indicating if node is available for decision, and
+                which type of decision
         """
         decision_prerequisites_fulfilled = (
             node.name == "a"
@@ -190,6 +205,21 @@ class MLTreeSearchFunctions:
 
 # ==================================================================================================
 class MLTreeModifier:
+    """Class for the manipulation of Markov Trees.
+    
+    This class is the counterpart to the MLTreeSearchFunctions class. It contains methods to modify
+    a tree or specific nodes.
+
+    Methods:
+        expand_tree: Expand the Markov tree by adding new children to the nodes
+        compress_resolved_subchains: Remove nodes within subchain that are not required for
+            subsequent MCMC decisions
+        update_descendants: Update the status of the descendants of a node
+        discard_rejected_nodes: Remove nodes from the tree that have been excluded by an MCMC
+            decision
+        update_probability_reached: Update the probability of reaching a node in the Markov tree
+    """
+
     def __init__(
         self,
         num_levels: int,
@@ -197,6 +227,19 @@ class MLTreeModifier:
         subsampling_rates: Sequence[int],
         rng_seed: float,
     ) -> None:
+        """Constructor.
+
+        Reads in the necessary parameters for the manipulation of the Markov tree.
+
+        Args:
+            num_levels (int): _description_
+            ground_proposal (np.ndarray): _description_
+            subsampling_rates (Sequence[int]): _description_
+            rng_seed (float): _description_
+
+        Raises:
+            ValueError: Checks that correct number of subsampling rates is provided
+        """
         if not len(subsampling_rates) == num_levels:
             raise ValueError("Subsampling rates must be provided for all levels")
         self._num_levels = num_levels
@@ -206,6 +249,15 @@ class MLTreeModifier:
 
     # ----------------------------------------------------------------------------------------------
     def expand_tree(self, root: MTNode) -> None:
+        """Expand Markov tree.
+
+        This is an interface method performing two steps:
+        1. Add new children to the levae nodes of the Markov tree
+        2. Update status of new nodes depending of the status of their parents
+
+        Args:
+            root (MTNode): Root node of the Markov tree
+        """
         for node in root.leaves:
             if (node.logposterior is not None) or node.computing:
                 self._add_new_children_to_node(node)
@@ -213,6 +265,15 @@ class MLTreeModifier:
 
     # ----------------------------------------------------------------------------------------------
     def compress_resolved_subchains(self, root: MTNode) -> None:
+        """Compress subchains by discarding irrelevant nodes.
+
+        Within a subchain of a given level, only the first and last node are relevant for a 
+        two-level decision to the next level. Accordingly, nodes in between can be removed as soon
+        as a unique path is established between them.
+
+        Args:
+            root (MTNode): Root node of the Markov tree
+        """
         trying_to_compress = True
 
         while trying_to_compress:
@@ -222,17 +283,17 @@ class MLTreeModifier:
                 for node in level_children:
                     if node.level == self._num_levels - 1:
                         continue
-                    same_subchain_child = MLTreeSearchFunctions.get_unique_same_subchain_child(node)
-                    if same_subchain_child is None:
+                    same_level_child = MLTreeSearchFunctions.get_unique_same_level_child(node)
+                    if same_level_child is None:
                         continue
-                    same_subchain_grandchild = MLTreeSearchFunctions.get_unique_same_subchain_child(
-                        same_subchain_child
+                    same_level_child = MLTreeSearchFunctions.get_unique_same_level_child(
+                        same_level_child
                     )
-                    if same_subchain_grandchild is None:
+                    if same_level_child is None:
                         continue
 
                     node.children[0].parent = None
-                    same_subchain_grandchild.parent = node
+                    same_level_child.parent = node
                     trying_to_compress = True
 
                     if trying_to_compress:
@@ -243,6 +304,16 @@ class MLTreeModifier:
     # ----------------------------------------------------------------------------------------------
     @staticmethod
     def update_descendants(root: MTNode) -> None:
+        """Update all descendants of a given node.
+
+        If a descendent node has the same state and level as its parent, they share status regarding
+        computations and posterior values. Transferring these values is important for evaluating
+        which nodes still require posterior evaluations. It also helps to avoid redundant
+        compuations.
+
+        Args:
+            root (MTNode): Root node of the Markov tree
+        """
         for level_children in itertools.islice(atree.LevelOrderGroupIter(root), 1, None):
             for child in level_children:
                 same_level_parent = MLTreeSearchFunctions.get_same_level_parent(child)
@@ -253,6 +324,14 @@ class MLTreeModifier:
     # ----------------------------------------------------------------------------------------------
     @staticmethod
     def discard_rejected_nodes(node: MTNode, accepted: bool) -> None:
+        """Prune the Markov tree after an MCMC decision.
+
+        The branch of the tree that isn't chosen in the MCMC decision can be discarded.
+
+        Args:
+            node (MTNode): Node for which MCMC decision has been computed
+            accepted (bool): If MCMC decision was accepted
+        """
         if accepted:
             atree.util.rightsibling(node).parent = None
         else:
@@ -261,25 +340,46 @@ class MLTreeModifier:
     # ----------------------------------------------------------------------------------------------
     @staticmethod
     def update_probability_reached(root: MTNode, acceptance_rate_estimator: Any) -> None:
+        """Update probabilities for reaching nodes according to accept rate estimates.
+
+        Args:
+            root (MTNode): Root node of the Markov tree
+            acceptance_rate_estimator (Any): Object returning acceptance rate estimate for a given
+                level
+        """
         for level_children in atree.LevelOrderGroupIter(root):
             for node in level_children:
                 acceptance_rate_estimate = acceptance_rate_estimator.get_acceptance_rate(node.level)
 
-                if node.parent == None:
+                if node.parent is None:
+                    # Root node has probability 1
                     node.probability_reached = 1.0
                 elif len(node.parent.children) == 1:
+                    # Only child has same probability as parent
                     node.probability_reached = node.parent.probability_reached
                 elif node.name == "a":
+                    # Standard accept node
                     node.probability_reached = (
                         acceptance_rate_estimate * node.parent.probability_reached
                     )
                 elif node.name == "r":
+                    # Standard reject node
                     node.probability_reached = (
                         1 - acceptance_rate_estimate
                     ) * node.parent.probability_reached
 
     # ----------------------------------------------------------------------------------------------
     def _add_new_children_to_node(self, node: MTNode) -> None:
+        """Add accept and reject child to a given node.
+
+        Depending on the level and subchain index of the parent, the children are created with
+        new level and subchain index properties. Also depending on their respective positions in
+        the chain, the states of the children are transferred from previous nodes or newly created
+        from a proposal distribution.
+
+        Args:
+            node (MTNode): Node to append children to
+        """
         accepted = MTNode(name="a", parent=node)
         rejected = MTNode(name="r", parent=node)
 
@@ -287,6 +387,7 @@ class MLTreeModifier:
             new_node.random_draw = self._rng.uniform(low=0, high=1, size=None)
         subsampling_rate = self._subsampling_rates[node.level]
 
+        # Parent is last node in subchain -> Go one level up
         if node.subchain_index == subsampling_rate - 1:
             for new_node in [accepted, rejected]:
                 new_node.level = node.level + 1
@@ -296,6 +397,7 @@ class MLTreeModifier:
             rejected.state = same_level_parent.state
             accepted.state = node.state
 
+        # Within ground level chain -> Draw from proposal for accept nodes
         elif node.level == 0:
             for new_node in [accepted, rejected]:
                 new_node.level = node.level
@@ -304,6 +406,7 @@ class MLTreeModifier:
             rejected.state = node.state
             accepted.state = self._ground_proposal.propose(node.state)
 
+        # Within higher level chain -> Go one level down, transfer state from parent
         else:
             rejected.parent = None
             accepted.level = node.level - 1
@@ -313,27 +416,51 @@ class MLTreeModifier:
     # ----------------------------------------------------------------------------------------------
     @property
     def rng(self) -> np.random.Generator:
+        """Getter for random number generator."""
         return self._rng
 
     # ----------------------------------------------------------------------------------------------
     @rng.setter
     def rng(self, rng: np.random.Generator) -> None:
+        """Setter for random number generator."""
         self._rng = rng
 
 
 # ==================================================================================================
 class MLTreeVisualizer:
+    """Visualizer for Markov Trees.
+    
+    This class utilizes `Anytree's` built-in exporter to create dotfile visualizations of
+    a given Markov tree. This dotfiles can then be converted into,e.g., PNG images during
+    post-processing.
+    The nodes are annotated with information on their name ('a' or 'r'), the probability of
+    reaching them, their level in the MLDA hierarchy, and their subchain index. Their respective
+    level is also indicated by the node size (higher level = larger node). In addition, coloring
+    of the nodes indicates their computing status. Light blue nodes have not been visited yet,
+    the posterior for orange nodes is currently being computed, and green nodes have been evaluated.
+
+    Methods:
+        export_to_dot: Export the given Markov tree to a dotfile, automatically indexed
+    """
     _base_size = 1
     _fixed_size = True
     _style = "filled"
     _shape = "circle"
     _border_color = "slategray4"
-    _color_not_visited = " 	azure2"
+    _color_not_visited = "azure2"
     _color_computing = "darkgoldenrod1"
     _color_visited = "mediumaquamarine"
 
     # ----------------------------------------------------------------------------------------------
     def __init__(self, result_directory: Path = None) -> None:
+        """Constructor.
+
+        Create directory for storing visualizations if desired, initialize counter for indexing.
+
+        Args:
+            result_directory (Path, optional): Directory to store dot files in. Defaults to None.
+                If no directory is provided, dot files are not stored.
+        """
         self._id_counter = 0
         self._result_dir = result_directory
         if self._result_dir is not None:
@@ -341,6 +468,14 @@ class MLTreeVisualizer:
 
     # ----------------------------------------------------------------------------------------------
     def export_to_dot(self, mltree_root: MTNode) -> int:
+        """Export a given tree to dot file, interface method.
+
+        Args:
+            mltree_root (MTNode): Root node of the tree to export
+
+        Returns:
+            int: _description_
+        """
         if self._result_dir is not None:
             tree_exporter = exporter.DotExporter(
                 mltree_root, nodenamefunc=self._name_from_parents, nodeattrfunc=self._node_attr_func
@@ -355,6 +490,14 @@ class MLTreeVisualizer:
     # ----------------------------------------------------------------------------------------------
     @classmethod
     def _node_attr_func(cls, node: MTNode) -> str:
+        """Generates a metadata string for dotfile export.
+        
+        Args:
+            node (MTNode): Node to generate metadata for
+        
+        Returns:
+            str: metadata string
+        """
         node_size = (1 + 0.75 * node.level) * cls._base_size
         if node.logposterior is not None:
             color = cls._color_visited
@@ -384,6 +527,14 @@ class MLTreeVisualizer:
     # ----------------------------------------------------------------------------------------------
     @staticmethod
     def _name_from_parents(node: MTNode) -> str:
+        """Create node name by appending current name to parent's name.
+
+        Args:
+            node (MTNode): Node to name
+
+        Returns:
+            str: node name
+        """
         name = node.name
         current_node = node
         while current_node := current_node.parent:

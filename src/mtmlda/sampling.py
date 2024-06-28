@@ -76,6 +76,9 @@ class MTMLDASampler:
         self._print_interval = None
         self._tree_render_interval = None
         self._job_handler = None
+        
+        self._num_generated_samples = [0,] * self._num_levels
+        self._num_accepted_samples = [0,] * self._num_levels
 
     # ----------------------------------------------------------------------------------------------
     def run(self, run_settings: SamplerRunSettings) -> list[np.ndarray]:
@@ -199,6 +202,9 @@ class MTMLDASampler:
                                 node, same_level_parent
                             )
                             self._log_debug_statistics(f"2lmcmc: {accepted}", node)
+                        self._num_generated_samples[node.level] += 1
+                        if accepted:
+                            self._num_accepted_samples[node.level] += 1
                         self._accept_rate_estimator.update(accepted, node)
                         self._mltree_modifier.discard_rejected_nodes(node, accepted)
                         computing_mcmc_decisions = True
@@ -233,8 +239,10 @@ class MTMLDASampler:
         for i in range(self._num_levels):
             run_statistics[f"evals_l{i}"] = logging.Statistic(f"{f'#Evals L{i}':<12}", "<12.3e")
         for i in range(self._num_levels):
-            run_statistics[f"accept_rate_l{i}"] = logging.Statistic(f"{f'#ARE L{i}':<12}", "<12.3e")
-
+            run_statistics[f"accept_rate_l{i}"] = logging.Statistic(f"{f'AR L{i}':<12}", "<12.3e")
+        for i in range(self._num_levels):
+            run_statistics[f"ar_estimate_l{i}"] = logging.Statistic(f"{f'ARE L{i}':<12}", "<12.3e")
+        
         debug_statistics = {}
         debug_statistics["level"] = logging.Statistic(f"{'level':<6}", "<3")
         debug_statistics["index"] = logging.Statistic(f"{'index':<6}", "<3")
@@ -252,7 +260,13 @@ class MTMLDASampler:
         for i in range(self._num_levels):
             self._run_statistics[f"evals_l{i}"].set_value(self._job_handler.num_evaluations[i])
         for i in range(self._num_levels):
-            self._run_statistics[f"accept_rate_l{i}"].set_value(
+            if self._num_generated_samples[i] == 0:
+                accept_rate = 0
+            else:
+                accept_rate = self._num_accepted_samples[i] / self._num_generated_samples[i]
+            self._run_statistics[f"accept_rate_l{i}"].set_value(accept_rate)
+        for i in range(self._num_levels):
+            self._run_statistics[f"ar_estimate_l{i}"].set_value(
                 self._accept_rate_estimator.get_acceptance_rate(i)
             )
 

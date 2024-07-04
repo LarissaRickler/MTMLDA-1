@@ -11,7 +11,7 @@ parallel_run_settings = general_settings.ParallelRunSettings(
     num_chains=4,
     chain_save_path=Path("results_example_01/chain"),
     chain_load_path=None,
-    node_save_path=Path("results_example_01/final_node"),
+    node_save_path=None,
     node_load_path=None,
     rng_state_save_path=None,
     rng_state_load_path=None,
@@ -22,7 +22,7 @@ parallel_run_settings = general_settings.ParallelRunSettings(
 
 sampler_setup_settings = general_settings.SamplerSetupSettings(
     num_levels=3,
-    subsampling_rates=[2, 2, -1],
+    subsampling_rates=[5, 3, -1],
     max_tree_height=50,
     underflow_threshold=-1000,
     rng_seed_mltree=1,

@@ -1,3 +1,5 @@
+"""_summary_."""
+
 import logging
 import os
 import sys
@@ -12,6 +14,14 @@ import numpy as np
 # ==================================================================================================
 @dataclass
 class LoggerSettings:
+    """Data class storing settings for the logger.
+
+    Attributes:
+        do_printing (bool): Decides if the default logger prints to the console, default is True
+        logfile_path (str): Directory to log run statistics to, default is None
+        debugfile_path (str): Directory to log debug statistics to, default is None
+        write_mode (str): Write mode for the log files (append, overwrite), default is 'w'
+    """
     do_printing: bool = True
     logfile_path: str = None
     debugfile_path: str = None
@@ -20,27 +30,60 @@ class LoggerSettings:
 
 # ==================================================================================================
 class Statistic:
+    """Basic statistics object containing information for logging.
+    
+    Every statistics object has a string identifier and a format string for the value it stores. The
+    value attribute is not accessed directly, but through getter and setter methods. The idea behind
+    is that more sophisticated logic can be implemented in subclasses, still adhering to the generic
+    interface.
+
+    Attributes:
+        str_id (str): Identifier for the statistic
+        str_format (str): Format string for the value
+
+    Methods:
+        set_value: Set the value of the statistic
+        get_value: Get the value of the statistic
+    """
+
     def __init__(self, str_id, str_format):
+        """Constructor of the statistic.
+
+        Args:
+            str_id (_type_): Identifier for the statistic
+            str_format (_type_): Format string for the value
+        """
         self.str_id = str_id
         self.str_format = str_format
         self._value: Any = None
 
     def set_value(self, value):
+        """Set the value of the statistic."""
         self._value = value
 
     def get_value(self):
+        """Get the value of the statistic."""
         return self._value
 
 # --------------------------------------------------------------------------------------------------
 class RunningStatistic(Statistic):
+    """Statistic for computing batch averages.
+    
+    The running statistics stores all values provided by the `set_value` method and computes their
+    average when the `get_value` method is called.
+    """
+
     def __init__(self, str_id, str_format):
+        """Constructor, see base class for details."""
         super().__init__(str_id, str_format)
         self._value = []
 
     def set_value(self, new_value):
+        """Set the value of the statistic."""
         self.value.append(new_value)
 
     def get_value(self):
+        """Get the value of the statistic."""
         value = np.column_stack(self._value)
         value = np.mean(value, axis=-1)
         self._value = []
@@ -48,16 +91,23 @@ class RunningStatistic(Statistic):
 
 # --------------------------------------------------------------------------------------------------
 class AccumulativeStatistic(Statistic):
+    """Statistic for computing overall averages.
+    
+    The mean value is computed from all provided values.
+    """
     def __init__(self, str_id, str_format):
+        """Constructor, see base class for details."""
         super().__init__(str_id, str_format)
         self._value = []
         self._num_recordings = 0
         self._average = 0
 
     def set_value(self, new_value):
+        """Set the value of the statistic."""
         self.value.append(new_value)
 
     def get_value(self):
+        """Get the value of the statisticas running average."""
         value = np.column_stack(self._value)
         num_new_recordings = len(self._value)
         new_average = np.mean(value, axis=-1)
@@ -65,12 +115,27 @@ class AccumulativeStatistic(Statistic):
         value = record_ratio * new_average + (1 - record_ratio) * self._average
         self._average = value
         self._num_recordings += num_new_recordings
-        self._value = ()
+        self._value =  []
         return value
 
 
 # ==================================================================================================
 class MTMLDALogger:
+    """Logger for the MLDA sampler.
+    
+    This custom logger wraps the standard Python logger, adding some convenience methods for
+    logging on different levels to different files and the console.
+
+    Methods:
+        log_run_statistics: Log run statistics
+        log_debug_statistics: Log debug statistics
+        log_header: Log the header of the run statistics table
+        log_debug_new_samples: Log the start of a new chain segment in the debug log
+        log_debug_tree_export: Log the export of a tree in the debug log
+        info: Log an info message to the run logger
+        debug: Log a debug message to the debug logger
+        exception: Log an exception to all loggers
+    """
     _debug_header_width = 80
 
     # ----------------------------------------------------------------------------------------------
@@ -78,6 +143,13 @@ class MTMLDALogger:
         self,
         logger_settings: LoggerSettings,
     ) -> None:
+        """Constructor of the logger.
+
+        Initializes the run and debug log handles, depending on the user settings.
+
+        Args:
+            logger_settings (LoggerSettings): User settings
+        """
         self._logfile_path = logger_settings.logfile_path
         self._debugfile_path = logger_settings.debugfile_path
         self._pylogger = logging.getLogger(__name__)
@@ -112,6 +184,11 @@ class MTMLDALogger:
 
     # ----------------------------------------------------------------------------------------------
     def log_run_statistics(self, statistics: dict[str, Statistic]) -> None:
+        """Log statistics into run log table.
+
+        Args:
+            statistics (dict[str, Statistic]): Run statistics object to log
+        """
         output_str = ""
 
         for statistic in statistics.values():
@@ -121,6 +198,12 @@ class MTMLDALogger:
 
     # ----------------------------------------------------------------------------------------------
     def log_debug_statistics(self, info: str, statistics: dict[str, Statistic]) -> None:
+        """_summary_.
+
+        Args:
+            info (str): _description_
+            statistics (dict[str, Statistic]): _description_
+        """
         output_str = ""
         for statistic in statistics.values():
             value_str = self._process_value_str(statistic.get_value(), statistic.str_format)
@@ -132,6 +215,11 @@ class MTMLDALogger:
 
     # ----------------------------------------------------------------------------------------------
     def log_header(self, statistics: dict[str, Statistic]) -> None:
+        """_summary_.
+
+        Args:
+            statistics (dict[str, Statistic]): _description_
+        """
         log_header_str = ""
         for statistic in statistics.values():
             log_header_str += f"{statistic.str_id}| "
@@ -140,6 +228,11 @@ class MTMLDALogger:
 
     # ----------------------------------------------------------------------------------------------
     def log_debug_new_samples(self, sample: int) -> None:
+        """_summary_.
+
+        Args:
+            sample (int): _description_
+        """
         if self._debugfile_path is not None:
             output_str = f" New chain segment, sample {sample:<8.3e} ".center(
                 self._debug_header_width, "="
@@ -148,24 +241,53 @@ class MTMLDALogger:
 
     # ----------------------------------------------------------------------------------------------
     def log_debug_tree_export(self, tree_id: int) -> None:
+        """_summary_.
+
+        Args:
+            tree_id (int): _description_
+        """
         if (self._debugfile_path is not None) and (tree_id is not None):
             output_str = f"-> Export tree with Id {tree_id}"
             self.debug(output_str)
 
     # ----------------------------------------------------------------------------------------------
     def info(self, message: str) -> None:
+        """_summary_.
+
+        Args:
+            message (str): _description_
+        """
         self._pylogger.info(message)
 
     # ----------------------------------------------------------------------------------------------
     def debug(self, message: str) -> None:
+        """_summary_.
+
+        Args:
+            message (str): _description_
+        """
         self._pylogger.debug(message)
 
     # ----------------------------------------------------------------------------------------------
     def exception(self, message: str) -> None:
+        """_summary_.
+
+        Args:
+            message (str): _description_
+        """
         self._pylogger.exception(message)
 
     # ----------------------------------------------------------------------------------------------
     def _process_value_str(self, value: Any, str_format: str) -> str:
+        """_summary_.
+
+        Args:
+            value (Any): _description_
+            str_format (str): _description_
+
+        Returns:
+            str: _description_
+        """
         if isinstance(value, Iterable):
             value_str = [f"{val:{str_format}}" for val in value]
             value_str = f"({','.join(value_str)})"
@@ -178,9 +300,24 @@ class MTMLDALogger:
 
 # ==================================================================================================
 class DebugFileHandler(logging.FileHandler):
+    """_summary_."""
+
     def __init__(self, filename: Path, mode: str = "a", encoding: str = None, delay: bool = False):
+        """_summary_.
+
+        Args:
+            filename (Path): _description_
+            mode (str, optional): _description_. Defaults to "a".
+            encoding (str, optional): _description_. Defaults to None.
+            delay (bool, optional): _description_. Defaults to False.
+        """
         super().__init__(filename, mode, encoding, delay)
 
     def emit(self, record: logging.LogRecord) -> None:
+        """_summary_.
+
+        Args:
+            record (logging.LogRecord): _description_
+        """
         if record.levelno == logging.DEBUG:
             super().emit(record)

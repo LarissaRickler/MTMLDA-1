@@ -8,7 +8,7 @@ from . import builder
 
 # ==================================================================================================
 parallel_run_settings = general_settings.ParallelRunSettings(
-    num_chains=4,
+    num_chains=1,
     chain_save_path=Path("results_example_01/chain"),
     chain_load_path=None,
     node_save_path=None,
@@ -31,12 +31,11 @@ sampler_setup_settings = general_settings.SamplerSetupSettings(
 )
 
 sampler_run_settings = general_settings.SamplerRunSettings(
-    num_samples=50,
+    num_samples=5,
     initial_state=None,
     initial_node=None,
     num_threads=1,
     print_interval=1,
-    tree_render_interval=1,
 )
 
 logger_settings = general_settings.LoggerSettings(

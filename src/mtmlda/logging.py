@@ -198,11 +198,11 @@ class MTMLDALogger:
 
     # ----------------------------------------------------------------------------------------------
     def log_debug_statistics(self, info: str, statistics: dict[str, Statistic]) -> None:
-        """_summary_.
+        """Log statistics into debug file.
 
         Args:
-            info (str): _description_
-            statistics (dict[str, Statistic]): _description_
+            info (str): Event to log statistics for
+            statistics (dict[str, Statistic]): Statistics to log
         """
         output_str = ""
         for statistic in statistics.values():
@@ -215,10 +215,10 @@ class MTMLDALogger:
 
     # ----------------------------------------------------------------------------------------------
     def log_header(self, statistics: dict[str, Statistic]) -> None:
-        """_summary_.
+        """Print our the header for the run statistics table.
 
         Args:
-            statistics (dict[str, Statistic]): _description_
+            statistics (dict[str, Statistic]): Statistics to print header for
         """
         log_header_str = ""
         for statistic in statistics.values():
@@ -228,10 +228,10 @@ class MTMLDALogger:
 
     # ----------------------------------------------------------------------------------------------
     def log_debug_new_samples(self, sample: int) -> None:
-        """_summary_.
+        """Log divider into debug file, indicating new fine-level sample.
 
         Args:
-            sample (int): _description_
+            sample (int): Number of the new sample
         """
         if self._debugfile_path is not None:
             output_str = f" New chain segment, sample {sample:<8.3e} ".center(
@@ -241,10 +241,10 @@ class MTMLDALogger:
 
     # ----------------------------------------------------------------------------------------------
     def log_debug_tree_export(self, tree_id: int) -> None:
-        """_summary_.
+        """Note in debug file that Markov tree with given id has been exported.
 
         Args:
-            tree_id (int): _description_
+            tree_id (int): ID of the tree that has been exported
         """
         if (self._debugfile_path is not None) and (tree_id is not None):
             output_str = f"-> Export tree with Id {tree_id}"
@@ -252,41 +252,44 @@ class MTMLDALogger:
 
     # ----------------------------------------------------------------------------------------------
     def info(self, message: str) -> None:
-        """_summary_.
+        """Wrapper for Python logger info call.
 
         Args:
-            message (str): _description_
+            message (str): Info message to log
         """
         self._pylogger.info(message)
 
     # ----------------------------------------------------------------------------------------------
     def debug(self, message: str) -> None:
-        """_summary_.
+        """Wrapper for Python logger debug call.
 
         Args:
-            message (str): _description_
+            message (str): Debug message to log
         """
         self._pylogger.debug(message)
 
     # ----------------------------------------------------------------------------------------------
     def exception(self, message: str) -> None:
-        """_summary_.
+        """Wrapper for Python logger exception call.
 
         Args:
-            message (str): _description_
+            message (str): Exception message to log
         """
         self._pylogger.exception(message)
 
     # ----------------------------------------------------------------------------------------------
     def _process_value_str(self, value: Any, str_format: str) -> str:
-        """_summary_.
+        """Format a numerical value as string, given a suitable format.
+
+        if the provided value is `None`, it is formatted as `np.nan`. If the value is iterable,
+        all values are concatenated as comma-separated list, each with the provided format.
 
         Args:
-            value (Any): _description_
-            str_format (str): _description_
+            value (Any): Value to format as string
+            str_format (str): format to use
 
         Returns:
-            str: _description_
+            str: Value as formatted string
         """
         if isinstance(value, Iterable):
             value_str = [f"{val:{str_format}}" for val in value]
@@ -300,24 +303,28 @@ class MTMLDALogger:
 
 # ==================================================================================================
 class DebugFileHandler(logging.FileHandler):
-    """_summary_."""
+    """Custom file handler for Logger.
+    
+    This file handler only transfers messages on the `DEBUG`level of python logging.
+    """
 
     def __init__(self, filename: Path, mode: str = "a", encoding: str = None, delay: bool = False):
-        """_summary_.
+        """Constructor of the file handler.
 
         Args:
-            filename (Path): _description_
-            mode (str, optional): _description_. Defaults to "a".
-            encoding (str, optional): _description_. Defaults to None.
-            delay (bool, optional): _description_. Defaults to False.
+            filename (Path): File to log to
+            mode (str, optional): Write mode for log messagges_. Defaults to "a".
+            encoding (str, optional): Special encoding for messages. Defaults to None.
+            delay (bool, optional): Determines if file opening is deferred until first `emit` call.
+                Defaults to False.
         """
         super().__init__(filename, mode, encoding, delay)
 
     def emit(self, record: logging.LogRecord) -> None:
-        """_summary_.
+        """Transfer a log message.
 
         Args:
-            record (logging.LogRecord): _description_
+            record (logging.LogRecord): Log message object 
         """
         if record.levelno == logging.DEBUG:
             super().emit(record)

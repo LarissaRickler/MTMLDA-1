@@ -53,8 +53,6 @@ class SamplerRunSettings:
         num_threads (int): Number of threads to be used for parallel evaluation of posterior
             evaluation requests. Default is 1.
         print_interval (int): Interval for printing run statistics, default is 1.
-        tree_render_interval (int): Interval for exporting the Markov tree as a dot file,
-            default is 1. Only relevant if an `mltree_path` has been provided during initialization.
     """
 
     num_samples: int
@@ -62,7 +60,6 @@ class SamplerRunSettings:
     initial_node: mltree.MTNode = None
     num_threads: int = 1
     print_interval: int = 1
-    tree_render_interval: int = 1
 
 
 @dataclass
@@ -147,7 +144,6 @@ class MTMLDASampler:
         self._start_time = None
         self._num_samples = None
         self._print_interval = None
-        self._tree_render_interval = None
         self._job_handler = None
 
         self._num_generated_samples = [
@@ -175,7 +171,6 @@ class MTMLDASampler:
         self._start_time = time.time()
         self._num_samples = run_settings.num_samples
         self._print_interval = run_settings.print_interval
-        self._tree_render_interval = run_settings.tree_render_interval
         num_threads = run_settings.num_threads
         mltree_root = self._init_mltree(run_settings.initial_state, run_settings.initial_node)
         mcmc_chain = [run_settings.initial_state]
@@ -193,7 +188,9 @@ class MTMLDASampler:
                     self._extend_tree_and_launch_jobs(mltree_root)
                     self._update_tree_from_finished_jobs(mltree_root)
                     self._compute_available_mcmc_decisions(mltree_root)
-                    self._mltree_modifier.compress_resolved_subchains(mltree_root)
+                    compressed = self._mltree_modifier.compress_resolved_subchains(mltree_root)
+                    if compressed:
+                        self._export_debug_tree(mltree_root)
                     mcmc_chain, mltree_root = self._propagate_chain(mcmc_chain, mltree_root)
 
                     if len(mcmc_chain) >= self._num_samples:
@@ -251,6 +248,7 @@ class MTMLDASampler:
         mltree_root = mltree.MTNode(name="a")
         mltree_root.level = self._num_levels - 1
         mltree_root.subchain_index = 0
+        mltree_root.probability_reached = 1
 
         if initial_node is not None:
             mltree_root.state = initial_node.state
@@ -280,6 +278,7 @@ class MTMLDASampler:
             self._mltree_modifier.update_probability_reached(
                 mltree_root, self._accept_rate_estimator
             )
+            self._export_debug_tree(mltree_root)
             new_candidate = mltree_search.find_max_probability_node(mltree_root)
             self._job_handler.submit_job(new_candidate)
             self._log_debug_statistics("submitted", new_candidate)

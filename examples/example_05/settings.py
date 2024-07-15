@@ -1,17 +1,24 @@
+import datetime
 from pathlib import Path
 
 import numpy as np
-
 from components import general_settings
+
 from . import builder
 
-USE_SURROGATE = True
+
 # ==================================================================================================
+timestamp = datetime.datetime.now()
+timestamp = f"{timestamp.year:04d}{timestamp.month:02d}{timestamp.day:02d}" \
+            f"_{timestamp.hour:02d}{timestamp.minute:02d}{timestamp.second:02d}"
+result_directory = f"{timestamp}_inno4scale001"
+
+
 parallel_run_settings = general_settings.ParallelRunSettings(
-    num_chains=4,
-    chain_save_path=Path("results_seissol_sebastian/chain"),
+    num_chains=1,
+    chain_save_path=Path(f"{result_directory}/chain"),
     chain_load_path=None,
-    node_save_path=Path("results_seissol_sebastian/final_node"),
+    node_save_path=None,
     node_load_path=None,
     rng_state_save_path=None,
     rng_state_load_path=None,
@@ -21,8 +28,8 @@ parallel_run_settings = general_settings.ParallelRunSettings(
 )
 
 sampler_setup_settings = general_settings.SamplerSetupSettings(
-    num_levels=3 if USE_SURROGATE else 2,
-    subsampling_rates=[5, 3, -1] if USE_SURROGATE else [5, -1],
+    num_levels=3,
+    subsampling_rates=[5, 3, -1],
     max_tree_height=50,
     underflow_threshold=-1000,
     rng_seed_mltree=1,
@@ -31,39 +38,37 @@ sampler_setup_settings = general_settings.SamplerSetupSettings(
 )
 
 sampler_run_settings = general_settings.SamplerRunSettings(
-    num_samples=10,
+    num_samples=1000,
     initial_state=None,
-    num_threads=8,
-    print_interval=1,
-    tree_render_interval=1,
+    initial_node=None,
+    num_threads=1,
+    print_interval=10,
 )
 
 logger_settings = general_settings.LoggerSettings(
     do_printing=True,
-    logfile_path=Path("results_seissol_sebastian") / Path("mtmlda"),
-    debugfile_path=Path("results_seissol_sebastian") / Path("mtmlda_debug"),
+    logfile_path=Path(f"{result_directory}/mtmlda"),
+    debugfile_path=None,
     write_mode="w",
 )
 
 # --------------------------------------------------------------------------------------------------
 inverse_problem_settings = builder.InverseProblemSettings(
-    prior_mean=np.array((5e6,)),
-    prior_covariance=1e12 * np.identity(1),
-    prior_rng_seed=3,
-    ub_model_configs=({"order": 4}, {"order": 5}),
-    ub_model_address="http://localhost:4343",
-    ub_model_name="QueuingModel",
-    use_surrogate=USE_SURROGATE,
-    ub_surrogate_address="http://localhost:4243",
-    ub_surrogate_name="surrogate",
+    ub_model_configs=({"level": 0}, {"level": 1}, {"level": 2}),
+    ub_model_address="http://localhost:4242",
+    ub_model_name="banana_posterior",
 )
 
 sampler_component_settings = builder.SamplerComponentSettings(
-    proposal_step_width=0.5,
-    proposal_covariance=1e12 * np.identity(1),
-    proposal_rng_seed=4,
-    accept_rates_initial_guess=[0.5, 0.7, 0.8] if USE_SURROGATE else [0.5, 0.8],
+    proposal_step_width=1,
+    proposal_covariance=1 * np.identity(2),
+    proposal_rng_seed=3,
+    accept_rates_initial_guess=[0.5, 0.7, 0.8],
     accept_rates_update_parameter=0.01,
 )
 
-initial_state_settings = builder.InitialStateSettings()
+initial_state_settings = builder.InitialStateSettings(
+    rng_seed_init=4,
+    mean_init=np.array([0, 0]),
+    covariance_init=np.identity(2),
+)

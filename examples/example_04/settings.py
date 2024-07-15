@@ -31,7 +31,6 @@ sampler_run_settings = general_settings.SamplerRunSettings(
     initial_state=None,
     num_threads=8,
     print_interval=100,
-    tree_render_interval=100,
 )
 
 logger_settings = general_settings.LoggerSettings(

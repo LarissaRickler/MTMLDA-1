@@ -206,7 +206,7 @@ class MLTreeSearchFunctions:
 # ==================================================================================================
 class MLTreeModifier:
     """Class for the manipulation of Markov Trees.
-    
+
     This class is the counterpart to the MLTreeSearchFunctions class. It contains methods to modify
     a tree or specific nodes.
 
@@ -254,20 +254,28 @@ class MLTreeModifier:
         This is an interface method performing two steps:
         1. Add new children to the levae nodes of the Markov tree
         2. Update status of new nodes depending of the status of their parents
+        These steps are repeated until computable leaves are available, meaning nodes for which no
+        posterior is available or being computed.
 
         Args:
             root (MTNode): Root node of the Markov tree
         """
-        for node in root.leaves:
-            if (node.logposterior is not None) or node.computing:
-                self._add_new_children_to_node(node)
-                self.update_descendants(node)
+        nodes_to_compute = False
+        while not nodes_to_compute:
+            for node in root.leaves:
+                if (node.logposterior is not None) or node.computing:
+                    self._add_new_children_to_node(node)
+                    self.update_descendants(node)
+            for node in root.leaves:
+                if node.logposterior is None and not node.computing:
+                    nodes_to_compute = True
+                    break
 
     # ----------------------------------------------------------------------------------------------
-    def compress_resolved_subchains(self, root: MTNode) -> None:
+    def compress_resolved_subchains(self, root: MTNode) -> bool:
         """Compress subchains by discarding irrelevant nodes.
 
-        Within a subchain of a given level, only the first and last node are relevant for a 
+        Within a subchain of a given level, only the first and last node are relevant for a
         two-level decision to the next level. Accordingly, nodes in between can be removed as soon
         as a unique path is established between them.
 
@@ -275,6 +283,7 @@ class MLTreeModifier:
             root (MTNode): Root node of the Markov tree
         """
         trying_to_compress = True
+        compressed = False
 
         while trying_to_compress:
             trying_to_compress = False
@@ -295,11 +304,14 @@ class MLTreeModifier:
                     node.children[0].parent = None
                     same_level_child.parent = node
                     trying_to_compress = True
+                    compressed = True
 
                     if trying_to_compress:
                         break
                 if trying_to_compress:
                     break
+        
+        return compressed
 
     # ----------------------------------------------------------------------------------------------
     @staticmethod
@@ -317,7 +329,7 @@ class MLTreeModifier:
         for level_children in itertools.islice(atree.LevelOrderGroupIter(root), 1, None):
             for child in level_children:
                 same_level_parent = MLTreeSearchFunctions.get_same_level_parent(child)
-                if same_level_parent is not None and child.state == same_level_parent.state:
+                if same_level_parent is not None and np.all(child.state == same_level_parent.state):
                     child.computing = same_level_parent.computing
                     child.logposterior = same_level_parent.logposterior
 
@@ -429,7 +441,7 @@ class MLTreeModifier:
 # ==================================================================================================
 class MLTreeVisualizer:
     """Visualizer for Markov Trees.
-    
+
     This class utilizes `Anytree's` built-in exporter to create dotfile visualizations of
     a given Markov tree. This dotfiles can then be converted into,e.g., PNG images during
     post-processing.
@@ -442,6 +454,7 @@ class MLTreeVisualizer:
     Methods:
         export_to_dot: Export the given Markov tree to a dotfile, automatically indexed
     """
+
     _base_size = 1
     _fixed_size = True
     _style = "filled"
@@ -491,10 +504,10 @@ class MLTreeVisualizer:
     @classmethod
     def _node_attr_func(cls, node: MTNode) -> str:
         """Generates a metadata string for dotfile export.
-        
+
         Args:
             node (MTNode): Node to generate metadata for
-        
+
         Returns:
             str: metadata string
         """

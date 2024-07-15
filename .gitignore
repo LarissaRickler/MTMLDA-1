@@ -207,6 +207,5 @@ pyrightconfig.json
 .vscode/
 !/components/
 !/examples/
-!/seissol/
 !/src/
 !/utilities/

@@ -3,11 +3,10 @@ import importlib
 import multiprocessing
 from collections.abc import Callable
 from functools import partial
-
 from typing import Any
 
-import utilities.utilities as utils
 import src.mtmlda.sampling as sampling
+import utilities.utilities as utils
 from components import abstract_builder, general_settings
 
 
@@ -91,11 +90,11 @@ def execute_mtmlda_run(
         initial_state = chain[-1, :]
     else:
         initial_state = app_builder.generate_initial_state(initial_state_settings)
+    sampler_run_settings.initial_state = initial_state
     if parallel_run_settings.node_load_path is not None:
         initial_node = utils.load_pickle(process_id, parallel_run_settings.node_load_path)
         sampler_run_settings.initial_node = initial_node
-    sampler_run_settings.initial_state = initial_state
-
+    
     mcmc_chain, final_node = mtmlda_sampler.run(sampler_run_settings)
     rng_states = mtmlda_sampler.get_rngs()
 

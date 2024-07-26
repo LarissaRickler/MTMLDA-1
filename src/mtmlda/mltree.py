@@ -1,15 +1,26 @@
-"""_summary_."""
+"""Markov tree components.
+
+This module implements the core functionalities for prefetching, which is realized through a binary
+decision tree (Markov tree).
+
+Classes:
+    BaseNode: Markov tree node base class
+    MTNode: Markov tree node implementation based on Anytree
+    MLTreeSearchFunctions: Collection of functions for inspecting a Markov tree
+    MLTreeModifier: Routines for modification of Markov trees
+    MLTreeVisualizer: Component for rendering Markov trees to dot files
+"""
 
 import itertools
 import os
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, Union
-from typing_extensions import Self
 
 import anytree as atree
 import anytree.exporter as exporter
 import numpy as np
+from typing_extensions import Self
 
 
 # ==================================================================================================
@@ -310,7 +321,7 @@ class MLTreeModifier:
                         break
                 if trying_to_compress:
                     break
-        
+
         return compressed
 
     # ----------------------------------------------------------------------------------------------

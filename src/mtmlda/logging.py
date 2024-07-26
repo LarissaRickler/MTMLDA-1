@@ -1,4 +1,16 @@
-"""_summary_."""
+"""Custom Logging.
+
+This module provides extensions of Pythons's logging capabilities for run and debug logs within 
+MLDA runs.
+
+Classes:
+    LoggerSettings: Data class storing settings for the logger
+    Statistic: Basic statistics object containing information for logging
+    RunningStatistic: Statistic for computing batch averages
+    AccumulativeStatistic: Statistic for computing overall averages
+    MTMLDALogger: Logger for the MLDA sampler
+    DebugFileHandler: Custom file handler for debug logging
+"""
 
 import logging
 import os

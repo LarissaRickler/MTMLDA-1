@@ -1,10 +1,10 @@
-import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from functools import partial
 from typing import Any
 
 import numpy as np
+
 import src.mtmlda.mcmc as mcmc
 import utilities.utilities as utils
 from components import abstract_builder

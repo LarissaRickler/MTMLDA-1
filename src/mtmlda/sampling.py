@@ -1,4 +1,15 @@
-"""_summary_."""
+"""Main component of the MTMLDA library.
+
+This module implements the actual MTMLDA sampler. It therefore combines the functionalities from the
+other modules in the package.
+
+Classes:
+    SamplerSetupSettings: Settings for initialization of the MLDASampler.
+    SamplerRunSettings: Settings for conduction of a run with an initialized MLDASampler.
+    RNGStates: Collection of random number generators of different sub-components, for
+        re-initialization of the sampler
+    MTMLDASampler: Main object for thread-parallel MLDA sampling.
+"""
 
 import time
 from collections.abc import Callable, Sequence

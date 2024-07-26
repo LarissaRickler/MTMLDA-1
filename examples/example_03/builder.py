@@ -5,8 +5,9 @@ from functools import partial
 from typing import Any
 
 import numpy as np
-import src.mtmlda.mcmc as mcmc
 import umbridge as ub
+
+import src.mtmlda.mcmc as mcmc
 import utilities.utilities as utils
 from components import abstract_builder, posterior, prior
 

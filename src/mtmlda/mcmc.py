@@ -1,4 +1,20 @@
-"""_summary_."""
+"""MLDA-specific MCMC routines.
+
+This module contains all MCMC-specific functionalities, including those necessary in the Multilevel
+context. Roughly speaking, this comprises proposals for coarse level changes and accept-reject
+routines. The only prefetching-specific component is the accept rate estimator, which is used to
+predict possible future states of the Markov chain.
+Porposals and accept rate estimators are implemenkted in class hierarchies. New options can easily
+be implemented by inheriting from the respective base class interfaces.
+
+Classes:
+    BaseProposal: Base class for MCMC proposals
+    RandomWalkProposal: Metropolis random walk proposal
+    PCNProposal: Preconditioned Crank-Nicolson proposal
+    BaseAcceptRateEstimator: Base class for MLDA accept rate estimators
+    StaticAcceptRateEstimator: Static accept rate estimator
+    MLMetropolisHastingsKernel: Metropolis-Hastings acceptance kernel for multilevel decisions
+"""
 
 from abc import abstractmethod
 from numbers import Real

@@ -1,10 +1,10 @@
 from pathlib import Path
 
 import numpy as np
+
 from components import general_settings
 
 from . import builder
-
 
 # ==================================================================================================
 parallel_run_settings = general_settings.ParallelRunSettings(

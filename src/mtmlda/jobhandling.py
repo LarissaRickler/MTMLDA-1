@@ -1,4 +1,11 @@
-"""_summary_."""
+"""Thread-parallel jobhandling for posterior evaluations.
+
+This module provides the interface for thread-parallel and asynchronous submission and retrieval of
+compute jobs for posterior evaluations. The functionality is based on Python's `ThreadPoolExecutor`.
+
+Classes:
+    JobHandler: Thread-parallel job handling for model evaluations in the MLDA algorithm
+"""
 
 import concurrent.futures as concurrent
 from collections.abc import Callable, Sequence

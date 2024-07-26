@@ -1,4 +1,18 @@
-"""_summary_."""
+"""Collection of utility functions for MTMLDA runs.
+
+This utilitiy functions are not part of the MTMLDA core library, as they are utilized only for the
+run wrapper and specific applications. They are mainly concerned with the executation of parallel
+chains, along with loading and saving states of the sampler for reinitialization.
+
+Functions:
+    distribute_rng_seeds_to_processes: Distribute RNG seeds to parallel processes, based on their id
+    append_string_to_path: Extend a Path object with a string for its name
+    load_chain: Load MCMC chain data from npy file
+    save_chain: Save MCMC chain array to npy file
+    load_pickle: Load a pickled object into memory
+    save_pickle: Save a generic object into pickle
+    request_umbridge_server: Request umbridge server with fail-save for long response times
+"""
 
 import os
 import pickle

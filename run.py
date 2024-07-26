@@ -1,3 +1,17 @@
+"""Executable script for parallel MTMLDA runs.
+
+This script is an executable wrapper for combining applications with the MTMLDA sampling routine.
+It allows for running parallel chains with Python's multiprocessing capabilities. All relevant
+settings are adjusted according to the invoking process.
+For info on how to run the script, type `python run.py --help` in the command line.
+
+Functions:
+    process_cli_arguments: Read in command-line arguments for application to run.
+    execute_mtmlda_run: Main routine to execute MTMLDA runs.
+    set_up_sampler: Set up MTMLDA sampler, with settings depending on invoking process.
+    main: Main routine to be invoked when script is executed
+"""
+
 import argparse
 import importlib
 import multiprocessing
@@ -12,6 +26,16 @@ from components import abstract_builder, general_settings
 
 # ==================================================================================================
 def process_cli_arguments() -> list[str]:
+    """Read in command-line arguments for application to run.
+
+    Every application has a builder and settings file to run. The user has to point to the directory
+    where these files are stored. Per default, the run routine will searach for the files 
+    `settings.py` and `builder.py` in the application directory. The user can provide different 
+    file names with the respective command line arguments.
+
+    Returns:
+        list[str]: strings of the directories of the settings and builder files
+    """
     argParser = argparse.ArgumentParser(
         prog="run.py",
         usage="python %(prog)s [options]",
@@ -67,8 +91,32 @@ def execute_mtmlda_run(
     sampler_component_settings: abstract_builder.SamplerComponentSettings,
     initial_state_settings: abstract_builder.InitialStateSettings,
 ) -> None:
+    """Main routine to execute MTMLDA runs.
+
+    The routine is called from a multiprocess pool and takes, next to generic settings, the id of
+    the invoking process. All process-specific settings are adjusted according to that id.
+
+    Args:
+        process_id (int): id of the invoking process
+        application_builder (abstract_builder.ApplicationBuilder): Application builder object
+        parallel_run_settings (general_settings.ParallelRunSettings): Settings for parallel run
+        sampler_setup_settings (general_settings.SamplerSetupSettings): Settings for setup of
+            the MTMLDA sampler
+        sampler_run_settings (general_settings.SamplerRunSettings): Settings for running the
+            MTMLDA sampler
+        logger_settings (general_settings.LoggerSettings): Settings for the MTMLDA logger
+        inverse_problem_settings (abstract_builder.InverseProblemSettings): Settings for the setup
+            of the posterior hierarchy of an application
+        sampler_component_settings (abstract_builder.SamplerComponentSettings): Settings for setup
+            of the MTMLDA sampler components specified by an application
+        initial_state_settings (abstract_builder.InitialStateSettings): Settings for the generation
+            of initial states for the Markov chains
+    """
+    # Set up posterior hierarchy
     app_builder = application_builder(process_id)
     models = app_builder.set_up_models(inverse_problem_settings)
+
+    # Set up MTMLDA sampler
     ground_proposal, accept_rate_estimator = app_builder.set_up_sampler_components(
         sampler_component_settings
     )
@@ -81,6 +129,7 @@ def execute_mtmlda_run(
         models,
     )
 
+    # Load structures for re-initialization
     if parallel_run_settings.rng_state_load_path is not None:
         rng_states = utils.load_pickle(process_id, parallel_run_settings.rng_state_load_path)
         mtmlda_sampler.set_rngs(rng_states)
@@ -95,9 +144,11 @@ def execute_mtmlda_run(
         initial_node = utils.load_pickle(process_id, parallel_run_settings.node_load_path)
         sampler_run_settings.initial_node = initial_node
     
+    # Run sampler
     mcmc_chain, final_node = mtmlda_sampler.run(sampler_run_settings)
     rng_states = mtmlda_sampler.get_rngs()
 
+    # Saver results and structures for re-initialization
     if parallel_run_settings.rng_state_save_path is not None:
         utils.save_pickle(
             process_id,
@@ -130,6 +181,20 @@ def set_up_sampler(
     accept_rate_estimator: Any,
     models: list[Callable],
 ) -> sampling.MTMLDASampler:
+    """Set up MTMLDA sampler, with settings depending on invoking process.
+
+    Args:
+        process_id (int): id of the invoking process
+        sampler_setup_settings (general_settings.SamplerSetupSettings): Settings for MTMLDA sampler
+        logger_settings (general_settings.LoggerSettings): Settings for MTMLDA logger
+        ground_proposal (Any): Proposal object for coarse level chains
+        accept_rate_estimator (Any): Multi-level accept rate estimator for prefetching
+        models (list[Callable]): Posterior hierarchy as list of callables
+
+    Returns:
+        sampling.MTMLDASampler: Initialized MTMLDA sampler
+    """
+    # Adjust RNG seeds according to invoking process
     sampler_setup_settings.rng_seed_mltree = utils.distribute_rng_seeds_to_processes(
         sampler_setup_settings.rng_seed_mltree, process_id
     )
@@ -137,6 +202,7 @@ def set_up_sampler(
         sampler_setup_settings.rng_seed_node_init, process_id
     )
 
+    # Adjust file paths based on process id
     if logger_settings.logfile_path is not None:
         logger_settings.logfile_path = utils.append_string_to_path(
             logger_settings.logfile_path, f"chain_{process_id}.log"
@@ -152,6 +218,7 @@ def set_up_sampler(
     if process_id != 0:
         logger_settings.do_printing = False
 
+    # Set up MTMLDA sampler
     mtmlda_sampler = sampling.MTMLDASampler(
         sampler_setup_settings,
         logger_settings,
@@ -165,6 +232,11 @@ def set_up_sampler(
 
 # ==================================================================================================
 def main() -> None:
+    """Main routine.
+
+    The method reads in application files and runs chain parallel MTMLDA runs with a multiprocessing
+    pool.
+    """
     settings_dir, builder_dir = process_cli_arguments()
     settings_module = importlib.import_module(settings_dir)
     builder_module = importlib.import_module(builder_dir)
@@ -173,6 +245,7 @@ def main() -> None:
     process_ids = range(num_chains)
 
     print("\n=== Start Sampling ===\n")
+
     execute_mtmlda_on_procs = partial(
         execute_mtmlda_run,
         application_builder=builder_module.ApplicationBuilder,
@@ -186,9 +259,8 @@ def main() -> None:
     )
     with multiprocessing.Pool(processes=num_chains) as process_pool:
         process_pool.map(execute_mtmlda_on_procs, process_ids)
-    print("\n======================")
-    print(" Sampling done!")
-    print("======================\n")
+    
+    print("\n===== Finish Run =====\n")
 
 
 if __name__ == "__main__":

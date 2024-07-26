@@ -81,7 +81,12 @@ class UniformLogPrior(BaseLogPrior):
         self._interval_lengths = self._upper_bounds - self._lower_bounds
 
     def evaluate(self, parameter: np.ndarray) -> float:
-        """Compute log-probability for given parameter."""
+        """Compute log-probability for given parameter.
+
+        Note that the prior simply returns 0 if the parameter is within the bounds, and -inf
+        otherwise. This is because a uniform prior eners into the posterior only as a constant,
+        which is irrelavant in MCMC.
+        """
         has_support = ((parameter >= self._lower_bounds) & (parameter <= self._upper_bounds)).all()
 
         if has_support:

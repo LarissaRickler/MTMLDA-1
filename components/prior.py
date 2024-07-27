@@ -68,17 +68,24 @@ class BaseLogPrior(ABC):
 class UniformLogPrior(BaseLogPrior):
     """Implementation of a uniform prior."""
 
+    
+
     def __init__(self, parameter_intervals: np.ndarray, seed: int) -> None:
         """Constructor.
 
         Args:
             parameter_intervals (np.ndarray): Bounds for each parameter
             seed (int): RNG seed
+
+        Raises:
+            ValueError: Checks for valid parameter intervals
         """
         super().__init__(seed)
         self._lower_bounds = parameter_intervals[:, 0]
         self._upper_bounds = parameter_intervals[:, 1]
         self._interval_lengths = self._upper_bounds - self._lower_bounds
+        if not np.all(self._interval_lengths > 0):
+            raise ValueError("Invalid parameter intervals")
 
     def evaluate(self, parameter: np.ndarray) -> float:
         """Compute log-probability for given parameter.
@@ -86,9 +93,14 @@ class UniformLogPrior(BaseLogPrior):
         Note that the prior simply returns 0 if the parameter is within the bounds, and -inf
         otherwise. This is because a uniform prior enters into the posterior only as a constant,
         which is irrelevant in MCMC.
-        """
-        has_support = ((parameter >= self._lower_bounds) & (parameter <= self._upper_bounds)).all()
 
+        Raises:
+            ValueError: Checks for valid parameter dimension
+        """
+        if not parameter.size == self._interval_lengths.size:
+            raise ValueError(f"Invalid parameter dimension {parameter.size}")
+        
+        has_support = ((parameter >= self._lower_bounds) & (parameter <= self._upper_bounds)).all()
         if has_support:
             return 0
         else:
@@ -111,14 +123,28 @@ class GaussianLogPrior(BaseLogPrior):
             mean (np.ndarray): Mean vector
             covariance (np.ndarray): Covariance matrix
             seed (int): RNG seed
+        
+        Raises:
+            ValueError: Checks for valid mean and covariance dimensions
         """
         super().__init__(seed)
         self._mean = mean
         self._cholesky = np.linalg.cholesky(covariance)
         self._precision = np.linalg.inv(covariance)
 
+        if not mean.size == covariance.shape[0] == covariance.shape[1]:
+            raise ValueError("Mean and covariance dimensions do not match:"
+                             f"{mean.shape}, {covariance.shape}")
+
     def evaluate(self, parameter: np.array) -> float:
-        """Compute log-probability for given parameter."""
+        """Compute log-probability for given parameter.
+        
+        Raises:
+            ValueError: Checks for valid parameter dimension
+        """
+        if not parameter.size == self._mean.size:
+            raise ValueError(f"Invalid parameter dimension {parameter.size}")
+        
         parameter_diff = parameter - self._mean
         log_probability = -0.5 * parameter_diff.T @ self._precision @ parameter_diff
         return log_probability

@@ -71,6 +71,7 @@ class Statistic:
         self._value: Any = None
 
     def set_value(self, value):
+        assert isinstance(value, (int, float, np.ndarray)), "Unsupported type for value"
         """Set the value of the statistic."""
         self._value = value
 
@@ -93,6 +94,7 @@ class RunningStatistic(Statistic):
 
     def set_value(self, new_value):
         """Set the value of the statistic."""
+        assert isinstance(new_value, (int, float, np.ndarray)), "Unsupported type for value"
         self.value.append(new_value)
 
     def get_value(self):
@@ -117,6 +119,7 @@ class AccumulativeStatistic(Statistic):
 
     def set_value(self, new_value):
         """Set the value of the statistic."""
+        assert isinstance(new_value, (int, float, np.ndarray)), "Unsupported type for value"
         self.value.append(new_value)
 
     def get_value(self):
@@ -301,6 +304,9 @@ class MTMLDALogger:
             value (Any): Value to format as string
             str_format (str): format to use
 
+        Raises:
+            TypeError: If the value is of an unsupported type
+
         Returns:
             str: Value as formatted string
         """
@@ -309,8 +315,11 @@ class MTMLDALogger:
             value_str = f"({','.join(value_str)})"
         elif value is None:
             value_str = f"{np.nan:{str_format}}"
-        else:
+        elif isinstance(value, float):
             value_str = f"{value:{str_format}}"
+        else:
+            raise TypeError(f"Unsupported type for value: {type(value)}")
+        
         return value_str
 
 

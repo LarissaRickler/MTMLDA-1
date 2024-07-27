@@ -67,7 +67,7 @@ class SamplerRunSettings:
     """
 
     num_samples: int
-    initial_state: np.ndarray
+    initial_state: np.ndarray = None
     initial_node: mltree.MTNode = None
     num_threads: int = 1
     print_interval: int = 1

@@ -92,6 +92,7 @@ class JobHandler:
         for future in concurrent.as_completed(self._futures):
             self._futures.remove(future)
             result = future.result()[0][0]
+            assert isinstance(result, float), "Model evaluation result is not a float"
             results.append(result)
             node = self._futuremap.pop(future)
             node.computing = False

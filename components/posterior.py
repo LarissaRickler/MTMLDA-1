@@ -20,7 +20,7 @@ class GaussianLLFromPTOMap:
 
     This components creates a Gaussian log-likelihood from an UM-Bridge model that constitute a
     parameter-to-observable (PTO) map.
-    
+
     Methods:
         __call__: UM-Bridge-like call interface for the log-likelihood.
     """
@@ -37,7 +37,19 @@ class GaussianLLFromPTOMap:
                 output
             covariance (np.ndarray): Covariance for waiting of the misfit vector in Gaussian
                 likelihood
+        
+        Raises:
+            ValueError: Checks if the sizes of the data vector and the output of the PTO map match
+            ValueError: Checks if the covariance matrix has the same shape as the data vector
         """
+        if not umbridge_pto_map.get_output_sizes()[0] == data.size:
+            raise ValueError(
+                "The size of the data vector does not match the size of the output of the "
+                "parameter-to-observable map."
+            )
+        if not covariance.shape == (data.size, data.size):
+            raise ValueError("The covariance matrix must have the same shape as the data vector.")
+        
         self._umbridge_pto_map = umbridge_pto_map
         self._data = data
         self._precision = np.linalg.inv(covariance)
@@ -65,7 +77,7 @@ class LogPosterior:
     def __init__(self, log_prior: Any, log_likelihood: Any) -> None:
         """Wrapper for computing the log posterior from a log-likelihood and a log-prior component.
 
-        log-likelihood and log-prior can be anything, but need to be callable according to the 
+        log-likelihood and log-prior can be anything, but need to be callable according to the
         UM-Bridge call interface.
 
         Args:

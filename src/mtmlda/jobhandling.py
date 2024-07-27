@@ -1,4 +1,4 @@
-"""Thread-parallel jobhandling for posterior evaluations.
+"""Thread-parallel job handling for posterior evaluations.
 
 This module provides the interface for thread-parallel and asynchronous submission and retrieval of
 compute jobs for posterior evaluations. The functionality is based on Python's `ThreadPoolExecutor`.
@@ -80,7 +80,7 @@ class JobHandler:
         Submitted jobs in a `ThreadPoolExecutor` object are automatically checked for completion
         with the `as_completed` method. Nodes of completed jobs are marked as not computing. The
         routine assumes that the result of the submitted callable is a list of lists to match the
-        umbridge interface. Only the entry `[0][0]` is treated as the result of the computation.
+        UM-Bridge interface. Only the entry `[0][0]` is treated as the result of the computation.
 
         Returns:
             tuple[list[float], list[at.AnyNode]]: Lists of job results (model evaluation) and

@@ -1,7 +1,7 @@
 """Components for setting up a Log-posterior model from sub-components.
 
 This module provides different components that can be combined into a log-posterior model. Each of
-them mimics the Umbridge interface.
+them mimics the UM-Bridge interface.
 
 Classes:
     GaussianLLFromPTOMap: Gaussian log-likelihood from parameter-to-observable map
@@ -18,7 +18,7 @@ import umbridge as ub
 class GaussianLLFromPTOMap:
     """Gaussian Log-Likelihood.
 
-    This components creates a Gaussian log-lieklihood from an UM-Bridge model that constitute a
+    This components creates a Gaussian log-likelihood from an UM-Bridge model that constitute a
     parameter-to-observable (PTO) map.
     
     Methods:
@@ -63,7 +63,7 @@ class GaussianLLFromPTOMap:
 # ==================================================================================================
 class LogPosterior:
     def __init__(self, log_prior: Any, log_likelihood: Any) -> None:
-        """Wrapper for computing the log posterior from a log-likelihood and  alog prior component.
+        """Wrapper for computing the log posterior from a log-likelihood and a log-prior component.
 
         log-likelihood and log-prior can be anything, but need to be callable according to the 
         UM-Bridge call interface.
@@ -80,8 +80,11 @@ class LogPosterior:
     ) -> list[list[float]]:
         """UMbridge-like call interface for log-posterior.
 
-        Simply returns the sum of log-likehood and log-prior values.
+        Simply returns the sum of log-likelihood and log-prior values.
         Note that input- and output-formats of this method resemble exactly those in UM-Bridge.
+        If the log-prior evaluates to -inf, meaning it doesn't have support for the current
+        parameter candidate, likelihood evaluation is not conducted, and -inf returned immediately
+        for the log-posterior.
 
         Args:
             parameter (list[list[float]]): Parameter candidate

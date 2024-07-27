@@ -29,12 +29,12 @@ def process_cli_arguments() -> list[str]:
     """Read in command-line arguments for application to run.
 
     Every application has a builder and settings file to run. The user has to point to the directory
-    where these files are stored. Per default, the run routine will searach for the files 
+    where these files are stored. Per default, the run routine will search for the files 
     `settings.py` and `builder.py` in the application directory. The user can provide different 
     file names with the respective command line arguments.
 
     Returns:
-        list[str]: strings of the directories of the settings and builder files
+        list[str]: strings for the directories of the settings and builder files
     """
     argParser = argparse.ArgumentParser(
         prog="run.py",
@@ -234,8 +234,8 @@ def set_up_sampler(
 def main() -> None:
     """Main routine.
 
-    The method reads in application files and runs chain parallel MTMLDA runs with a multiprocessing
-    pool.
+    The method reads in application files and runs chain-parallel MTMLDA runs within a
+    multiprocessing pool.
     """
     settings_dir, builder_dir = process_cli_arguments()
     settings_module = importlib.import_module(settings_dir)

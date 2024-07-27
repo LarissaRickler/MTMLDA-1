@@ -45,13 +45,13 @@ class ApplicationBuilder(ABC):
     """Base class for application builders.
     
     The class provides a generic interface for application builders, as will be invoked by the run
-    wrapper. The class is purely abstract, implementation musst follow in subclasses. The only 
+    wrapper. The class is purely abstract, implementation must follow in subclasses. The only 
     concrete behavior the class enforces is that the id of the invoking process is provided. This 
     is useful for setting up components in a process-specific way for chain-parallel runs.
 
     Methods:
         set_up_models: Set up a model hierarchy in the form of a list of callables..
-        set_up_sampler_components: Set up porposal and accept rate estimator.
+        set_up_sampler_components: Set up proposal and accept rate estimator.
         generate_initial_state: Generate the initial state for the Markov chain
     """
 
@@ -68,9 +68,9 @@ class ApplicationBuilder(ABC):
         """Set up a posterior hierarchy as a sequence of callables.
 
         Within this method, different components can be freely combined to obtain a posterior
-        hierarchy. For instance, an external model erver could be called to provide a likelihood,
+        hierarchy. For instance, an external model server could be called to provide a likelihood,
         which is then combined with a prior component. This method is the main reason the separate
-        builder exists, to allow for more flexibility in themodel setup.
+        builder exists, to allow for more flexibility in the model setup.
 
         Args:
             inverse_problem_settings (InverseProblemSettings): Necessary settings for model setup,
@@ -101,7 +101,7 @@ class ApplicationBuilder(ABC):
 
     @abstractmethod
     def generate_initial_state(self, initial_state_settings: InitialStateSettings) -> np.ndarray:
-        """Generate initial staet of a Markov chain.
+        """Generate initial state of a Markov chain.
 
         Can be used for process-dependent initialization.
 

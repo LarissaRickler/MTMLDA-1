@@ -1,6 +1,6 @@
 """Prior components.
 
-These prior implementations adhere to a comman interface provided by the abstract base class.
+These prior implementations adhere to a common interface provided by the abstract base class.
 New prior distributions can be implemented through subclassing.
 
 Classes:
@@ -19,8 +19,8 @@ class BaseLogPrior(ABC):
     """Base class for prior distributions.
 
     This class prescribes the basic interface for a prior distribution, as required by other
-    compontents. Basically, a prior needs to provide methods to evaluate its log-likelihood, and
-    to draw sanmples from it. The base class also provides an UM-Bridge like call interface for the
+    components. Basically, a prior needs to provide methods to evaluate its log-likelihood, and
+    to draw samples from it. The base class also provides an UM-Bridge like call interface for the
     evaluation of the log-probability.
 
     Methods:
@@ -84,8 +84,8 @@ class UniformLogPrior(BaseLogPrior):
         """Compute log-probability for given parameter.
 
         Note that the prior simply returns 0 if the parameter is within the bounds, and -inf
-        otherwise. This is because a uniform prior eners into the posterior only as a constant,
-        which is irrelavant in MCMC.
+        otherwise. This is because a uniform prior enters into the posterior only as a constant,
+        which is irrelevant in MCMC.
         """
         has_support = ((parameter >= self._lower_bounds) & (parameter <= self._upper_bounds)).all()
 

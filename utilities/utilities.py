@@ -1,7 +1,7 @@
 """Collection of utility functions for MTMLDA runs.
 
-This utilitiy functions are not part of the MTMLDA core library, as they are utilized only for the
-run wrapper and specific applications. They are mainly concerned with the executation of parallel
+This utility functions are not part of the MTMLDA core library, as they are utilized only for the
+run wrapper and specific applications. They are mainly concerned with the execution of parallel
 chains, along with loading and saving states of the sampler for reinitialization.
 
 Functions:
@@ -11,7 +11,7 @@ Functions:
     save_chain: Save MCMC chain array to npy file
     load_pickle: Load a pickled object into memory
     save_pickle: Save a generic object into pickle
-    request_umbridge_server: Request umbridge server with fail-save for long response times
+    request_umbridge_server: Request UM-Bridge server with fail-save for long response times
 """
 
 import os
@@ -27,7 +27,7 @@ import umbridge as ub
 
 # ==================================================================================================
 def distribute_rng_seeds_to_processes(seeds: Union[list, int], process_id: int):
-    """Distribute and optionall modify seeds for different parallel processes.
+    """Distribute and optionally modify seeds for different parallel processes.
 
     This is a generic function that distributes RNG seeds to parallel processes when running MCMC
     with multiple independent chains. It can be used in two different ways. If the seeds are
@@ -103,7 +103,7 @@ def load_chain(process_id: int, load_path: Path) -> None:
 def save_chain(
     process_id: int, save_path: Path, mcmc_trace: list[np.ndarray], exist_ok: bool
 ) -> None:
-    """Save MCMC chain arry to npy file.
+    """Save MCMC chain array to npy file.
 
     The save path is process-specific through the `append_string_to_path` function.
 
@@ -167,19 +167,19 @@ def save_pickle(process_id: int, save_path: Path, object: Any, exist_ok: bool) -
 
 # --------------------------------------------------------------------------------------------------
 def request_umbridge_server(process_id: int, address: str, name: str) -> ub.HTTPModel:
-    """Request umbrdige model server with fail-save for long response times.
+    """Request UM-Bridge model server with fail-save for long response times.
 
-    The function tries to connect to an umbridge server at the provided address and name. It is a
+    The function tries to connect to an UM-Bridge server at the provided address and name. It is a
     simple wrapper to the 'HTTPModel' class constructor. It repeatedly tries to connect to the
     server until it is available.
 
     Args:
         process_id (int): ID of the calling process
-        address (str): Address of the umbridge server to call
-        name (str): Name of the umbridge server to call
+        address (str): Address of the UM-Bridge server to call
+        name (str): Name of the UM-Bridge server to call
 
     Returns:
-        ub.HTTPModel: Umbridge server object
+        ub.HTTPModel: UM-Bridge server object
     """
     server_available = False
     while not server_available:

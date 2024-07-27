@@ -1,7 +1,8 @@
 """Custom Logging.
 
 This module provides extensions of Pythons's logging capabilities for run and debug logs within 
-MLDA runs.
+MLDA runs. The more elaborate logging routines take `Statistics` objects, which makes their
+evaluation and formatted output more convenient.
 
 Classes:
     LoggerSettings: Data class storing settings for the logger
@@ -119,7 +120,7 @@ class AccumulativeStatistic(Statistic):
         self.value.append(new_value)
 
     def get_value(self):
-        """Get the value of the statisticas running average."""
+        """Get the value of the statistic's running average."""
         value = np.column_stack(self._value)
         num_new_recordings = len(self._value)
         new_average = np.mean(value, axis=-1)
@@ -325,7 +326,7 @@ class DebugFileHandler(logging.FileHandler):
 
         Args:
             filename (Path): File to log to
-            mode (str, optional): Write mode for log messagges_. Defaults to "a".
+            mode (str, optional): Write mode for log messages. Defaults to "a".
             encoding (str, optional): Special encoding for messages. Defaults to None.
             delay (bool, optional): Determines if file opening is deferred until first `emit` call.
                 Defaults to False.

@@ -4,7 +4,7 @@ This module contains all MCMC-specific functionalities, including those necessar
 context. Roughly speaking, this comprises proposals for coarse level changes and accept-reject
 routines. The only prefetching-specific component is the accept rate estimator, which is used to
 predict possible future states of the Markov chain.
-Porposals and accept rate estimators are implemenkted in class hierarchies. New options can easily
+Proposals and accept rate estimators are implemented in class hierarchies. New options can easily
 be implemented by inheriting from the respective base class interfaces.
 
 Classes:
@@ -358,7 +358,7 @@ class StaticAcceptRateEstimator(BaseAcceptRateEstimator):
 class MLMetropolisHastingsKernel:
     """Metropolis-Hastings Acceptance Kernel.
     
-    The kernel implements the Metroplis-Hastings acceptance rule for the multilevel setting.
+    The kernel implements the Metropolis-Hastings acceptance rule for the multilevel setting.
     Accordingly, to different acceptance rules are implemented. One for within-level moves, utilized
     for standard MCMC on the coarsest level of the model hierarchy. The other is for between-level
     moves on the higher levels.
@@ -416,7 +416,7 @@ class MLMetropolisHastingsKernel:
     # ----------------------------------------------------------------------------------------------
     @staticmethod
     def compute_two_level_decision(node: mltree.MTNode, same_level_parent: mltree.MTNode) -> bool:
-        """Compute between level MCMC decision.
+        """Compute between-level MCMC decision.
 
         This decision rule is specific to the multilevel setting. Note that it does not utilize the
         proposal, but only the node containing the proposal and its same-level parent.

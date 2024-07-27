@@ -31,7 +31,7 @@ class SamplerSetupSettings:
 
     Attributes:
         num_levels (int): Number of levels in the MLDA hierarchy.
-        subsampling_rates (list): List of subchain lengths for each level.
+        subsampling_rates (list): List of sub-chain lengths for each level.
         max_tree_height (int): Maximum height of the tree, purely technical, default is 50.
         underflow_threshold (float): Threshold for underflow of log-posterior values, below
             posterior probability is treated as zero, default is -1000.
@@ -91,7 +91,7 @@ class MTMLDASampler:
 
     the MTMLDASampler is the main component of the MLDA code base. It is a composite object, taking
     arguments for the logger, a model hierarchy, and accept rate estimator, and a proposal.
-    In addition, it internally initilizes a Metropolis-Hastings Kernel object and everything related
+    In addition, it internally initializes an MH Kernel object and everything related
     to working with Markov trees for prefetching. The `run` method produces a Markov chain for the
     fine level posterior by repeatedly looping through a number of steps:
     1. Extend the Markov tree by adding new nodes.
@@ -119,7 +119,7 @@ class MTMLDASampler:
     ) -> None:
         """Constructor of the MLDA sampler.
 
-        The constructor asssembles the compisite sampler object. Components for which multiple
+        The constructor assembles the composite sampler object. Components for which multiple
         options might be necessary are passed as arguments, while components that are unique are
         created internally.
 
@@ -168,7 +168,7 @@ class MTMLDASampler:
     def run(self, run_settings: SamplerRunSettings) -> list[np.ndarray]:
         """Main  run methods for the sampler.
 
-        The method takes a data class with run-specific settings. As described in the construtor,
+        The method takes a data class with run-specific settings. As described in the constructor,
         it initiates a while loop that continuous until the desired number of fine level samples
         has been generated. This method is mainly an interface, most of the program logic is
         implemented in the private sub-methods.
@@ -242,7 +242,7 @@ class MTMLDASampler:
         """Initialize the Markov tree for prefetching.
 
         The method either takes an initial state or a Markov tree node. In the first case, a new
-        tree is initialized from the state alone. If a node is provided, its logposterior and
+        tree is initialized from the state alone. If a node is provided, its log-posterior and
         random draw is also taken over to the new tree.
 
         Args:
@@ -299,7 +299,7 @@ class MTMLDASampler:
     def _update_tree_from_finished_jobs(self, mltree_root) -> None:
         """Get finished jobs from job handler, update Markov tree accordingly.
 
-        If a job returns with log-probablity lower than the underflow threshold, the corresponding
+        If a job returns with log-probability lower than the underflow threshold, the corresponding
         node and its descendants are discarded, since they correspond to states that are impossible
         to reach. Otherwise, the log-probability is transferred to the node and its descendants are
         updated accordingly. 
@@ -324,7 +324,7 @@ class MTMLDASampler:
     def _compute_available_mcmc_decisions(self, mltree_root: mltree.MTNode) -> None:
         """Traverse the Markov tree repeatedly and compute available MCMC decisions.
 
-        This includes one-level and two-level descisions. As the tree structure is modified after
+        This includes one-level and two-level decisions. As the tree structure is modified after
         an MCMC decision, it is completely traversed after each decision. The acceptance rates for
         each level are updated accordingly.
 
@@ -381,7 +381,7 @@ class MTMLDASampler:
         procedure is repeated until no more unique paths can be found.
 
         Args:
-            mcmc_chain (Sequence[np.ndarray]): List of fine lavel samples
+            mcmc_chain (Sequence[np.ndarray]): List of fine level samples
             mltree_root (mltree.MTNode): current Markov tree root
 
         Returns:
@@ -401,7 +401,7 @@ class MTMLDASampler:
     def _init_statistics(self) -> tuple[dict[str, logging.Statistic], dict[str, logging.Statistic]]:
         """Initialize statistics dictionaries.
 
-        The MTMLDA logger takes to types of statistis: Run statistics are logged in a table, debug
+        The MTMLDA logger takes two types of statistics: Run statistics are logged in a table, debug
         statistics contain more detailed information, logged to a separate file. All statistics are
         stored in the respective dictionaries with a string handle, a string id for the output, and
         the format the corresponding value should be printed in.
@@ -438,7 +438,7 @@ class MTMLDASampler:
             mcmc_chain (list[np.ndarray]): Current MCMC chain
 
         Returns:
-            dict[str, logging.Statistic]: Updateted statistics dictionary
+            dict[str, logging.Statistic]: Updated statistics dictionary
         """
         self._run_statistics["time"].set_value(time.time() - self._start_time)
         self._run_statistics["num_samples"].set_value(len(mcmc_chain))
@@ -465,7 +465,7 @@ class MTMLDASampler:
             node (mltree.MTNode): Markov tree node to extract debug information from
 
         Returns:
-            dict[str, logging.Statistic]: Updateted statistics dictionary
+            dict[str, logging.Statistic]: Updated statistics dictionary
         """
         self._debug_statistics["level"].set_value(node.level)
         self._debug_statistics["index"].set_value(node.subchain_index)

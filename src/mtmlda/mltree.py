@@ -39,7 +39,7 @@ class BaseNode:
         random_draw (float): The random number used to decide whether to accept or reject the
             MCMC move associated with the node
         level (int): The level of the node in the multilevel hierarchy
-        subchain_index (int): The index of the node within the subchain of its level
+        subchain_index (int): The index of the node within the sub-chain of its level
     """
 
     probability_reached: float = None
@@ -53,9 +53,9 @@ class BaseNode:
 
 
 class MTNode(BaseNode, atree.NodeMixin):
-    """Markov tree node implementaiton.
+    """Markov tree node implementation.
 
-    The class inherits MCMC-related information from '`BaseNode`' and is equiped with `Anytree`'s
+    The class inherits MCMC-related information from '`BaseNode`' and is equipped with `Anytree`'s
     node functionality via a mixin.
     """
 
@@ -86,7 +86,7 @@ class MLTreeSearchFunctions:
         get_same_level_parent: Find the parent node of the same level as the input node,
             if it exists
         get_unique_same_subchain_child: Find the unique child of a node with the same level, if it
-            exists (i.e. if all intermdeiate MCMC decisions have been carried out)
+            exists (i.e. if all intermediate MCMC decisions have been carried out)
         check_if_node_is_available_for_decision: Check if a node is available for an MCMC decision,
             depending on if its log-posterior and those of "adjacent nodes" have been computed
     """
@@ -173,10 +173,10 @@ class MLTreeSearchFunctions:
 
         A node has to fulfill some general criteria to be available for an MCMC decision. These are
         checked with the `decision_prerequisites_fulfilled` conditional. After that, we distinguish
-        two different cases. On the groundlevel of the MLDA hierarchy, the node's posterior and its
+        two different cases. On the ground level of the MLDA hierarchy, the node's posterior and its
         immediate parent's posterior (which also has to be on the ground level) have to be computed.
         For the second case of a two-level decision, we require four posterior values to be
-        available. Fristly, we need the values for the first and last node of the coarser subchain.
+        available. Firstly, we need the values for the first and last node of the coarser sub-chain.
         Secondly, we need the values for the current finer level state and the proposal on that
         level.
         The method returns three booleans, indicating if the node is generally available for a
@@ -223,7 +223,7 @@ class MLTreeModifier:
 
     Methods:
         expand_tree: Expand the Markov tree by adding new children to the nodes
-        compress_resolved_subchains: Remove nodes within subchain that are not required for
+        compress_resolved_subchains: Remove nodes within sub-chain that are not required for
             subsequent MCMC decisions
         update_descendants: Update the status of the descendants of a node
         discard_rejected_nodes: Remove nodes from the tree that have been excluded by an MCMC
@@ -249,7 +249,7 @@ class MLTreeModifier:
             rng_seed (float): _description_
 
         Raises:
-            ValueError: Checks that correct number of subsampling rates is provided
+            ValueError: Checks that correct number of sub-sampling rates is provided
         """
         if not len(subsampling_rates) == num_levels:
             raise ValueError("Subsampling rates must be provided for all levels")
@@ -263,7 +263,7 @@ class MLTreeModifier:
         """Expand Markov tree.
 
         This is an interface method performing two steps:
-        1. Add new children to the levae nodes of the Markov tree
+        1. Add new children to the leave nodes of the Markov tree
         2. Update status of new nodes depending of the status of their parents
         These steps are repeated until computable leaves are available, meaning nodes for which no
         posterior is available or being computed.
@@ -284,9 +284,9 @@ class MLTreeModifier:
 
     # ----------------------------------------------------------------------------------------------
     def compress_resolved_subchains(self, root: MTNode) -> bool:
-        """Compress subchains by discarding irrelevant nodes.
+        """Compress sub-chains by discarding irrelevant nodes.
 
-        Within a subchain of a given level, only the first and last node are relevant for a
+        Within a sub-chain of a given level, only the first and last node are relevant for a
         two-level decision to the next level. Accordingly, nodes in between can be removed as soon
         as a unique path is established between them.
 
@@ -332,7 +332,7 @@ class MLTreeModifier:
         If a descendent node has the same state and level as its parent, they share status regarding
         computations and posterior values. Transferring these values is important for evaluating
         which nodes still require posterior evaluations. It also helps to avoid redundant
-        compuations.
+        computations.
 
         Args:
             root (MTNode): Root node of the Markov tree
@@ -395,8 +395,8 @@ class MLTreeModifier:
     def _add_new_children_to_node(self, node: MTNode) -> None:
         """Add accept and reject child to a given node.
 
-        Depending on the level and subchain index of the parent, the children are created with
-        new level and subchain index properties. Also depending on their respective positions in
+        Depending on the level and sub-chain index of the parent, the children are created with
+        new level and sub-chain index properties. Also depending on their respective positions in
         the chain, the states of the children are transferred from previous nodes or newly created
         from a proposal distribution.
 
@@ -453,8 +453,8 @@ class MLTreeModifier:
 class MLTreeVisualizer:
     """Visualizer for Markov Trees.
 
-    This class utilizes `Anytree's` built-in exporter to create dotfile visualizations of
-    a given Markov tree. This dotfiles can then be converted into,e.g., PNG images during
+    This class utilizes `Anytree's` built-in exporter to create dot-file visualizations of
+    a given Markov tree. This dot-files can then be converted into,e.g., PNG images during
     post-processing.
     The nodes are annotated with information on their name ('a' or 'r'), the probability of
     reaching them, their level in the MLDA hierarchy, and their subchain index. Their respective
@@ -463,7 +463,7 @@ class MLTreeVisualizer:
     the posterior for orange nodes is currently being computed, and green nodes have been evaluated.
 
     Methods:
-        export_to_dot: Export the given Markov tree to a dotfile, automatically indexed
+        export_to_dot: Export the given Markov tree to a dot-file, automatically indexed
     """
 
     _base_size = 1
@@ -514,7 +514,7 @@ class MLTreeVisualizer:
     # ----------------------------------------------------------------------------------------------
     @classmethod
     def _node_attr_func(cls, node: MTNode) -> str:
-        """Generates a metadata string for dotfile export.
+        """Generates a metadata string for dot-file export.
 
         Args:
             node (MTNode): Node to generate metadata for

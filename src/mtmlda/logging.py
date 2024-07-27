@@ -1,6 +1,6 @@
 """Custom Logging.
 
-This module provides extensions of Pythons's logging capabilities for run and debug logs within 
+This module provides extensions of Pythons's logging capabilities for run and debug logs within
 MLDA runs. The more elaborate logging routines take `Statistics` objects, which makes their
 evaluation and formatted output more convenient.
 
@@ -35,6 +35,7 @@ class LoggerSettings:
         debugfile_path (str): Directory to log debug statistics to, default is None
         write_mode (str): Write mode for the log files (append, overwrite), default is 'w'
     """
+
     do_printing: bool = True
     logfile_path: str = None
     debugfile_path: str = None
@@ -44,7 +45,7 @@ class LoggerSettings:
 # ==================================================================================================
 class Statistic:
     """Basic statistics object containing information for logging.
-    
+
     Every statistics object has a string identifier and a format string for the value it stores. The
     value attribute is not accessed directly, but through getter and setter methods. The idea behind
     is that more sophisticated logic can be implemented in subclasses, still adhering to the generic
@@ -71,18 +72,21 @@ class Statistic:
         self._value: Any = None
 
     def set_value(self, value):
-        assert isinstance(value, (int, float, np.ndarray)), "Unsupported type for value"
         """Set the value of the statistic."""
+        assert (value is None) or isinstance(
+            value, (int, float, np.ndarray)
+        ), "Unsupported type for value"
         self._value = value
 
     def get_value(self):
         """Get the value of the statistic."""
         return self._value
 
+
 # --------------------------------------------------------------------------------------------------
 class RunningStatistic(Statistic):
     """Statistic for computing batch averages.
-    
+
     The running statistics stores all values provided by the `set_value` method and computes their
     average when the `get_value` method is called.
     """
@@ -94,7 +98,9 @@ class RunningStatistic(Statistic):
 
     def set_value(self, new_value):
         """Set the value of the statistic."""
-        assert isinstance(new_value, (int, float, np.ndarray)), "Unsupported type for value"
+        assert (new_value is None) or isinstance(
+            new_value, (int, float, np.ndarray)
+        ), "Unsupported type for value"
         self.value.append(new_value)
 
     def get_value(self):
@@ -104,12 +110,14 @@ class RunningStatistic(Statistic):
         self._value = []
         return value
 
+
 # --------------------------------------------------------------------------------------------------
 class AccumulativeStatistic(Statistic):
     """Statistic for computing overall averages.
-    
+
     The mean value is computed from all provided values.
     """
+
     def __init__(self, str_id, str_format):
         """Constructor, see base class for details."""
         super().__init__(str_id, str_format)
@@ -119,7 +127,9 @@ class AccumulativeStatistic(Statistic):
 
     def set_value(self, new_value):
         """Set the value of the statistic."""
-        assert isinstance(new_value, (int, float, np.ndarray)), "Unsupported type for value"
+        assert (new_value is None) or isinstance(
+            new_value, (int, float, np.ndarray)
+        ), "Unsupported type for value"
         self.value.append(new_value)
 
     def get_value(self):
@@ -131,14 +141,14 @@ class AccumulativeStatistic(Statistic):
         value = record_ratio * new_average + (1 - record_ratio) * self._average
         self._average = value
         self._num_recordings += num_new_recordings
-        self._value =  []
+        self._value = []
         return value
 
 
 # ==================================================================================================
 class MTMLDALogger:
     """Logger for the MLDA sampler.
-    
+
     This custom logger wraps the standard Python logger, adding some convenience methods for
     logging on different levels to different files and the console.
 
@@ -152,6 +162,7 @@ class MTMLDALogger:
         debug: Log a debug message to the debug logger
         exception: Log an exception to all loggers
     """
+
     _debug_header_width = 80
 
     # ----------------------------------------------------------------------------------------------
@@ -315,18 +326,18 @@ class MTMLDALogger:
             value_str = f"({','.join(value_str)})"
         elif value is None:
             value_str = f"{np.nan:{str_format}}"
-        elif isinstance(value, float):
+        elif isinstance(value, (int, float)):
             value_str = f"{value:{str_format}}"
         else:
             raise TypeError(f"Unsupported type for value: {type(value)}")
-        
+
         return value_str
 
 
 # ==================================================================================================
 class DebugFileHandler(logging.FileHandler):
     """Custom file handler for Logger.
-    
+
     This file handler only transfers messages on the `DEBUG`level of python logging.
     """
 
@@ -346,7 +357,7 @@ class DebugFileHandler(logging.FileHandler):
         """Transfer a log message.
 
         Args:
-            record (logging.LogRecord): Log message object 
+            record (logging.LogRecord): Log message object
         """
         if record.levelno == logging.DEBUG:
             super().emit(record)

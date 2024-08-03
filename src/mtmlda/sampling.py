@@ -319,7 +319,7 @@ class MTMLDASampler:
                 node.logposterior = result
                 self._mltree_modifier.update_descendants(node)
                 self._log_debug_statistics("returned", node)
-            self._export_debug_tree(mltree_root)
+        self._export_debug_tree(mltree_root)
 
     # ----------------------------------------------------------------------------------------------
     def _compute_available_mcmc_decisions(self, mltree_root: mltree.MTNode) -> None:

@@ -11,7 +11,7 @@ from . import builder
 timestamp = datetime.datetime.now()
 timestamp = f"{timestamp.year:04d}{timestamp.month:02d}{timestamp.day:02d}" \
             f"_{timestamp.hour:02d}{timestamp.minute:02d}{timestamp.second:02d}"
-result_directory = f"{timestamp}_inno4scale001"
+result_directory = f"{timestamp}_example_05"
 
 
 parallel_run_settings = general_settings.ParallelRunSettings(
@@ -29,26 +29,26 @@ parallel_run_settings = general_settings.ParallelRunSettings(
 
 sampler_setup_settings = general_settings.SamplerSetupSettings(
     num_levels=3,
-    subsampling_rates=[5, 3, -1],
+    subsampling_rates=[30, 3, -1],
     max_tree_height=50,
     underflow_threshold=-1000,
     rng_seed_mltree=1,
     rng_seed_node_init=2,
-    mltree_path=None,
+    mltree_path=Path(f"{result_directory}/mltree"),
 )
 
 sampler_run_settings = general_settings.SamplerRunSettings(
-    num_samples=1000,
+    num_samples=3,
     initial_state=None,
     initial_node=None,
-    num_threads=1,
+    num_threads=6,
     print_interval=10,
 )
 
 logger_settings = general_settings.LoggerSettings(
     do_printing=True,
     logfile_path=Path(f"{result_directory}/mtmlda"),
-    debugfile_path=None,
+    debugfile_path=Path(f"{result_directory}/mtmlda_debug"),
     write_mode="w",
 )
 

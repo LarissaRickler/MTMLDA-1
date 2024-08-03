@@ -283,17 +283,18 @@ class MTMLDASampler:
             mltree_root (mltree.MTNode): Root of the Markov tree to extend
         """
         while (
-            mltree_root.height <= self._maximum_tree_height
-        ) and self._job_handler.workers_available:
+            mltree_root.height <= self._maximum_tree_height and self._job_handler.workers_available
+        ):
             self._mltree_modifier.expand_tree(mltree_root)
             self._mltree_modifier.update_probability_reached(
                 mltree_root, self._accept_rate_estimator
             )
             self._export_debug_tree(mltree_root)
-            new_candidate = mltree_search.find_max_probability_node(mltree_root)
-            self._job_handler.submit_job(new_candidate)
-            self._log_debug_statistics("submitted", new_candidate)
-            self._export_debug_tree(mltree_root)
+            if mltree_search.check_if_leaf_is_available_for_computation(mltree_root):
+                new_candidate = mltree_search.find_max_probability_node(mltree_root)
+                self._job_handler.submit_job(new_candidate)
+                self._log_debug_statistics("submitted", new_candidate)
+                self._export_debug_tree(mltree_root)
 
     # ----------------------------------------------------------------------------------------------
     def _update_tree_from_finished_jobs(self, mltree_root) -> None:
@@ -302,7 +303,7 @@ class MTMLDASampler:
         If a job returns with log-probability lower than the underflow threshold, the corresponding
         node and its descendants are discarded, since they correspond to states that are impossible
         to reach. Otherwise, the log-probability is transferred to the node and its descendants are
-        updated accordingly. 
+        updated accordingly.
 
         Args:
             mltree_root (mltree.MTNode): Current Markov tree, only necessary for visualization.

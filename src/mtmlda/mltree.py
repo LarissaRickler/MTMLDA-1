@@ -213,6 +213,26 @@ class MLTreeSearchFunctions:
 
         return node_available_for_decision, is_ground_level_decision, is_two_level_decision
 
+    # ----------------------------------------------------------------------------------------------
+    @staticmethod
+    def check_if_leaf_is_available_for_computation(root: MTNode) -> bool:
+        """Check if a leaf node is ready for computation.
+
+        This means that the node has not been visited yet.
+
+        Args:
+            root (MTNode): Root node of the Markov tree
+
+        Returns:
+            bool: If any leaf is available for computation
+        """
+        for node in root.leaves:
+            if (node.logposterior is None) and (not node.computing):
+                return True
+            break
+        else:
+            return False
+
 
 # ==================================================================================================
 class MLTreeModifier:
@@ -231,6 +251,7 @@ class MLTreeModifier:
         update_probability_reached: Update the probability of reaching a node in the Markov tree
     """
 
+    # ----------------------------------------------------------------------------------------------
     def __init__(
         self,
         num_levels: int,
@@ -265,22 +286,15 @@ class MLTreeModifier:
         This is an interface method performing two steps:
         1. Add new children to the leave nodes of the Markov tree
         2. Update status of new nodes depending of the status of their parents
-        These steps are repeated until computable leaves are available, meaning nodes for which no
-        posterior is available or being computed.
 
         Args:
             root (MTNode): Root node of the Markov tree
         """
-        nodes_to_compute = False
-        while not nodes_to_compute:
-            for node in root.leaves:
-                if (node.logposterior is not None) or node.computing:
-                    self._add_new_children_to_node(node)
-                    self.update_descendants(node)
-            for node in root.leaves:
-                if node.logposterior is None and not node.computing:
-                    nodes_to_compute = True
-                    break
+        for node in root.leaves:
+            if (node.logposterior is not None) or node.computing:
+                self._add_new_children_to_node(node)
+                self.update_descendants(node)
+                break
 
     # ----------------------------------------------------------------------------------------------
     def compress_resolved_subchains(self, root: MTNode) -> bool:

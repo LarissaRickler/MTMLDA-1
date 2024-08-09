@@ -42,7 +42,7 @@ sampler_run_settings = general_settings.SamplerRunSettings(
     initial_state=None,
     initial_node=None,
     num_threads=6,
-    print_interval=10,
+    print_interval=1,
 )
 
 logger_settings = general_settings.LoggerSettings(

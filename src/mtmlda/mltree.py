@@ -286,15 +286,29 @@ class MLTreeModifier:
         This is an interface method performing two steps:
         1. Add new children to the leave nodes of the Markov tree
         2. Update status of new nodes depending of the status of their parents
+        The procedure is repeated as long as some accept nodes are still not computable,
+        meaning they do not inherit the status of their parents.
 
         Args:
             root (MTNode): Root node of the Markov tree
         """
-        for node in root.leaves:
-            if (node.logposterior is not None) or node.computing:
-                self._add_new_children_to_node(node)
-                self.update_descendants(node)
-                break
+        all_accept_leaves_computable = False
+        while not all_accept_leaves_computable:
+            all_accept_leaves_computable = True
+
+            for node in root.leaves:
+                if node.name == "a" and ((node.logposterior is not None) or node.computing):
+                    self._add_new_children_to_node(node)
+                    self.update_descendants(node)
+                    sibling_node = atree.util.rightsibling(node)
+                    if sibling_node is not None:
+                        self._add_new_children_to_node(sibling_node)
+                        self.update_descendants(sibling_node)
+
+            for node in root.leaves:
+                if node.name == "a" and ((node.logposterior is not None) or node.computing):
+                    all_accept_leaves_computable = False
+                    break
 
     # ----------------------------------------------------------------------------------------------
     def compress_resolved_subchains(self, root: MTNode) -> bool:

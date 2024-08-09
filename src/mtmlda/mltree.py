@@ -293,18 +293,26 @@ class MLTreeModifier:
             root (MTNode): Root node of the Markov tree
         """
         all_accept_leaves_computable = False
+        # Repeat until all leaves occur in pairs, with accept nodes open for computations
         while not all_accept_leaves_computable:
             all_accept_leaves_computable = True
 
+            # Go through all leaves that have been computed/are being computed
             for node in root.leaves:
-                if node.name == "a" and ((node.logposterior is not None) or node.computing):
-                    self._add_new_children_to_node(node)
-                    self.update_descendants(node)
-                    sibling_node = atree.util.rightsibling(node)
-                    if sibling_node is not None:
-                        self._add_new_children_to_node(sibling_node)
-                        self.update_descendants(sibling_node)
+                if (node.logposterior is not None) or node.computing:
+                    # Accept node: Expand, expand reject sibling if it exists
+                    if node.name == "a":
+                        self._add_new_children_to_node(node)
+                        self.update_descendants(node)
+                        if (sibling_node := atree.util.rightsibling(node)) is not None:
+                            self._add_new_children_to_node(sibling_node)
+                            self.update_descendants(sibling_node)
+                    # Reject node: Expand if accept sibling does not exist
+                    if node.name == "r" and atree.util.leftsibling(node) is None:
+                        self._add_new_children_to_node(node)
+                        self.update_descendants(node)
 
+            # Check if any new accept leaves are not open for computation
             for node in root.leaves:
                 if node.name == "a" and ((node.logposterior is not None) or node.computing):
                     all_accept_leaves_computable = False

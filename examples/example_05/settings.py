@@ -3,8 +3,8 @@ from pathlib import Path
 
 import numpy as np
 
-from components import general_settings
-
+from src.mtmlda.core import logging, sampling
+from src.mtmlda.run import runner, postprocessor
 from . import builder
 
 # ==================================================================================================
@@ -14,8 +14,8 @@ timestamp = f"{timestamp.year:04d}{timestamp.month:02d}{timestamp.day:02d}" \
 result_directory = f"{timestamp}_example_05"
 
 
-parallel_run_settings = general_settings.ParallelRunSettings(
-    num_chains=1,
+parallel_run_settings = runner.ParallelRunSettings(
+    num_chains=10,
     chain_save_path=Path(f"{result_directory}/chain"),
     chain_load_path=None,
     node_save_path=None,
@@ -27,9 +27,9 @@ parallel_run_settings = general_settings.ParallelRunSettings(
     overwrite_rng_states=True,
 )
 
-sampler_setup_settings = general_settings.SamplerSetupSettings(
+sampler_setup_settings = sampling.SamplerSetupSettings(
     num_levels=3,
-    subsampling_rates=[30, 3, -1],
+    subsampling_rates=[5, 3, -1],
     max_tree_height=50,
     underflow_threshold=-1000,
     rng_seed_mltree=1,
@@ -37,15 +37,15 @@ sampler_setup_settings = general_settings.SamplerSetupSettings(
     mltree_path=Path(f"{result_directory}/mltree"),
 )
 
-sampler_run_settings = general_settings.SamplerRunSettings(
-    num_samples=3,
+sampler_run_settings = sampling.SamplerRunSettings(
+    num_samples=1000,
     initial_state=None,
     initial_node=None,
-    num_threads=6,
-    print_interval=1,
+    num_threads=1,
+    print_interval=10,
 )
 
-logger_settings = general_settings.LoggerSettings(
+logger_settings = logging.LoggerSettings(
     do_printing=True,
     logfile_path=Path(f"{result_directory}/mtmlda"),
     debugfile_path=Path(f"{result_directory}/mtmlda_debug"),
@@ -72,3 +72,13 @@ initial_state_settings = builder.InitialStateSettings(
     mean_init=np.array([0, 0]),
     covariance_init=np.identity(2),
 )
+
+# --------------------------------------------------------------------------------------------------
+postprocessor_settings = postprocessor.PostprocessorSettings(
+        chain_directory=Path("results/chains"),
+        tree_directory=Path("results/trees"),
+        output_data_directory=Path("results/chains"),
+        visualization_directory=Path("results/chains"),
+        acf_max_lag=100,
+        ess_stride=100,
+    )

@@ -24,7 +24,6 @@ model = [
 postprocessing = [
     "arviz>=0.17",
     "pydot>=2.0",
-    "seaborn>=0.13",
     "xarray>=2024.3"
 ]
 notebook = [

@@ -205,5 +205,7 @@ pyrightconfig.json
 /*/
 .VSCodeCounter/
 .vscode/
+!/components/
 !/examples/
 !/src/
+!/utilities/

@@ -18,7 +18,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from ..core import mcmc
+import src.mtmlda.mcmc as mcmc
 
 
 # ==================================================================================================

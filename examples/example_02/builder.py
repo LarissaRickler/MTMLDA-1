@@ -7,7 +7,7 @@ import numpy as np
 import umbridge as ub
 
 import src.mtmlda.mcmc as mcmc
-import src.mtmlda.utilities as utils
+import utilities.utilities as utils
 from components import abstract_builder
 
 

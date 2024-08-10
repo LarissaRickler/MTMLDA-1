@@ -5,9 +5,9 @@ from typing import Any
 
 import numpy as np
 
-from src.mtmlda.components import abstract_builder
-from src.mtmlda.core import mcmc
-from src.mtmlda import utilities as utils
+import src.mtmlda.mcmc as mcmc
+import utilities.utilities as utils
+from components import abstract_builder
 
 
 # ==================================================================================================

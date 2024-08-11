@@ -148,7 +148,7 @@ class ParallelRunner:
         self,
         process_id: int,
         rng_states: sampling.RNGStates,
-        mcmc_chain: np.ndarry,
+        mcmc_chain: np.ndarray,
         final_node: mltree.MTNode,
     ) -> None:
         if self._parallel_run_settings.rng_state_save_path is not None:

@@ -29,12 +29,12 @@ parallel_run_settings = runner.ParallelRunSettings(
 
 sampler_setup_settings = sampling.SamplerSetupSettings(
     num_levels=3,
-    subsampling_rates=[5, 3, -1],
+    subsampling_rates=[30, 3, -1],
     max_tree_height=50,
     underflow_threshold=-1000,
     rng_seed_mltree=1,
     rng_seed_node_init=2,
-    mltree_path=Path(f"{result_directory}/mltree"),
+    mltree_path=None,
 )
 
 sampler_run_settings = sampling.SamplerRunSettings(
@@ -72,13 +72,3 @@ initial_state_settings = builder.InitialStateSettings(
     mean_init=np.array([0, 0]),
     covariance_init=np.identity(2),
 )
-
-# --------------------------------------------------------------------------------------------------
-postprocessor_settings = postprocessor.PostprocessorSettings(
-        chain_directory=Path("results/chains"),
-        tree_directory=Path("results/trees"),
-        output_data_directory=Path("results/chains"),
-        visualization_directory=Path("results/chains"),
-        acf_max_lag=100,
-        ess_stride=100,
-    )

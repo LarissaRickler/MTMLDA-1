@@ -22,7 +22,6 @@ class PostprocessorSettings:
     output_data_directory: Path
     visualization_directory: Path
     acf_max_lag: int
-    ess_stride: int
 
 
 # ==================================================================================================
@@ -33,7 +32,6 @@ class Postprocessor:
         self._output_data_directory = postprocessor_settings.output_data_directory
         self._visualization_directory = postprocessor_settings.visualization_directory
         self._acf_max_lag = postprocessor_settings.acf_max_lag
-        self._ess_stride = postprocessor_settings.ess_stride
 
         (
             self._chains,
@@ -69,7 +67,7 @@ class Postprocessor:
     # ----------------------------------------------------------------------------------------------
     def _load_chain_data(self, chain_directory: Path) -> tuple[list[np.ndarray], int, int]:
         npy_files = utils.get_specific_file_type(chain_directory, "npy")
-        chains = np.array([np.load(chain_directory / Path(file)) for file in npy_files])
+        chains = [np.load(chain_directory / Path(file)) for file in npy_files]
         num_components = chains[0].shape[1]
 
         return chains, num_components
@@ -96,16 +94,17 @@ class Postprocessor:
     # ----------------------------------------------------------------------------------------------
     def _compute_effective_sample_size(self) -> list:
         ess = []
+        stride = int(np.ceil(len(self._all_samples) / 100))
         for i in range(self._num_components):
             ess_per_component = np.array(
                 [
                     az.ess(self._all_samples[:n, i])
-                    for n in range(4, len(self._all_samples), self._ess_stride)
+                    for n in range(4, len(self._all_samples), stride)
                 ]
             )
             ess.append(ess_per_component)
 
-        true_sample_size = np.array(range(4, len(self._all_samples), self._ess_stride))
+        true_sample_size = np.array(range(4, len(self._all_samples), stride))
         return ess, true_sample_size
 
     # ----------------------------------------------------------------------------------------------

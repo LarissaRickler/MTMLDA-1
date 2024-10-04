@@ -4,7 +4,7 @@ from pathlib import Path
 import numpy as np
 
 from src.mtmlda.core import logging, sampling
-from src.mtmlda.run import runner, postprocessor
+from src.mtmlda.run import runner
 from . import builder
 
 # ==================================================================================================

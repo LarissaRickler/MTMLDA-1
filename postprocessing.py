@@ -1,3 +1,14 @@
+"""Executable script for MTMLDA run postprocessing.
+
+This script is an executable wrapper for the Postprocessor class. It performs postprocessing of
+an MTMLDA run according to the provided settings files.
+For info on how to run the script, type `python run.py --help` in the command line.
+
+Functions:
+    process_cli_arguments: Read in command-line arguments for application to run.
+    main: Main routine to be invoked when script is executed
+"""
+
 import argparse
 import warnings
 from pathlib import Path
@@ -7,6 +18,7 @@ from src.mtmlda.run import postprocessor
 
 # ==================================================================================================
 def process_cli_arguments() -> str:
+    """Read in command-line arguments for postprocessing settings, mainly data locations."""
     argParser = argparse.ArgumentParser(
         prog="postprocessing.py",
         usage="python %(prog)s [options]",
@@ -54,6 +66,7 @@ def process_cli_arguments() -> str:
 
 # ==================================================================================================
 def main():
+    """Entry point for the script, constructs and runs the Postprocessor."""
     chain_directory, tree_directory, acf_max_lag = process_cli_arguments()
 
     postprocessor_settings = postprocessor.PostprocessorSettings(

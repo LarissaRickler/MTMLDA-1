@@ -1,14 +1,11 @@
 """Executable script for parallel MTMLDA runs.
 
-This script is an executable wrapper for combining applications with the MTMLDA sampling routine.
-It allows for running parallel chains with Python's multiprocessing capabilities. All relevant
-settings are adjusted according to the invoking process.
+This script is an executable wrapper for the ParallelRunner class. It executes chain-parallel
+MTMLDA runs with Python's multiprocessing module.
 For info on how to run the script, type `python run.py --help` in the command line.
 
 Functions:
     process_cli_arguments: Read in command-line arguments for application to run.
-    execute_mtmlda_run: Main routine to execute MTMLDA runs.
-    set_up_sampler: Set up MTMLDA sampler, with settings depending on invoking process.
     main: Main routine to be invoked when script is executed
 """
 
@@ -23,8 +20,8 @@ def process_cli_arguments() -> list[str]:
     """Read in command-line arguments for application to run.
 
     Every application has a builder and settings file to run. The user has to point to the directory
-    where these files are stored. Per default, the run routine will search for the files 
-    `settings.py` and `builder.py` in the application directory. The user can provide different 
+    where these files are stored. Per default, the run routine will search for the files
+    `settings.py` and `builder.py` in the application directory. The user can provide different
     file names with the respective command line arguments.
 
     Returns:
@@ -78,13 +75,13 @@ def main() -> None:
     """Main routine.
 
     The method reads in application files and runs chain-parallel MTMLDA runs within a
-    multiprocessing pool.
+    multiprocessing pool. This functionality is implemented in the ParallelRunner class.
     """
     settings_dir, builder_dir = process_cli_arguments()
     settings_module = importlib.import_module(settings_dir)
     builder_module = importlib.import_module(builder_dir)
 
-    print("\n=== Start Sampling ===\n")
+    print("\n====== Start Sampling ======\n")
     prunner = runner.ParallelRunner(
         application_builder=builder_module.ApplicationBuilder,
         parallel_run_settings=settings_module.parallel_run_settings,
@@ -93,10 +90,10 @@ def main() -> None:
         logger_settings=settings_module.logger_settings,
         inverse_problem_settings=settings_module.inverse_problem_settings,
         sampler_component_settings=settings_module.sampler_component_settings,
-        initial_state_settings=settings_module.initial_state_settings
+        initial_state_settings=settings_module.initial_state_settings,
     )
     prunner.run()
-    print("\n===== Finish Run =====\n")
+    print("\n============================\n")
 
 
 if __name__ == "__main__":

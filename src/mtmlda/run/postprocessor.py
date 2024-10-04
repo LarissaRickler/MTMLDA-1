@@ -1,3 +1,13 @@
+"""Postprocessing for parallel MTMLDA runs.
+
+The postprocessing routines evaluate and visualize statistics and render trees for parallel MTMLDA
+runs. All data can be saved for reproducibility of plots.
+
+Classes:
+    PostprocessorSettings: Dataclass to store postprocessing settings.
+    Postprocessor: Postprocessor for parallel MTMLDA runs.
+"""
+
 from dataclasses import dataclass
 from pathlib import Path
 from itertools import combinations
@@ -17,6 +27,23 @@ sns.set_theme(style="ticks")
 # ==================================================================================================
 @dataclass
 class PostprocessorSettings:
+    """Dataclass to store postprocessing settings.
+
+    Attributes:
+        chain_directory: Path
+            Directory containing the chains in npy format. If `None`, no postprocessing is performed
+        tree_directory: Path
+            Directory containing exported Markov trees in dot format. If `None`, no rendering is
+            performed.
+        output_data_directory: Path
+            Directory to save statistics data to. If `None`, no data is saved.
+        visualization_directory: Path
+            Directory to save visualizations to. If `None`, no visualizations are generated.
+        acf_max_lag: int
+            Maximum lag for autocorrelation function computation. Chains need to be longer than
+            this value.
+    """
+
     chain_directory: Path
     tree_directory: Path
     output_data_directory: Path
@@ -26,7 +53,31 @@ class PostprocessorSettings:
 
 # ==================================================================================================
 class Postprocessor:
+    """Postprocessor for parallel MTMLDA runs.
+
+    Given a set of directories, the postprocessor looks for chain data, evaluates statistics,
+    visualizes these statistics, and renders potentially created Markov trees.
+
+    Statistics:
+    - Component-wise autocorrelation
+    - Component-wise effective sample size
+
+    Visualizations:
+    - 1D marginal densities
+    - Pairwise sample distributions
+    - ESS over sample size
+    - Component-wise ACFs
+    - Markov trees
+    """
+
     def __init__(self, postprocessor_settings: PostprocessorSettings) -> None:
+        """Constructor of the Postprocessor.
+
+        Reads in settings and loads chain data.
+
+        Args:
+            postprocessor_settings (PostprocessorSettings): Settings class for postprocessing
+        """
         self._chain_directory = postprocessor_settings.chain_directory
         self._tree_directory = postprocessor_settings.tree_directory
         self._output_data_directory = postprocessor_settings.output_data_directory
@@ -41,6 +92,11 @@ class Postprocessor:
 
     # ----------------------------------------------------------------------------------------------
     def run(self) -> None:
+        """Main method of the postprocessor.
+
+        Depending on which paths are provided, the postprocessor evaluates statistics, saves data,
+        generates visualizations, and renders trees.
+        """
         if self._chain_directory is not None:
             print("Evaluate statistics ...")
             marginal_densities = self._compute_marginal_kdes()
@@ -66,14 +122,44 @@ class Postprocessor:
 
     # ----------------------------------------------------------------------------------------------
     def _load_chain_data(self, chain_directory: Path) -> tuple[list[np.ndarray], int, int]:
+        """Loads chain data from specified directory.
+
+        All `npy` files are interpreted as chains. Chains need to be 2D arrays, where the first
+        dimension corresponds to the number of samples and the second dimension to the number of
+        components. Chains of different length are allowed.
+
+        Args:
+            chain_directory (Path): Directory of raw chain data.
+
+        Raises:
+            FileNotFoundError: Checks that all chains have correct format.
+
+        Returns:
+            tuple[list[np.ndarray], int]: Chain arrays, number of components of the samples.
+        """
         npy_files = utils.get_specific_file_type(chain_directory, "npy")
-        chains = [np.load(chain_directory / Path(file)) for file in npy_files]
+        try:
+            chains = [np.load(chain_directory / Path(file)) for file in npy_files]
+        except FileNotFoundError:
+            raise FileNotFoundError("Chain files couldn't be loaded.")
+        assert all([len(chain.shape) == 2 for chain in chains]), "Chains need to be 2D arrays."
         num_components = chains[0].shape[1]
+        assert (
+            min([chain.shape[0] for chain in chains]) >= self._acf_max_lag
+        ), "Chains need to be longer than the maximum lag for autocorrelation."
 
         return chains, num_components
 
     # ----------------------------------------------------------------------------------------------
     def _compute_marginal_kdes(self) -> list:
+        """Compute 1D marginal densities through KDE.
+
+        Note that the samples from all chains are concatenated, including those that might be
+        discarded as burn-in.
+
+        Returns:
+            list: 1D marginal densities for each component.
+        """
         kdes = []
         for i in range(self._num_components):
             kdes.append(az.kde(self._all_samples[:, i], bw="scott"))
@@ -82,6 +168,13 @@ class Postprocessor:
 
     # ----------------------------------------------------------------------------------------------
     def _compute_autocorrelation(self) -> list:
+        """Computes ACFs for eacht chain and component.
+
+        Useful for assessing mixing/burn-in of chains.
+
+        Returns:
+            list: List of lists containing ACFs for each chain and component.
+        """
         autocorrelations = []
         for i in range(len(self._chains)):
             acf_per_chain = []
@@ -93,14 +186,20 @@ class Postprocessor:
 
     # ----------------------------------------------------------------------------------------------
     def _compute_effective_sample_size(self) -> list:
+        """Evaluates the ESS per component.
+
+        Evaluation is started at a sample size of 4 and is increased in steps of 1% of the total
+        sample size (all chains combined). Note that this ESS computation simply uses the samples
+        from all chains concatenated, meaning it does not exclude burn-in samples.
+
+        Returns:
+            list: ESS for all components.
+        """
         ess = []
         stride = int(np.ceil(len(self._all_samples) / 100))
         for i in range(self._num_components):
             ess_per_component = np.array(
-                [
-                    az.ess(self._all_samples[:n, i])
-                    for n in range(4, len(self._all_samples), stride)
-                ]
+                [az.ess(self._all_samples[:n, i]) for n in range(4, len(self._all_samples), stride)]
             )
             ess.append(ess_per_component)
 
@@ -115,6 +214,14 @@ class Postprocessor:
         effective_sample_size: list,
         true_sample_size: np.ndarray,
     ) -> None:
+        """Save statistics data for reproducibility of plots.
+
+        Args:
+            marginal_densities (list): 1D Marginal densities from KDE.
+            autocorrelations (list): ACFs for all components.
+            effective_sample_size (list): ESS for all components.
+            true_sample_size (np.ndarray): True sample size array for comparison.
+        """
         marginal_densities_file = self._output_data_directory / Path("marginal_density.npz")
         autocorrelations_file = self._output_data_directory / Path("autocorrelation.npz")
         effective_sample_size_file = self._output_data_directory / Path("effective_sample_size.npz")
@@ -125,7 +232,7 @@ class Postprocessor:
 
         for i, density_per_component in enumerate(marginal_densities):
             md_data_dict[f"component_{i}"] = density_per_component
-        for i , ess_per_component in enumerate(effective_sample_size):
+        for i, ess_per_component in enumerate(effective_sample_size):
             ess_data_dict[f"component_{i}"] = [true_sample_size, ess_per_component]
         for i, acf_per_chain in enumerate(autocorrelations):
             for j, acf_per_component in enumerate(acf_per_chain):
@@ -134,9 +241,14 @@ class Postprocessor:
         np.savez(marginal_densities_file, **md_data_dict)
         np.savez(autocorrelations_file, **ac_data_dict)
         np.savez(effective_sample_size_file, **ess_data_dict)
-        
+
     # ----------------------------------------------------------------------------------------------
     def _visualize_marginal_densities(self, marginal_densities: list) -> None:
+        """Visualize 1D Marginals for each component.
+
+        Args:
+            marginal_densities (list): 1D densities, estimated via KDE.
+        """
         visualization_file = self._visualization_directory / Path("marginal_density.pdf")
         with PdfPages(visualization_file) as pdf:
             for i, kde in enumerate(marginal_densities):
@@ -149,6 +261,11 @@ class Postprocessor:
 
     # ----------------------------------------------------------------------------------------------
     def _visualize_autocorrelation(self, autocorrelations: list) -> None:
+        """Visualize ACFs for all components.
+
+        Args:
+            autocorrelations (list): Computed ACFs for all components.
+        """
         visualization_file = self._visualization_directory / Path("autocorrelation.pdf")
 
         with PdfPages(visualization_file) as pdf:
@@ -170,6 +287,12 @@ class Postprocessor:
     def _visualize_effective_sample_size(
         self, effective_sample_size: list, true_sample_size: np.ndarray
     ) -> None:
+        """Visualize ESS for every component.
+
+        Args:
+            effective_sample_size (list): ESS for all components.
+            true_sample_size (np.ndarray): True sample size for comparison.
+        """
         visualization_file = self._visualization_directory / Path("effective_sample_size.pdf")
 
         with PdfPages(visualization_file) as pdf:
@@ -183,6 +306,7 @@ class Postprocessor:
 
     # ----------------------------------------------------------------------------------------------
     def _visualize_pairwise(self):
+        """Visualize all perwise sample distribution in an all-vs-all fashion."""
         visualization_file = self._visualization_directory / Path("pairwise_samples.pdf")
         component_list = list(range(self._num_components))
         component_permutations = list(combinations(component_list, 2))
@@ -198,6 +322,14 @@ class Postprocessor:
 
     # ----------------------------------------------------------------------------------------------
     def _render_dot_files(self, tree_directory: Path) -> None:
+        """Render tree files with Pydot.
+
+        Note: Rendering trees is quite time-consuming.
+
+        Args:
+            tree_directory (Path): Path to stored dot files. Rendered tree images are stored in the
+                same directory.
+        """
         dot_files = utils.get_specific_file_type(tree_directory, "dot")
         dot_files = [tree_directory / Path(file) for file in dot_files]
         for file in dot_files:

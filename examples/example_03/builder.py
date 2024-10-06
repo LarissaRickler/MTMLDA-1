@@ -1,24 +1,18 @@
-import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from functools import partial
 from typing import Any
 
 import numpy as np
-import umbridge as ub
 
-import src.mtmlda.mcmc as mcmc
-import utilities.utilities as utils
-from components import abstract_builder, posterior, prior
+from src.mtmlda.components import abstract_builder
+from src.mtmlda.core import mcmc
+from src.mtmlda import utilities as utils
 
 
 # ==================================================================================================
 @dataclass
 class InverseProblemSettings(abstract_builder.InverseProblemSettings):
-    prior_intervals: np.ndarray
-    prior_rng_seed: int
-    likelihood_data: np.ndarray
-    likelihood_covariance: np.ndarray
     ub_model_configs: dict[str, str]
     ub_model_address: str
     ub_model_name: str
@@ -35,7 +29,9 @@ class SamplerComponentSettings(abstract_builder.SamplerComponentSettings):
 
 @dataclass
 class InitialStateSettings(abstract_builder.InitialStateSettings):
-    pass
+    mean_init: np.ndarray
+    covariance_init: np.ndarray
+    rng_seed_init: int
 
 
 # ==================================================================================================
@@ -47,39 +43,14 @@ class ApplicationBuilder(abstract_builder.ApplicationBuilder):
 
     # ----------------------------------------------------------------------------------------------
     def set_up_models(self, inverse_problem_settings: InverseProblemSettings) -> list[Callable]:
-        server_available = False
-        while not server_available:
-            try:
-                if self._process_id == 0:
-                    print("Calling server...")
-                pto_model = ub.HTTPModel(
-                    inverse_problem_settings.ub_model_address,
-                    inverse_problem_settings.ub_model_name,
-                )
-                if self._process_id == 0:
-                    print("Server available\n")
-                server_available = True
-            except Exception as exc:
-                print(exc)
-                time.sleep(10)
-
-        prior_rng_seed = utils.distribute_rng_seeds_to_processes(
-            inverse_problem_settings.prior_rng_seed, self._process_id
-        )
-        prior_component = prior.UniformLogPrior(
-            inverse_problem_settings.prior_intervals, prior_rng_seed
-        )
-        self._prior_component = prior_component
-
-        likelihood_component = posterior.GaussianLLFromPTOMap(
-            pto_model,
-            inverse_problem_settings.likelihood_data,
-            inverse_problem_settings.likelihood_covariance,
+        posterior_component = utils.request_umbridge_server(
+            self._process_id,
+            inverse_problem_settings.ub_model_address,
+            inverse_problem_settings.ub_model_name,
         )
 
-        model_wrapper = posterior.LogPosterior(prior_component, likelihood_component)
         models = [
-            partial(model_wrapper, config=config)
+            partial(posterior_component, config=config)
             for config in inverse_problem_settings.ub_model_configs
         ]
 
@@ -107,5 +78,12 @@ class ApplicationBuilder(abstract_builder.ApplicationBuilder):
 
     # ----------------------------------------------------------------------------------------------
     def generate_initial_state(self, initial_state_settings: InitialStateSettings) -> np.ndarray:
-        initial_state = self._prior_component.sample()
+        rng_seed = utils.distribute_rng_seeds_to_processes(
+            initial_state_settings.rng_seed_init, self._process_id
+        )
+        init_rng = np.random.default_rng(rng_seed)
+        initial_state = init_rng.multivariate_normal(
+            initial_state_settings.mean_init, initial_state_settings.covariance_init
+        )
+
         return initial_state

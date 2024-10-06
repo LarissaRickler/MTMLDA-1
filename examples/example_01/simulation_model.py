@@ -10,9 +10,9 @@ import umbridge as ub
 # ==================================================================================================
 def process_cli_arguments() -> bool:
     argParser = argparse.ArgumentParser(
-        prog="posterior_gauss.py",
+        prog="pto_banana.py",
         usage="python %(prog)s [options]",
-        description="Umbridge server-side client emulating Gaussian posterior",
+        description="Umbridge server-side client emulating PTO map",
     )
 
     argParser.add_argument(
@@ -36,8 +36,8 @@ def process_cli_arguments() -> bool:
         "--sleep_times",
         type=float,
         required=False,
-        nargs=3,
-        default=[0.03, 0.06, 1],
+        nargs=2,
+        default=[0.001, 0.001],
         help="Sleep times to emulate simulation",
     )
 
@@ -50,27 +50,50 @@ def process_cli_arguments() -> bool:
 
 
 # ==================================================================================================
-class GaussianPosterior(ub.Model):
-    def __init__(self, model_name: str, sleep_time: float) -> None:
-        super().__init__(model_name)
-        self._sleep_time = sleep_time
-        self._mean = np.array([0, 0])
-        self._precision = np.linalg.inv([[0.1, 0.05], [0.05, 0.1]])
+class PTOModel(ub.Model):
+    def __init__(self, sleep_times: list[float]) -> None:
+        super().__init__("banana_pto")
+        self._time_coarse, self._time_fine = sleep_times
+        self._parameter_ranges = [[500, 2000], [1, 20], [20e9, 30e9], [20e9, 30e9]]
 
-    def get_input_sizes(self, config: Any) -> list[int]:
-        return [2]
+    def get_input_sizes(self, config: dict[str:Any] = {}) -> list[float]:
+        return [4]
 
-    def get_output_sizes(self, config: Any) -> list[int]:
-        return [1]
+    def get_output_sizes(self, config: dict[str:Any] = {}) -> list[float]:
+        return [4]
 
     def supports_evaluate(self) -> bool:
         return True
 
-    def __call__(self, parameters: list[list[float]], config: Any = {}) -> list[list[float]]:
-        time.sleep(self._sleep_time)
-        misfit = np.array(parameters[0]) - self._mean
-        logp = -0.5 * misfit.T @ self._precision @ misfit
-        return [[logp]]
+    def __call__(
+        self, parameters: list[list[float]], config: dict[str:Any] = {}
+    ) -> list[list[float]]:
+        if config["level"] == "0":
+            time.sleep(self._time_coarse)
+        if config["level"] == "1":
+            time.sleep(self._time_fine)
+        scaled_parameters = self._scale_input(parameters)
+        observables = self._compute_observables(scaled_parameters)
+        return observables
+
+    def _scale_input(self, parameters: list[list[float]]) -> list[list[float]]:
+        for i, value in enumerate(parameters[0]):
+            lower_bound, upper_bound = self._parameter_ranges[i]
+            parameters[0][i] = 4 * (value - lower_bound) / (upper_bound - lower_bound) - 2
+        return parameters
+
+    def _compute_observables(self, parameters: list[list[float]]) -> list[list[float]]:
+        parameters = parameters[0]
+        observables = [
+            0,
+        ] * len(parameters)
+
+        observables[0] = np.sqrt(20 * (parameters[0] ** 2 - 2 * parameters[1]) ** 2)
+        observables[1] = np.sqrt(2 * (parameters[1] - 0.25) ** 4)
+        observables[2] = np.sqrt(20 * (parameters[3] ** 2 - 2 * parameters[2]) ** 2)
+        observables[3] = np.sqrt(2 * (parameters[2] - 0.25) ** 4)
+
+        return [observables]
 
 
 # ==================================================================================================
@@ -83,9 +106,7 @@ def main():
 
     ub.serve_models(
         [
-            GaussianPosterior("gaussian_posterior_coarse", sleep_times[0]),
-            GaussianPosterior("gaussian_posterior_intermediate", sleep_times[1]),
-            GaussianPosterior("gaussian_posterior_fine", sleep_times[2]),
+            PTOModel(sleep_times),
         ],
         port=port,
         max_workers=100,

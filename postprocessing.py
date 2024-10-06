@@ -9,7 +9,6 @@ Functions:
     main: Main routine to be invoked when script is executed
 """
 
-
 import argparse
 import importlib
 import warnings
@@ -27,21 +26,20 @@ def process_cli_arguments() -> str:
     )
 
     argParser.add_argument(
-        "-dir",
-        "--chain_directory",
+        "-app",
+        "--application",
         type=str,
-        required=False,
-        default=None,
-        help="MCMC chain directory",
+        required=True,
+        help="Application directory",
     )
 
     argParser.add_argument(
-        "-tdir",
-        "--tree_directory",
+        "-s",
+        "--settings",
         type=str,
         required=False,
-        default=None,
-        help="Markov tree directory",
+        default="settings",
+        help="Application settings file",
     )
 
     cliArgs = argParser.parse_args()
@@ -61,7 +59,6 @@ def main():
     pproc = postprocessor.Postprocessor(settings_module.postprocessor_settings)
     pproc.run()
     print("\n============================\n")
-
 
 
 if __name__ == "__main__":

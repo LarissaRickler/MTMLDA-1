@@ -74,6 +74,15 @@ def append_string_to_path(path: Path, string: int) -> Path:
 
 
 # --------------------------------------------------------------------------------------------------
+def get_specific_file_type(directory: Path, file_type: str) -> list[str]:
+    files = []
+    for file in os.listdir(directory):
+        if file.endswith(file_type):
+            files.append(file)
+    return files
+
+
+# --------------------------------------------------------------------------------------------------
 def load_chain(process_id: int, load_path: Path) -> None:
     """Load MCMC chain data from npy file.
 

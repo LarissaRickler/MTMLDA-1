@@ -1,21 +1,27 @@
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
+from functools import partial
 from typing import Any
 
 import numpy as np
 import umbridge as ub
 
-import src.mtmlda.mcmc as mcmc
-import src.mtmlda.utilities as utils
-from components import abstract_builder
+from src.mtmlda.components import abstract_builder, prior, posterior
+from src.mtmlda.core import mcmc
+from src.mtmlda import utilities as utils
 
 
 # ==================================================================================================
 @dataclass
 class InverseProblemSettings(abstract_builder.InverseProblemSettings):
+    prior_intervals: np.ndarray
+    prior_rng_seed: int
+    likelihood_data: np.ndarray
+    likelihood_covariance: np.ndarray
+    ub_model_configs: dict[str, str]
     ub_model_address: str
-    ub_model_names: str
+    ub_model_name: str
 
 
 @dataclass
@@ -29,7 +35,7 @@ class SamplerComponentSettings(abstract_builder.SamplerComponentSettings):
 
 @dataclass
 class InitialStateSettings(abstract_builder.InitialStateSettings):
-    initial_states: list[np.ndarray]
+    pass
 
 
 # ==================================================================================================
@@ -37,6 +43,7 @@ class ApplicationBuilder(abstract_builder.ApplicationBuilder):
     # ----------------------------------------------------------------------------------------------
     def __init__(self, process_id: int) -> None:
         super().__init__(process_id)
+        self._prior_component = None
 
     # ----------------------------------------------------------------------------------------------
     def set_up_models(self, inverse_problem_settings: InverseProblemSettings) -> list[Callable]:
@@ -45,20 +52,10 @@ class ApplicationBuilder(abstract_builder.ApplicationBuilder):
             try:
                 if self._process_id == 0:
                     print("Calling server...")
-                posterior_models = [
-                    ub.HTTPModel(
-                        inverse_problem_settings.ub_model_address,
-                        inverse_problem_settings.ub_model_names[0],
-                    ),
-                    ub.HTTPModel(
-                        inverse_problem_settings.ub_model_address,
-                        inverse_problem_settings.ub_model_names[1],
-                    ),
-                    ub.HTTPModel(
-                        inverse_problem_settings.ub_model_address,
-                        inverse_problem_settings.ub_model_names[2],
-                    ),
-                ]
+                pto_model = ub.HTTPModel(
+                    inverse_problem_settings.ub_model_address,
+                    inverse_problem_settings.ub_model_name,
+                )
                 if self._process_id == 0:
                     print("Server available\n")
                 server_available = True
@@ -66,7 +63,27 @@ class ApplicationBuilder(abstract_builder.ApplicationBuilder):
                 print(exc)
                 time.sleep(10)
 
-        return posterior_models
+        prior_rng_seed = utils.distribute_rng_seeds_to_processes(
+            inverse_problem_settings.prior_rng_seed, self._process_id
+        )
+        prior_component = prior.UniformLogPrior(
+            inverse_problem_settings.prior_intervals, prior_rng_seed
+        )
+        self._prior_component = prior_component
+
+        likelihood_component = posterior.GaussianLLFromPTOMap(
+            pto_model,
+            inverse_problem_settings.likelihood_data,
+            inverse_problem_settings.likelihood_covariance,
+        )
+
+        model_wrapper = posterior.LogPosterior(prior_component, likelihood_component)
+        models = [
+            partial(model_wrapper, config=config)
+            for config in inverse_problem_settings.ub_model_configs
+        ]
+
+        return models
 
     # ----------------------------------------------------------------------------------------------
     def set_up_sampler_components(
@@ -90,5 +107,5 @@ class ApplicationBuilder(abstract_builder.ApplicationBuilder):
 
     # ----------------------------------------------------------------------------------------------
     def generate_initial_state(self, initial_state_settings: InitialStateSettings) -> np.ndarray:
-        initial_state = initial_state_settings.initial_states[self._process_id]
+        initial_state = self._prior_component.sample()
         return initial_state

@@ -273,8 +273,15 @@ class Postprocessor:
                 max_lag = min(self._acf_max_lag, len(acf[0]))
                 lag_values = np.linspace(1, max_lag, max_lag)
                 fig, axs = plt.subplots(
-                    nrows=1, ncols=self._num_components, figsize=(8, 4), layout="constrained"
+                    nrows=1,
+                    ncols=self._num_components,
+                    figsize=(4 * self._num_components, 4),
+                    layout="constrained",
                 )
+                if self._num_components == 1:
+                    axs = [
+                        axs,
+                    ]
                 fig.suptitle(rf"Autocorrelation Chain {i}")
                 for j, ax in enumerate(axs):
                     ax.bar(lag_values, acf[j][:max_lag])

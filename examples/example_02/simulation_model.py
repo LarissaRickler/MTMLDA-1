@@ -3,16 +3,15 @@ import os
 import time
 from typing import Any
 
-import numpy as np
 import umbridge as ub
 
 
 # ==================================================================================================
 def process_cli_arguments() -> bool:
     argParser = argparse.ArgumentParser(
-        prog="posterior_banana.py",
+        prog="loglikelihood_gauss.py",
         usage="python %(prog)s [options]",
-        description="Umbridge server-side client emulating banana-shaped posterior",
+        description="Umbridge server-side client emulating Gaussian log-likelihood",
     )
 
     argParser.add_argument(
@@ -36,8 +35,8 @@ def process_cli_arguments() -> bool:
         "--sleep_times",
         type=float,
         required=False,
-        nargs=3,
-        default=[0.03, 0.06, 1],
+        nargs=2,
+        default=[0.001, 0.001],
         help="Sleep times to emulate simulation",
     )
 
@@ -50,32 +49,33 @@ def process_cli_arguments() -> bool:
 
 
 # ==================================================================================================
-class BananaPosterior(ub.Model):
-    def __init__(self, model_name: str, sleep_time: float) -> None:
-        super().__init__(model_name)
-        self._sleep_time = sleep_time
-        self._mean = np.array([0, 0])
-        self._precision = np.identity(2)
+class GaussianLogLikelihood(ub.Model):
+    def __init__(self, sleep_times: list[float]) -> None:
+        super().__init__("gaussian_loglikelihood")
+        self._time_coarse, self._time_fine = sleep_times
+        self._mean = 5e6
+        self._covariance = 1e12
 
-    def get_input_sizes(self, config: Any = {}) -> list[int]:
-        return [2]
+    def get_input_sizes(self, config: dict[str, Any] = {}) -> list[int]:
+        return [1]
 
-    def get_output_sizes(self, config: Any = {}) -> list[int]:
+    def get_output_sizes(self, config: dict[str, Any] = {}) -> list[int]:
         return [1]
 
     def supports_evaluate(self) -> bool:
         return True
 
-    def __call__(self, parameters: list[list[float]], config: Any = {}) -> list[list[float]]:
-        time.sleep(self._sleep_time)
-        parameters = parameters[0]
-        transformed_parameters = np.zeros((2,))
-        transformed_parameters[0] = np.sqrt(20 * (parameters[0] ** 2 - 2 * parameters[1]) ** 2)
-        transformed_parameters[1] = np.sqrt(2 * (parameters[1] - 0.25) ** 4)
-        misfit = self._mean - transformed_parameters
-        logp = -0.5 * misfit.T @ self._precision @ misfit
+    def __call__(
+        self, parameters: list[list[float]], config: dict[str, Any] = {}
+    ) -> list[list[float]]:
+        if config["level"] == 0:
+            time.sleep(self._time_coarse)
+        if config["level"] == 0:
+            time.sleep(self._time_fine)
 
-        return [[logp]]
+        state_diff = parameters[0][0] - self._mean
+        log_likelihood = -0.5 * state_diff**2 / self._covariance
+        return [[log_likelihood]]
 
 
 # ==================================================================================================
@@ -88,9 +88,7 @@ def main():
 
     ub.serve_models(
         [
-            BananaPosterior(model_name="banana_posterior_coarse", sleep_time=sleep_times[0]),
-            BananaPosterior(model_name="banana_posterior_intermediate", sleep_time=sleep_times[1]),
-            BananaPosterior(model_name="banana_posterior_fine", sleep_time=sleep_times[2]),
+            GaussianLogLikelihood(sleep_times),
         ],
         port=port,
         max_workers=100,

@@ -4,7 +4,7 @@ name = "mtmlda"
 version = "0.1.0"
 description = "Markov Tree Multilevel Delayed Acceptance MCMC Library"
 readme = "README.md"
-license = {text = "GNU GPLv3"}
+license = {text = "MIT License"}
 authors = [
     {name = "Maximilian Kruse", email = "maximilian.kruse@kit.edu"},
     {name = "Linus Seelinger", email = "linus.seelinger@kit.edu"},
@@ -23,7 +23,9 @@ model = [
 ]
 postprocessing = [
     "arviz>=0.17",
-    "pydot>=2.0"
+    "pydot>=2.0",
+    "seaborn>=0.13",
+    "xarray>=2024.3"
 ]
 notebook = [
     "jupyter>=1.0",

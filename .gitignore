@@ -201,13 +201,9 @@ pyrightconfig.json
 *.npy
 *.pdf
 *.pkl
-*.ipynb
 
 /*/
 .VSCodeCounter/
 .vscode/
-!/components/
 !/examples/
-!/seissol/
 !/src/
-!/utilities/

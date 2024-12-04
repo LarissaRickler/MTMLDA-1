@@ -15,7 +15,6 @@ import time
 from collections.abc import Callable, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
-from typing import Union
 
 import anytree as atree
 import numpy as np
@@ -236,8 +235,8 @@ class MTMLDASampler:
     # ----------------------------------------------------------------------------------------------
     def _init_mltree(
         self,
-        initial_state: Union[np.ndarray, None] = None,
-        initial_node: Union[mltree.MTNode, None] = None,
+        initial_state: np.ndarray | None = None,
+        initial_node: mltree.MTNode | None = None,
     ) -> mltree.MTNode:
         """Initialize the Markov tree for prefetching.
 
@@ -298,7 +297,7 @@ class MTMLDASampler:
                 break
 
     # ----------------------------------------------------------------------------------------------
-    def _update_tree_from_finished_jobs(self, mltree_root) -> None:
+    def _update_tree_from_finished_jobs(self, mltree_root: mltree.MTNode) -> None:
         """Get finished jobs from job handler, update Markov tree accordingly.
 
         If a job returns with log-probability lower than the underflow threshold, the corresponding

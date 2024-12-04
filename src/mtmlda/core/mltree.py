@@ -15,12 +15,11 @@ import itertools
 import os
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, Union
+from typing import Any, Self
 
 import anytree as atree
-import anytree.exporter as exporter
 import numpy as np
-from typing_extensions import Self
+from anytree import exporter
 
 
 # ==================================================================================================
@@ -128,7 +127,7 @@ class MLTreeSearchFunctions:
 
     # ----------------------------------------------------------------------------------------------
     @staticmethod
-    def get_same_level_parent(node: MTNode) -> Union[MTNode, None]:
+    def get_same_level_parent(node: MTNode) -> MTNode | None:
         """Find next parent with same level in the MLDA hierarchy.
 
         Args:
@@ -145,7 +144,7 @@ class MLTreeSearchFunctions:
 
     # ----------------------------------------------------------------------------------------------
     @staticmethod
-    def get_unique_same_level_child(node: MTNode) -> Union[MTNode, None]:
+    def get_unique_same_level_child(node: MTNode) -> MTNode | None:
         """Get the unique child on the the same level of the MLDA hierarchy.
 
         Uniqueness refers to the path in the Markov tree, meaning that all MCMC decisions between

@@ -4,10 +4,9 @@ from functools import partial
 from typing import Any
 
 import numpy as np
-
-from src.mtmlda.components import abstract_builder
-from src.mtmlda.core import mcmc
-from src.mtmlda import utilities as utils
+from mtmlda import utilities as utils
+from mtmlda.components import abstract_builder
+from mtmlda.core import mcmc
 
 
 # ==================================================================================================

@@ -6,10 +6,9 @@ from typing import Any
 
 import numpy as np
 import umbridge as ub
-
-from src.mtmlda.components import abstract_builder, prior, posterior
-from src.mtmlda.core import mcmc
-from src.mtmlda import utilities as utils
+from mtmlda import utilities as utils
+from mtmlda.components import abstract_builder, posterior, prior
+from mtmlda.core import mcmc
 
 
 # ==================================================================================================
@@ -101,6 +100,6 @@ class ApplicationBuilder(abstract_builder.ApplicationBuilder):
         return ground_proposal, accept_rate_estimator
 
     # ----------------------------------------------------------------------------------------------
-    def generate_initial_state(self, initial_state_settings: InitialStateSettings) -> np.ndarray:
+    def generate_initial_state(self, _initial_state_settings: InitialStateSettings) -> np.ndarray:
         initial_state = self._prior_component.sample()
         return initial_state

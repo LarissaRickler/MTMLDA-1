@@ -60,7 +60,7 @@ class Statistic:
         get_value: Get the value of the statistic
     """
 
-    def __init__(self, str_id, str_format):
+    def __init__(self, str_id: str, str_format: str) -> None:
         """Constructor of the statistic.
 
         Args:
@@ -71,14 +71,14 @@ class Statistic:
         self.str_format = str_format
         self._value: Any = None
 
-    def set_value(self, value):
+    def set_value(self, value: int | float | np.ndarray) -> None:
         """Set the value of the statistic."""
         assert (value is None) or isinstance(
-            value, (int, float, np.ndarray)
+            value, int | float | np.ndarray
         ), "Unsupported type for value"
         self._value = value
 
-    def get_value(self):
+    def get_value(self) -> int | float | np.ndarray:
         """Get the value of the statistic."""
         return self._value
 
@@ -91,19 +91,19 @@ class RunningStatistic(Statistic):
     average when the `get_value` method is called.
     """
 
-    def __init__(self, str_id, str_format):
+    def __init__(self, str_id: str, str_format: str) -> None:
         """Constructor, see base class for details."""
         super().__init__(str_id, str_format)
         self._value = []
 
-    def set_value(self, new_value):
+    def set_value(self, new_value: int | float | np.ndarray):
         """Set the value of the statistic."""
         assert (new_value is None) or isinstance(
-            new_value, (int, float, np.ndarray)
+            new_value, int | float | np.ndarray
         ), "Unsupported type for value"
         self.value.append(new_value)
 
-    def get_value(self):
+    def get_value(self) -> np.ndarray:
         """Get the value of the statistic."""
         value = np.column_stack(self._value)
         value = np.mean(value, axis=-1)
@@ -118,21 +118,21 @@ class AccumulativeStatistic(Statistic):
     The mean value is computed from all provided values.
     """
 
-    def __init__(self, str_id, str_format):
+    def __init__(self, str_id: str, str_format: str) -> None:
         """Constructor, see base class for details."""
         super().__init__(str_id, str_format)
         self._value = []
         self._num_recordings = 0
         self._average = 0
 
-    def set_value(self, new_value):
+    def set_value(self, new_value: int | float | np.ndarray) -> None:
         """Set the value of the statistic."""
         assert (new_value is None) or isinstance(
-            new_value, (int, float, np.ndarray)
+            new_value, int | float | np.ndarray
         ), "Unsupported type for value"
         self.value.append(new_value)
 
-    def get_value(self):
+    def get_value(self) -> np.ndarray:
         """Get the value of the statistic's running average."""
         value = np.column_stack(self._value)
         num_new_recordings = len(self._value)
@@ -186,7 +186,6 @@ class MTMLDALogger:
         if not self._pylogger.hasHandlers():
             if logger_settings.do_printing:
                 console_handler = logging.StreamHandler(sys.stdout)
-                console_handler.setFormatter
                 console_handler.setLevel(logging.INFO)
                 console_handler.setFormatter(formatter)
                 self._pylogger.addHandler(console_handler)
@@ -326,7 +325,7 @@ class MTMLDALogger:
             value_str = f"({','.join(value_str)})"
         elif value is None:
             value_str = f"{np.nan:{str_format}}"
-        elif isinstance(value, (int, float)):
+        elif isinstance(value, int | float):
             value_str = f"{value:{str_format}}"
         else:
             raise TypeError(f"Unsupported type for value: {type(value)}")

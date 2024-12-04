@@ -9,8 +9,8 @@ Classes:
 """
 
 from dataclasses import dataclass
-from pathlib import Path
 from itertools import combinations
+from pathlib import Path
 
 import arviz as az
 import matplotlib.pyplot as plt
@@ -19,7 +19,7 @@ import pydot
 import seaborn as sns
 from matplotlib.backends.backend_pdf import PdfPages
 
-from .. import utilities as utils
+from mtmlda import utilities as utils
 
 sns.set_theme(style="ticks")
 

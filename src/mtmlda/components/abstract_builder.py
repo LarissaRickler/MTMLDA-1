@@ -18,35 +18,32 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from ..core import mcmc
+from mtmlda.core import mcmc
 
 
 # ==================================================================================================
 @dataclass
 class InverseProblemSettings:
     """Empty base data class for inverse problem settings."""
-    pass
 
 
 @dataclass
 class SamplerComponentSettings:
     """Empty base data class for sampler component settings."""
-    pass
 
 
 @dataclass
 class InitialStateSettings:
     """Empty base data class for initial state settings."""
-    pass
 
 
 # ==================================================================================================
 class ApplicationBuilder(ABC):
     """Base class for application builders.
-    
+
     The class provides a generic interface for application builders, as will be invoked by the run
-    wrapper. The class is purely abstract, implementation must follow in subclasses. The only 
-    concrete behavior the class enforces is that the id of the invoking process is provided. This 
+    wrapper. The class is purely abstract, implementation must follow in subclasses. The only
+    concrete behavior the class enforces is that the id of the invoking process is provided. This
     is useful for setting up components in a process-specific way for chain-parallel runs.
 
     Methods:
@@ -86,7 +83,7 @@ class ApplicationBuilder(ABC):
         self, sampler_component_settings: SamplerComponentSettings
     ) -> tuple[mcmc.BaseProposal, mcmc.BaseAcceptRateEstimator]:
         """Set up the coarse-level proposal and accept rate estimator for MLDA.
-        
+
         Can be used for process-dependent initialization.
 
         Args:

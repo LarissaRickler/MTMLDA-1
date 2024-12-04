@@ -1,9 +1,8 @@
 from pathlib import Path
 
 import numpy as np
-
-from src.mtmlda.core import logging, sampling
-from src.mtmlda.run import runner, postprocessor
+from mtmlda.core import logging, sampling
+from mtmlda.run import postprocessor, runner
 
 from . import builder
 

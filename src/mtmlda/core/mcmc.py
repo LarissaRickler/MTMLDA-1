@@ -109,7 +109,7 @@ class BaseProposal:
 # ==================================================================================================
 class RandomWalkProposal(BaseProposal):
     """Random walk proposal.
-    
+
     Implementation of the Metropolis random walk proposal, inheriting from the BaseProposal class.
     The proposal distribution is a Gaussian about the current state. We utilize a fixed covariance
     matrix and step width. Note that the proposal distribution is symmetric w.r.t. to its arguments,
@@ -160,7 +160,7 @@ class RandomWalkProposal(BaseProposal):
         return proposal
 
     # ----------------------------------------------------------------------------------------------
-    def evaluate_log_probability(self, proposal: np.ndarray, current_state: np.ndarray) -> float:
+    def evaluate_log_probability(self, _proposal: np.ndarray, _current_state: np.ndarray) -> float:
         """Evaluate log probability of proposal, given current state.
 
         This is only a dummy returning zero, as the conditional proposal probabilities vanish
@@ -179,7 +179,7 @@ class RandomWalkProposal(BaseProposal):
 # ==================================================================================================
 class PCNProposal(BaseProposal):
     """Preconditioned Crank-Nicolson random walk proposal.
-    
+
     Implementation of the pCN proposal, inheriting from the BaseProposal class.
     The pCN proposal is an asymmetric extension of the Metropolis random walk proposal. It has been
     developed particularly for high-dimensional parameter spaces.
@@ -261,7 +261,7 @@ class PCNProposal(BaseProposal):
 # ==================================================================================================
 class BaseAcceptRateEstimator:
     """Base class for MLDA accept rate estimators.
-    
+
     This class defines the interface for accept rate estimators. It is an abstract class and cannot
     be instantiated. The prefetching approach to our MLDA implementation requires a-priori estimates
     for accepting MCMC moves on the different levels of the model hierarchy. Such estimates can 
@@ -282,7 +282,7 @@ class BaseAcceptRateEstimator:
 # ==================================================================================================
 class StaticAcceptRateEstimator(BaseAcceptRateEstimator):
     """Static accept rate estimator.
-    
+
     This class implements a simple accept rate estimator based on a fixed update scheme. The object
     is initialized with a list of estimates for each levels. The estimates are then incremented or
     decremented after each MCMC decision, depending on the acceptance of the move.
@@ -357,7 +357,7 @@ class StaticAcceptRateEstimator(BaseAcceptRateEstimator):
 # ==================================================================================================
 class MLMetropolisHastingsKernel:
     """Metropolis-Hastings Acceptance Kernel.
-    
+
     The kernel implements the Metropolis-Hastings acceptance rule for the multilevel setting.
     Accordingly, to different acceptance rules are implemented. One for within-level moves, utilized
     for standard MCMC on the coarsest level of the model hierarchy. The other is for between-level

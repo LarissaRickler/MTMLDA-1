@@ -9,20 +9,20 @@ import umbridge as ub
 
 # ==================================================================================================
 def process_cli_arguments() -> bool:
-    argParser = argparse.ArgumentParser(
+    arg_parser = argparse.ArgumentParser(
         prog="model_server.py",
         usage="python %(prog)s [options]",
         description="Umbridge server-side client emulating hierarchy of banana-shaped posteriors",
     )
 
-    argParser.add_argument(
+    arg_parser.add_argument(
         "-hq",
         "--hyperqueue",
         action="store_true",
         help="Run via Hyperqueue",
     )
 
-    argParser.add_argument(
+    arg_parser.add_argument(
         "-p",
         "--port",
         type=float,
@@ -31,7 +31,7 @@ def process_cli_arguments() -> bool:
         help="User-defined port (if not on Hyperqueue)",
     )
 
-    argParser.add_argument(
+    arg_parser.add_argument(
         "-t",
         "--sleep_times",
         type=float,
@@ -41,10 +41,10 @@ def process_cli_arguments() -> bool:
         help="Sleep times to emulate simulation",
     )
 
-    cliArgs = argParser.parse_args()
-    run_on_hq = cliArgs.hyperqueue
-    local_port = cliArgs.port
-    sleep_times = cliArgs.sleep_times
+    cli_args = arg_parser.parse_args()
+    run_on_hq = cli_args.hyperqueue
+    local_port = cli_args.port
+    sleep_times = cli_args.sleep_times
 
     return run_on_hq, local_port, sleep_times
 
@@ -57,15 +57,15 @@ class BananaPosterior(ub.Model):
         self._mean = np.array([0, 0])
         self._precisions = [prefactor * np.identity(2) for prefactor in (0.1, 0.3, 1.0)]
 
-    def get_input_sizes(self, config: dict[Any] = {}) -> list[int]:
+    def get_input_sizes(self, _config: dict[Any] = {}) -> list[int]:
         return [2]
 
-    def get_output_sizes(self, config: dict[Any] = {}) -> list[int]:
+    def get_output_sizes(self, _config: dict[Any] = {}) -> list[int]:
         return [1]
 
     def supports_evaluate(self) -> bool:
         return True
-    
+
     def _evaluate_logp(self, parameters: list[float], precision: np.ndarray) -> float:
         transformed_parameters = np.zeros((2,))
         transformed_parameters[0] = np.sqrt(20 * (parameters[0] ** 2 - 2 * parameters[1]) ** 2)
@@ -79,16 +79,13 @@ class BananaPosterior(ub.Model):
         time.sleep(self._sleep_times[level])
         logp = self._evaluate_logp(parameters[0], self._precisions[level])
 
-        return [[logp]]
+        return [[float(logp)]]
 
 
 # ==================================================================================================
 def main():
     run_on_hq, local_port, sleep_times = process_cli_arguments()
-    if run_on_hq:
-        port = int(os.environ["PORT"])
-    else:
-        port = local_port
+    port = int(os.environ["PORT"]) if run_on_hq else local_port
 
     ub.serve_models(
         [

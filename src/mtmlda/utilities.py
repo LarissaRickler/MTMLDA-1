@@ -19,14 +19,14 @@ import pickle
 import time
 from numbers import Real
 from pathlib import Path
-from typing import Any, Union
+from typing import Any
 
 import numpy as np
 import umbridge as ub
 
 
 # ==================================================================================================
-def distribute_rng_seeds_to_processes(seeds: Union[list, int], process_id: int):
+def distribute_rng_seeds_to_processes(seeds: list | int, process_id: int) -> int:
     """Distribute and optionally modify seeds for different parallel processes.
 
     This is a generic function that distributes RNG seeds to parallel processes when running MCMC
@@ -40,7 +40,7 @@ def distribute_rng_seeds_to_processes(seeds: Union[list, int], process_id: int):
         process_id (int): Integer ID of the calling process
 
     Returns:
-        Real: RNG seed for the calling process 
+        Real: RNG seed for the calling process
     """
     assert isinstance(process_id, int) and process_id >= 0, "Process ID must be a positive integer"
     if isinstance(seeds, list):
@@ -56,7 +56,7 @@ def distribute_rng_seeds_to_processes(seeds: Union[list, int], process_id: int):
 # --------------------------------------------------------------------------------------------------
 def append_string_to_path(path: Path, string: int) -> Path:
     """Extend a Path object with a file name extension provided as a string.
-    
+
     The new path object's name is extended by "_string". This routine is used to create process-
     specific file names by appending the ID of the calling process. Such a convention is also
     assumed when loading files.
@@ -75,6 +75,7 @@ def append_string_to_path(path: Path, string: int) -> Path:
 
 # --------------------------------------------------------------------------------------------------
 def get_specific_file_type(directory: Path, file_type: str) -> list[str]:
+    """Get all files of a specific type in a directory."""
     files = []
     for file in os.listdir(directory):
         if file.endswith(file_type):
@@ -149,14 +150,14 @@ def load_pickle(process_id: int, load_path: Path) -> Any:
     load_file = append_string_to_path(load_path, f"{process_id}.pkl")
     try:
         with load_file.open("rb") as load_file:
-            object = pickle.load(load_file)
+            loaded_object = pickle.load(load_file)
     except FileNotFoundError:
         raise FileNotFoundError(f"File not found for process id {process_id}")
-    return object
+    return loaded_object
 
 
 # --------------------------------------------------------------------------------------------------
-def save_pickle(process_id: int, save_path: Path, object: Any, exist_ok: bool) -> None:
+def save_pickle(process_id: int, save_path: Path, save_object: Any, exist_ok: bool) -> None:
     """Save a generic object into pickle.
 
     The save path is process-specific through the `append_string_to_path` function. The method is
@@ -171,7 +172,7 @@ def save_pickle(process_id: int, save_path: Path, object: Any, exist_ok: bool) -
     os.makedirs(save_path.parent, exist_ok=exist_ok)
     save_file = append_string_to_path(save_path, f"{process_id}.pkl")
     with save_file.open("wb") as save_file:
-        pickle.dump(object, save_file)
+        pickle.dump(save_object, save_file)
 
 
 # --------------------------------------------------------------------------------------------------

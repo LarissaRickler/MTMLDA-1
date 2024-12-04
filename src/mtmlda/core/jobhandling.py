@@ -23,7 +23,7 @@ class JobHandler:
     nodes is modified accordingly, along with the posterior of the node from the result of the model
     evaluation. The execution is non-blocking, but the precise nature of the callable dictates if
     the execution is actually parallel.
-        
+
     Methods:
         submit_job: Submit a job to the threadpool executor
         get_finished_jobs: Retrieve all jobs that have been fully executed
@@ -84,7 +84,7 @@ class JobHandler:
 
         Returns:
             tuple[list[float], list[at.AnyNode]]: Lists of job results (model evaluation) and
-                corresponding nodes 
+                corresponding nodes
         """
         results = []
         nodes = []

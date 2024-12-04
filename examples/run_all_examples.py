@@ -4,18 +4,17 @@ import subprocess
 import time
 
 
-#===================================================================================================
-def start_server(command):
+# ===================================================================================================
+def start_server(command: str) -> subprocess.Popen:
     print("1) Start simulation model server:", end=" ", flush=True)
-    simulation_server_proc = subprocess.Popen(
-        shlex.split(command), stdout=subprocess.DEVNULL
-    )
+    simulation_server_proc = subprocess.Popen(shlex.split(command), stdout=subprocess.DEVNULL)
     time.sleep(1)
     print("Done", flush=True)
     return simulation_server_proc
 
-#---------------------------------------------------------------------------------------------------
-def run_command(command, message):
+
+# ---------------------------------------------------------------------------------------------------
+def run_command(command: str, message: str) -> None:
     print(message, end=" ", flush=True)
     proc = subprocess.run(shlex.split(command), capture_output=True)
     try:
@@ -25,8 +24,9 @@ def run_command(command, message):
     else:
         print("Done", flush=True)
 
-#---------------------------------------------------------------------------------------------------
-def run_application(path):
+
+# ---------------------------------------------------------------------------------------------------
+def run_application(path: str) -> None:
     print(f"===== Running application {path} =====", flush=True)
     simulation_server_command = f"python {path}/simulation_model.py"
     sampling_run_command = f"python run.py -app {path}"
@@ -43,19 +43,13 @@ def run_application(path):
         print("", flush=True)
 
 
-#===================================================================================================
+# ===================================================================================================
 def main() -> None:
-    applications = [
-        "examples/example_01",
-        "examples/example_02",
-        "examples/example_03",
-    ]
+    applications = ["example_01", "example_02", "example_03"]
 
-    os.chdir("../")
     for application_path in applications:
         run_application(application_path)
 
 
 if __name__ == "__main__":
     main()
-

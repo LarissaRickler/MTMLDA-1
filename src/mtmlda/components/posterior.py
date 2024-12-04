@@ -37,7 +37,7 @@ class GaussianLLFromPTOMap:
                 output
             covariance (np.ndarray): Covariance for waiting of the misfit vector in Gaussian
                 likelihood
-        
+
         Raises:
             ValueError: Checks if the sizes of the data vector and the output of the PTO map match
             ValueError: Checks if the covariance matrix has the same shape as the data vector
@@ -49,7 +49,7 @@ class GaussianLLFromPTOMap:
             )
         if not covariance.shape == (data.size, data.size):
             raise ValueError("The covariance matrix must have the same shape as the data vector.")
-        
+
         self._umbridge_pto_map = umbridge_pto_map
         self._data = data
         self._precision = np.linalg.inv(covariance)

@@ -7,7 +7,7 @@ from mtmlda.run import postprocessor, runner
 from . import builder
 
 # ==================================================================================================
-result_directory = "results_example_02"
+result_directory = "../results_example_02"
 
 parallel_run_settings = runner.ParallelRunSettings(
     num_chains=2,

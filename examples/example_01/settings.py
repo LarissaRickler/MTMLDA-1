@@ -1,13 +1,14 @@
 from pathlib import Path
 
 import numpy as np
+
 from mtmlda.core import logging, sampling
 from mtmlda.run import postprocessor, runner
 
 from . import builder
 
 # ==================================================================================================
-result_directory = "results_example_01"
+result_directory = "../results_example_01"
 
 parallel_run_settings = runner.ParallelRunSettings(
     num_chains=2,

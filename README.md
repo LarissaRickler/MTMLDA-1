@@ -24,7 +24,7 @@ To then execute a sampling application, simply invoke the `run.py` script with t
 ```
 python run.py -app examples/example_01
 ```
-The run script sets up a parallel runner for the execution and conducts the MLDA run. Subsequently, you can analysize and visualize results with 
+The run script sets up a parallel runner for the execution and conducts the MLDA run. Subsequently, you can analysize and visualize results with
 ```
 python postprocessing.py -app examples_example_01
 ```
@@ -59,7 +59,35 @@ Lastly, we discuss in more details the actual settings specified in `settings.py
 **`LoggerSettings`** configures the MTMLDA logger:
 - `do_printing` determines if the run logger info is printed to console
 - `logfile_path` indicates where run logger info is stored, if wanted 
-- `debugfile_path`indicates where debug logger info is stored, if wanted 
+- `debugfile_path`indicates where debug logger info is stored, if wanted
+
+**The second block of settings goes into the application builder, it is therefore application-specific.**
+
+For the current example, we assume that an Umbridge server provides us with a 4D -> 4D *parameter-to-observable map*. From this the builder constructs a Gaussian likelihood, and forms a posterior through the combination with a uniform prior.
+
+**`InverseProblemSettings`** configures the initialization of the model hierarchy for MLDA:
+- `prior_intervals` gives dimension-wise intervals for the uniform prior
+- `prior_rng_seed` is the seed for the prior-internal RNG, which is used to draw samples from it
+- `likelihood_data` is the data vector used to construct a misfit with the output of the PTO map
+- `likelihood_covariance` defines the covariance matrix used to generate a Gaussian likelihood from the misfit vector
+- `ub_model_configs` defines the values of the `config` argument of calls to the UMBridge model server for each model in the hierarchy.
+- `ub_model_address` is the address of the UMBridge server
+- `ub_model_name` is the name of the UMBridge server
+
+**`SamplerComponentSettings`** defines the configuration of the components to be passed to the MLDA sampler, these are the proposal and the accept rate estimator. In this example, 
+we utilize a Metropolis `RandomWalkProposal` and a `StaticAcceptRateEstimator`. We refer to the documentation of these components for further details.
+- `proposal_step_width` is the step width of the random walk proposal
+- `proposal_covariance` is the covariance matrix for the Gaussian proposal step
+- `proposal_rng_seed` is the seed initializing the RNG for proposal step sampling
+- `accept_rates_initial_gues` sets the initial accept rate estimates for each level in the model hierarchy
+- `accept_rates_update_parameter` is a factor for the decrease/increase of the accept rate estimate of a level if a proposal is accepted or rejected through an MCMC decision
+  
+**`InitialStateSettings`** determines how to initialize the Markov Chain for MLDA. For our application, it is empty, as the initial states are simply sampled from the prior (if not provided explicitly)
+
+**Note**: Several settings may be set and or modified by the parallel run wrapper, depending on the index of the chain they are used for.
+
+
+
 
 ## License
 

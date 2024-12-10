@@ -68,7 +68,7 @@ class BaseProposal:
         Args:
             current_state (np.ndarray): State of the Markov chain to propose from
         """
-        pass
+        raise NotImplementedError
 
     # ----------------------------------------------------------------------------------------------
     @abstractmethod
@@ -83,7 +83,7 @@ class BaseProposal:
             left_state (np.ndarray): First state for evaluation
             right_state (np.ndarray): Second state for evaluation
         """
-        pass
+        raise NotImplementedError
 
     # ----------------------------------------------------------------------------------------------
     @property
@@ -276,7 +276,7 @@ class BaseAcceptRateEstimator:
     @abstractmethod
     def get_acceptance_rate(self, *args: Any, **kwargs: Any) -> float:
         """Abstract getter for the acceptance rate."""
-        pass
+        raise NotImplementedError
 
 
 # ==================================================================================================

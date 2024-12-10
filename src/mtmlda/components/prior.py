@@ -56,12 +56,12 @@ class BaseLogPrior(ABC):
     @abstractmethod
     def evaluate(self, parameter: np.ndarray) -> float:
         """Compute log-probability for given parameter."""
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def sample(self) -> np.ndarray:
         """Draw a sample from the prior."""
-        pass
+        raise NotImplementedError
 
 
 # ==================================================================================================

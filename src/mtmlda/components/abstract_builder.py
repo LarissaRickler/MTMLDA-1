@@ -76,7 +76,7 @@ class ApplicationBuilder(ABC):
         Returns:
             list[Callable]: Posterior hierarchy for MLDA run
         """
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def set_up_sampler_components(
@@ -94,7 +94,7 @@ class ApplicationBuilder(ABC):
             tuple[mcmc.BaseProposal, mcmc.BaseAcceptRateEstimator]: Proposal and
                 accept rate estimator
         """
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def generate_initial_state(self, initial_state_settings: InitialStateSettings) -> np.ndarray:
@@ -109,4 +109,4 @@ class ApplicationBuilder(ABC):
         Returns:
             np.ndarray: Initial state
         """
-        pass
+        raise NotImplementedError

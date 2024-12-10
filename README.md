@@ -49,6 +49,7 @@ Lastly, we discuss in more details the actual settings specified in `settings.py
 - `underflow_threshold` is the value for the obtained log densities below which the corresponding density is treated as zero. The threshold is implemented for numerical stability.
 - `rng_seed_mltree` is the seed of the RNG that is used for the uniform numbers for comparison in accept/reject steps. Every new node in  a Markov tree is equipped with such a random number.
 - `rng_seed_node_init` is the seed of the RNG used for initialization of the first node in the Markov tree. The RNG samples an initial state, only necessary if such a state is not provided (see `SamplerRunSettings`)
+- `mltree_path`indicates where to store exported Markov trees, if wanted
 
 **`SamplerRunSettings`** configures the MLDA run for an initialized sampler:
 - `num_samples` denotes the number of fine-level samples to generate
@@ -84,9 +85,17 @@ we utilize a Metropolis `RandomWalkProposal` and a `StaticAcceptRateEstimator`. 
   
 **`InitialStateSettings`** determines how to initialize the Markov Chain for MLDA. For our application, it is empty, as the initial states are simply sampled from the prior (if not provided explicitly)
 
+
+**The last block of settings is again generic, it comprises the configuration of the postprocessor.**
+
+**`PostprocessorSettings`**:
+- `chain_directory` points to the sampled chains to postprocess
+- `tree_directory`points to exported Markov trees for rendering, if wanted
+- `output_data_directory` says where to store postprcessed data
+- `visualization_directory` says where to store visualizations
+- `acf_lag_max` determines up to which lag autocorrelation functions should be computed
+
 **Note**: Several settings may be set and or modified by the parallel run wrapper, depending on the index of the chain they are used for.
-
-
 
 
 ## License

@@ -68,9 +68,9 @@ class GaussianLogLikelihood(ub.Model):
     def __call__(
         self, parameters: list[list[float]], config: dict[str, Any] = {}
     ) -> list[list[float]]:
-        if config["level"] == 0:
+        if config["level"] == "0":
             time.sleep(self._time_coarse)
-        if config["level"] == 0:
+        if config["level"] == "1":
             time.sleep(self._time_fine)
 
         state_diff = parameters[0][0] - self._mean

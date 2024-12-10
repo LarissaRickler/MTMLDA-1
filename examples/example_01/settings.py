@@ -39,7 +39,7 @@ sampler_run_settings = sampling.SamplerRunSettings(
 
 logger_settings = logging.LoggerSettings(
     do_printing=True,
-    logfile_path=Path(f"{result_directory}") / Path("mtmlda"),
+    logfile_path=Path(f"{result_directory}/mtmlda"),
     debugfile_path=Path(f"{result_directory}/mtmlda_debug"),
     write_mode="w",
 )

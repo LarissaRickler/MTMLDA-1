@@ -82,14 +82,7 @@ class GaussianLogLikelihood(ub.Model):
 def main():
     run_on_hq, local_port, sleep_times = process_cli_arguments()
     port = int(os.environ["PORT"]) if run_on_hq else local_port
-
-    ub.serve_models(
-        [
-            GaussianLogLikelihood(sleep_times),
-        ],
-        port=port,
-        max_workers=100,
-    )
+    ub.serve_models([GaussianLogLikelihood(sleep_times)], port=port, max_workers=100)
 
 
 if __name__ == "__main__":

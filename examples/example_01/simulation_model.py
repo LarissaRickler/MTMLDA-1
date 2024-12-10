@@ -56,10 +56,10 @@ class PTOModel(ub.Model):
         self._time_coarse, self._time_fine = sleep_times
         self._parameter_ranges = [[500, 2000], [1, 20], [20e9, 30e9], [20e9, 30e9]]
 
-    def get_input_sizes(self, _config: dict[str:Any] = {}) -> list[float]:
+    def get_input_sizes(self, _config: dict[str:Any]) -> list[float]:
         return [4]
 
-    def get_output_sizes(self, _config: dict[str:Any] = {}) -> list[float]:
+    def get_output_sizes(self, _config: dict[str:Any]) -> list[float]:
         return [4]
 
     def supports_evaluate(self) -> bool:
@@ -101,14 +101,7 @@ class PTOModel(ub.Model):
 def main():
     run_on_hq, local_port, sleep_times = process_cli_arguments()
     port = int(os.environ["PORT"]) if run_on_hq else local_port
-
-    ub.serve_models(
-        [
-            PTOModel(sleep_times),
-        ],
-        port=port,
-        max_workers=100,
-    )
+    ub.serve_models([PTOModel(sleep_times)], port=port, max_workers=100)
 
 
 if __name__ == "__main__":

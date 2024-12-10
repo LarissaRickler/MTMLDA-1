@@ -6,6 +6,7 @@ from typing import Any
 
 import numpy as np
 import umbridge as ub
+
 from mtmlda import utilities as utils
 from mtmlda.components import abstract_builder, posterior, prior
 from mtmlda.core import mcmc

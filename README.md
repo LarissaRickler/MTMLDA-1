@@ -12,7 +12,7 @@ in the root directory. Alternatively, you may use [UV](https://docs.astral.sh/uv
 
 ## Usage
 
-`mtmlda` is a modular, low-level library, whose functionality is implemented in the `core` submodule. Its main component is the `MTMLDASampler`sampler object, which requires, next to MCMC-specific components, a list of callables resembling the model hierarchy. To accommodate different scenarios, we provide the user with the possibility to implement an object with the interface of `ApplicationBuilder` in the `components` submodule. In addition, the `components` module provides interfaces and exemplary implementations of components that are typically required to set up a hierarchy of Bayesian posterior densities. The builder can then be used, in combination with a `settings.py` file, to set up a `ParallelRunner` object in the `run`. This object sets up the model hierarchy and sampler. Subsequently, it can run multiple MLDA chains in parallel, each of which is potentially parallelized though prefetching. All parallelization is effectively handled through the asynchronous calls to the hierarchy of models. To process these request effectively, we rely on the [UM-Bridge](https://um-bridge-benchmarks.readthedocs.io/en/docs/) framework, which can dispatch the calls to any sort of external framework, up to HPC architectures. After results of an mtmlda run comprise detailed logfiles (run and debug), as well as the generated chains, and potentially the Markov trees generated during the sampling. Data and trees can be analyzed by the `PostProcessor` in the `run`module.
+`mtmlda` is a modular, low-level library, whose functionality is implemented in the `core` submodule. Its main component is the `MTMLDASampler`sampler object, which requires, next to MCMC-specific components, a list of callables resembling the model hierarchy (**log densities**). To accommodate different scenarios, we provide the user with the possibility to implement an object with the interface of `ApplicationBuilder` in the `components` submodule. In addition, the `components` module provides interfaces and exemplary implementations of components that are typically required to set up a hierarchy of Bayesian posterior densities. The builder can then be used, in combination with a `settings.py` file, to set up a `ParallelRunner` object in the `run`. This object sets up the model hierarchy and sampler. Subsequently, it can run multiple MLDA chains in parallel, each of which is potentially parallelized though prefetching. All parallelization is effectively handled through the asynchronous calls to the hierarchy of models. To process these request effectively, we rely on the [UM-Bridge](https://um-bridge-benchmarks.readthedocs.io/en/docs/) framework, which can dispatch the calls to any sort of external framework, up to HPC architectures. After results of an mtmlda run comprise detailed logfiles (run and debug), as well as the generated chains, and potentially the Markov trees generated during the sampling. Data and trees can be analyzed by the `PostProcessor` in the `run`module.
 
 All mentioned components have extensivee in-code documentation, which we refer the reader to for moder detailed information on their usage and implementation. In the following, we focus on the execution of the example application `example_01`. Any application to be processed by the standard workflow has to comprise a `settings.py`and a `builder.py` file. The settings file is the unified entry point for the configuration of the models, the builder and the sampler. It implements data classes that serve as input settings for the respective components.
 For the MCMC client to work, we need to start a server-side model hierarchy to be called. This is implemented as an UMBridge server in `simulation_model.py`, execute in a separate terminal session with
@@ -29,7 +29,37 @@ The run script sets up a parallel runner for the execution and conducts the MLDA
 python postprocessing.py -app examples_example_01
 ```
 
-Lastly, we discuss in more details the actual settings specified in `settings.py`, with the example application `example_01`.
+Lastly, we discuss in more details the actual settings specified in `settings.py`, for the example application `example_01`.
+
+**The first block of settings is identical for all applications, it comprises the settings for the MTMLDA algorithm.**
+
+**`ParallelRunSettings`** configures the parallel runner wrapper:
+- `num_chains` determines the number of parallel MLDA chains to sample
+- `chain_save_path` indicates the directory where to store the resulting samples in `npy` file format
+- `chain_load_path` can point to existing samples for re-initialization of a sampling run
+- `rng_state_save_path` can be set to store the numpy RNGs used during sampling in `pkl` format
+- `rng_state_load_path` can fetch those RNGs for re-initialization
+- `overwrite_chains` indicates whether overwriting existing chain data is permitted
+- `overwrite_rng_states`indicates the same for the RNGs
+
+**`SamplerSetupSettings`** configures the initialization of the MLDA sampler:
+- `num_levels` indicates the depth of the multilevel model hierarchy
+- `subsampling_rates` determines the length of subchains on respective levels, from coarse to fine, has to be of length `num_levels`
+- `max_tree_height` is a technical setting, restricting the Markov tree in the algorithm to a maximum depth. This depth should usually not be reached.
+- `underflow_threshold` is the value for the obtained log densities below which the corresponding density is treated as zero. The threshold is implemented for numerical stability.
+- `rng_seed_mltree` is the seed of the RNG that is used for the uniform numbers for comparison in accept/reject steps. Every new node in  a Markov tree is equipped with such a random number.
+- `rng_seed_node_init` is the seed of the RNG used for initialization of the first node in the Markov tree. The RNG samples an initial state, only necessary if such a state is not provided (see `SamplerRunSettings`)
+
+**`SamplerRunSettings`** configures the MLDA run for an initialized sampler:
+- `num_samples` denotes the number of fine-level samples to generate
+- `initial_state` defines the initial parameter value in the chain
+- `num_threads` is the number of parallel workers for prefetching
+- `print_interval` determines the stride on samples after which info is sent to the logger
+
+**`LoggerSettings`** configures the MTMLDA logger:
+- `do_printing` determines if the run logger info is printed to console
+- `logfile_path` indicates where run logger info is stored, if wanted 
+- `debugfile_path`indicates where debug logger info is stored, if wanted 
 
 ## License
 

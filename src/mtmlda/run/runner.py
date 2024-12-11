@@ -19,9 +19,9 @@ from pathlib import Path
 
 import numpy as np
 
-from .. import utilities as utils
-from ..components import abstract_builder
-from ..core import logging, mltree, sampling
+from mtmlda import utilities as utils
+from mtmlda.components import abstract_builder
+from mtmlda.core import logging, mltree, sampling
 
 
 # ==================================================================================================

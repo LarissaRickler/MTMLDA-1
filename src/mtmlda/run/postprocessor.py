@@ -141,8 +141,8 @@ class Postprocessor:
         try:
             chains = [np.load(chain_directory / Path(file)) for file in npy_files]
         except FileNotFoundError:
-            raise FileNotFoundError("Chain files couldn't be loaded.")
-        assert all([len(chain.shape) == 2 for chain in chains]), "Chains need to be 2D arrays."
+            raise FileNotFoundError("Chain files couldn't be loaded.") from None
+        assert all(len(chain.shape) == 2 for chain in chains), "Chains need to be 2D arrays."
         num_components = chains[0].shape[1]
         assert (
             min([chain.shape[0] for chain in chains]) >= self._acf_max_lag

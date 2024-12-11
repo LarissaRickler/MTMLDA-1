@@ -128,7 +128,7 @@ class MTMLDASampler:
             models (Sequence[Callable]): List of callables resembling the MLDA model hierarchy
             accept_rate_estimator (mcmc.BaseAcceptRateEstimator): Accept rate estimator
                 for prefetching
-            ground_proposal (mcmc.BaseProposal): Proposal object for thr ground level MCMC chain
+            ground_proposal (mcmc.BaseProposal): Proposal object for the ground level MCMC chain
         """
         self._models = models
         self._num_levels = setup_settings.num_levels
@@ -206,12 +206,12 @@ class MTMLDASampler:
                     if len(mcmc_chain) >= self._num_samples:
                         break
 
-        except BaseException as exc:
-            self._logger.exception(exc)
+        except BaseException:
+            self._logger.exception()
             try:
                 self._export_debug_tree(mltree_root)
-            except RecursionError as exc:
-                self._logger.exception(exc)
+            except RecursionError:
+                self._logger.exception()
         finally:
             return mcmc_chain, mltree_root
 
@@ -309,7 +309,7 @@ class MTMLDASampler:
             mltree_root (mltree.MTNode): Current Markov tree, only necessary for visualization.
         """
         results, nodes = self._job_handler.get_finished_jobs()
-        for result, node in zip(results, nodes):
+        for result, node in zip(results, nodes, strict=False):
             if result < self._underflow_threshold:
                 # Zero probability -> Discard this tree branch
                 node.parent = None

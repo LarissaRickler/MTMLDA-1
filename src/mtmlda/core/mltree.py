@@ -12,7 +12,6 @@ Classes:
 """
 
 import itertools
-import os
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, Self
@@ -58,7 +57,9 @@ class MTNode(BaseNode, atree.NodeMixin):
     node functionality via a mixin.
     """
 
-    def __init__(self, name: str, parent: Self = None, children: list[Self] = None):
+    def __init__(
+        self, name: str, parent: Self | None = None, children: list[Self] | None = None
+    ) -> None:
         """Node constructor.
 
         Args:
@@ -254,7 +255,7 @@ class MLTreeModifier:
     def __init__(
         self,
         num_levels: int,
-        ground_proposal: np.ndarray,
+        ground_proposal: Any,
         subsampling_rates: Sequence[int],
         rng_seed: float,
     ) -> None:
@@ -263,10 +264,11 @@ class MLTreeModifier:
         Reads in the necessary parameters for the manipulation of the Markov tree.
 
         Args:
-            num_levels (int): _description_
-            ground_proposal (np.ndarray): _description_
-            subsampling_rates (Sequence[int]): _description_
-            rng_seed (float): _description_
+            num_levels (int): Number of levels in the model hierarchy
+            ground_proposal (Any): Proposal object for chain on coarsest level
+            subsampling_rates (Sequence[int]): Subchain lengths for each level
+            rng_seed (float): RNG seed for uniform number generation to be used in accept/reject
+                decisions
 
         Raises:
             ValueError: Checks that correct number of sub-sampling rates is provided
@@ -511,7 +513,7 @@ class MLTreeVisualizer:
     _color_visited = "mediumaquamarine"
 
     # ----------------------------------------------------------------------------------------------
-    def __init__(self, result_directory: Path = None) -> None:
+    def __init__(self, result_directory: Path | None = None) -> None:
         """Constructor.
 
         Create directory for storing visualizations if desired, initialize counter for indexing.
@@ -523,7 +525,7 @@ class MLTreeVisualizer:
         self._id_counter = 0
         self._result_dir = result_directory
         if self._result_dir is not None:
-            os.makedirs(result_directory, exist_ok=True)
+            Path.mkdir(self._result_dir,parents=True, exist_ok=True)
 
     # ----------------------------------------------------------------------------------------------
     def export_to_dot(self, mltree_root: MTNode) -> int:

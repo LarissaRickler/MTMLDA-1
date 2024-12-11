@@ -37,7 +37,7 @@ class BaseProposal:
 
     Methods:
         propose: Propose new MCMC move
-        evaluate_log_probability: Evaluate log probability of a new move depending on the 
+        evaluate_log_probability: Evaluate log probability of a new move depending on the
             current state
     Attributes:
         rng: Random number generator used for proposals

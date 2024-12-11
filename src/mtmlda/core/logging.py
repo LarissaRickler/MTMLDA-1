@@ -14,7 +14,6 @@ Classes:
 """
 
 import logging
-import os
 import sys
 from collections.abc import Iterable
 from dataclasses import dataclass
@@ -71,7 +70,7 @@ class Statistic:
         self.str_format = str_format
         self._value: Any = None
 
-    def set_value(self, value: int | float | np.ndarray) -> None:
+    def set_value(self, value: float | np.ndarray) -> None:
         """Set the value of the statistic."""
         assert (value is None) or isinstance(
             value, int | float | np.ndarray
@@ -96,7 +95,7 @@ class RunningStatistic(Statistic):
         super().__init__(str_id, str_format)
         self._value = []
 
-    def set_value(self, new_value: int | float | np.ndarray):
+    def set_value(self, new_value: float | np.ndarray) -> None:
         """Set the value of the statistic."""
         assert (new_value is None) or isinstance(
             new_value, int | float | np.ndarray
@@ -125,7 +124,7 @@ class AccumulativeStatistic(Statistic):
         self._num_recordings = 0
         self._average = 0
 
-    def set_value(self, new_value: int | float | np.ndarray) -> None:
+    def set_value(self, new_value: float | np.ndarray) -> None:
         """Set the value of the statistic."""
         assert (new_value is None) or isinstance(
             new_value, int | float | np.ndarray
@@ -191,7 +190,7 @@ class MTMLDALogger:
                 self._pylogger.addHandler(console_handler)
 
             if self._logfile_path is not None:
-                os.makedirs(self._logfile_path.parent, exist_ok=True)
+                Path.mkdir(self._logfile_path.parent, parents=True, exist_ok=True)
                 file_handler = logging.FileHandler(
                     self._logfile_path, mode=logger_settings.write_mode
                 )
@@ -200,7 +199,7 @@ class MTMLDALogger:
                 self._pylogger.addHandler(file_handler)
 
             if self._debugfile_path is not None:
-                os.makedirs(self._debugfile_path.parent, exist_ok=True)
+                Path.mkdir(self._debugfile_path.parent, parents=True, exist_ok=True)
                 debug_handler = DebugFileHandler(
                     self._debugfile_path, mode=logger_settings.write_mode
                 )

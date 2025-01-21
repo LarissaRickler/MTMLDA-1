@@ -19,11 +19,7 @@ uv sync --all-groups
 
 ## Usage
 
-
-
-
-
-
+The [documentation](https://uqatkit.github.io/mtmlda/) provides further information regarding usage, theoretical background, technical setup and API. Alternatively, you can check out the runnable [examples](https://github.com/UQatKIT/mtmlda/tree/main/examples)
 
 ## License
 

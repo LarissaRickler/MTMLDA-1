@@ -167,8 +167,8 @@ class RandomWalkProposal(BaseProposal):
         in the Metropolis-Hastings acceptance ratio.
 
         Args:
-            proposal (np.ndarray): Proposal state
-            current_state (np.ndarray): Current state
+            _proposal (np.ndarray): Proposal state
+            _current_state (np.ndarray): Current state
 
         Returns:
             float: Dummy log-probability, here always zero

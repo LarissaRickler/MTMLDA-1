@@ -208,3 +208,4 @@ pyrightconfig.json
 !/examples/
 !/src/
 !docs/
+!.github/

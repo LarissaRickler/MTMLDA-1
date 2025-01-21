@@ -166,7 +166,7 @@ def save_pickle(process_id: int, save_path: Path, save_object: Any, exist_ok: bo
     Args:
         process_id (int): ID of the calling process
         save_path (Path): Generic save path
-        object (Any): Object to save
+        save_object (Any): Object to save
         exist_ok (bool): Choose if existing object should be overwritten
     """
     os.makedirs(save_path.parent, exist_ok=exist_ok)

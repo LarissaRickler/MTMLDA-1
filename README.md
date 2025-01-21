@@ -1,4 +1,4 @@
-![Docs](https://img.shields.io/github/actions/workflow/status/UQatKIT/Eikonax/docs.yaml?label=Docs)
+![Docs](https://img.shields.io/github/actions/workflow/status/UQatKIT/mtmlda/docs.yaml?label=Docs)
 ![Python Version](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2FUQatKIT%2Fmtmlda%2Fmain%2Fpyproject.toml)
 ![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)
 

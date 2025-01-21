@@ -16,7 +16,7 @@ The library in this repository is a Python package readily installable via `pip`
 ```bash
 python pip install .
 ```
-For development, we recommend using the great uv project management tool, for which Eikonax provides a universal lock file. To set up a reproducible environment, run 
+For development, we recommend using the great [uv](https://docs.astral.sh/uv/) project management tool, for which MTMLDA provides a universal lock file. To set up a reproducible environment, run 
 ```bash
 uv sync --all-groups
 ```
@@ -25,7 +25,7 @@ To render images from generated dot files, you also need to have [Graphviz](http
 
 ## Usage
 
-The [documentation](https://uqatkit.github.io/mtmlda/) provides further information regarding usage, theoretical background, technical setup and API. Alternatively, you can check out the runnable [examples](https://github.com/UQatKIT/mtmlda/tree/main/examples).
+The [documentation](https://uqatkit.github.io/mtmlda/) provides further information regarding usage, technical setup and API. Alternatively, you can check out the runnable [examples](https://github.com/UQatKIT/mtmlda/tree/main/examples).
 
 ## License
 

@@ -14,7 +14,7 @@ The implemented version comprises within-chain parallelism through [prefetching]
 
 The library in this repository is a Python package readily installable via `pip`, simply run
 ```bash
-python pip install .
+pip install .
 ```
 For development, we recommend using the great [uv](https://docs.astral.sh/uv/) project management tool, for which MTMLDA provides a universal lock file. To set up a reproducible environment, run 
 ```bash

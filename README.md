@@ -21,9 +21,11 @@ For development, we recommend using the great uv project management tool, for wh
 uv sync --all-groups
 ```
 
+To render images from generated dot files, you also need to have [Graphviz](https://graphviz.org/) installed on your system.
+
 ## Usage
 
-The [documentation](https://uqatkit.github.io/mtmlda/) provides further information regarding usage, theoretical background, technical setup and API. Alternatively, you can check out the runnable [examples](https://github.com/UQatKIT/mtmlda/tree/main/examples)
+The [documentation](https://uqatkit.github.io/mtmlda/) provides further information regarding usage, theoretical background, technical setup and API. Alternatively, you can check out the runnable [examples](https://github.com/UQatKIT/mtmlda/tree/main/examples).
 
 ## License
 

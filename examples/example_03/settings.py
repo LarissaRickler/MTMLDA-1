@@ -11,7 +11,7 @@ from . import builder
 result_directory = "../results_example_03"
 
 parallel_run_settings = runner.ParallelRunSettings(
-    num_chains=2,
+    num_chains=4,
     chain_save_path=Path(f"{result_directory}/chain"),
     chain_load_path=None,
     node_save_path=None,
@@ -34,11 +34,11 @@ sampler_setup_settings = sampling.SamplerSetupSettings(
 )
 
 sampler_run_settings = sampling.SamplerRunSettings(
-    num_samples=10,
+    num_samples=1000,
     initial_state=None,
     initial_node=None,
     num_threads=2,
-    print_interval=1,
+    print_interval=50,
 )
 
 logger_settings = logging.LoggerSettings(

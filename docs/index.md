@@ -21,6 +21,8 @@ For development, we recommend using the great uv project management tool, for wh
 uv sync --all-groups
 ```
 
+To render images from generated dot files, you also need to have [Graphviz](https://graphviz.org/) installed on your system.
+
 ## Documentation
 
 #### Usage

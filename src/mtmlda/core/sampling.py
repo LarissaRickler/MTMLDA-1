@@ -251,9 +251,9 @@ class MTMLDASampler:
         Returns:
             mltree.MTNode: Root of the Markov tree.
         """
-        assert (initial_state is not None) or (
-            initial_node is not None
-        ), "Either initial state or initial node must be provided."
+        assert (initial_state is not None) or (initial_node is not None), (
+            "Either initial state or initial node must be provided."
+        )
 
         mltree_root = mltree.MTNode(name="a")
         mltree_root.level = self._num_levels - 1

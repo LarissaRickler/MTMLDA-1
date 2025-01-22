@@ -144,9 +144,9 @@ class Postprocessor:
             raise FileNotFoundError("Chain files couldn't be loaded.") from None
         assert all(len(chain.shape) == 2 for chain in chains), "Chains need to be 2D arrays."
         num_components = chains[0].shape[1]
-        assert (
-            min([chain.shape[0] for chain in chains]) >= self._acf_max_lag
-        ), "Chains need to be longer than the maximum lag for autocorrelation."
+        assert min([chain.shape[0] for chain in chains]) >= self._acf_max_lag, (
+            "Chains need to be longer than the maximum lag for autocorrelation."
+        )
 
         return chains, num_components
 
@@ -254,8 +254,8 @@ class Postprocessor:
             for i, kde in enumerate(marginal_densities):
                 fig, ax = plt.subplots(figsize=(4, 4), layout="constrained")
                 ax.plot(kde[0], kde[1])
-                ax.set_xlabel(rf"$\theta_{i+1}$")
-                ax.set_ylabel(rf"$P_{{KDE}}(\theta_{i+1})$")
+                ax.set_xlabel(rf"$\theta_{i + 1}$")
+                ax.set_ylabel(rf"$P_{{KDE}}(\theta_{i + 1})$")
                 pdf.savefig(fig)
                 plt.close(fig)
 
@@ -286,7 +286,7 @@ class Postprocessor:
                 for j, ax in enumerate(axs):
                     ax.bar(lag_values, acf[j][:max_lag])
                     ax.set_xlabel(r"Lag")
-                    ax.set_ylabel(rf"Autocorrelation $\theta_{j+1}$")
+                    ax.set_ylabel(rf"Autocorrelation $\theta_{j + 1}$")
                 pdf.savefig(fig)
                 plt.close(fig)
 
@@ -306,8 +306,8 @@ class Postprocessor:
             for i, ess in enumerate(effective_sample_size):
                 fig, ax = plt.subplots(figsize=(4, 4), layout="constrained")
                 ax.plot(true_sample_size, ess)
-                ax.set_xlabel(rf"Sample Size $\theta_{i+1}$")
-                ax.set_ylabel(rf"Effective Sample Size $\theta_{i+1}$")
+                ax.set_xlabel(rf"Sample Size $\theta_{i + 1}$")
+                ax.set_ylabel(rf"Effective Sample Size $\theta_{i + 1}$")
                 pdf.savefig(fig)
                 plt.close(fig)
 
@@ -322,8 +322,8 @@ class Postprocessor:
             for i, j in component_permutations:
                 fig, ax = plt.subplots(figsize=(4, 4), layout="constrained")
                 ax.scatter(self._all_samples[:, i], self._all_samples[:, j], s=10, alpha=0.1)
-                ax.set_xlabel(rf"$\theta_{i+1}$")
-                ax.set_ylabel(rf"$\theta_{j+1}$")
+                ax.set_xlabel(rf"$\theta_{i + 1}$")
+                ax.set_ylabel(rf"$\theta_{j + 1}$")
                 pdf.savefig(fig)
                 plt.close(fig)
 

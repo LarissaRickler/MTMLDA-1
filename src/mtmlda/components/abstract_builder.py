@@ -53,7 +53,7 @@ class ApplicationBuilder(ABC):
     """
 
     def __init__(self, process_id: int) -> None:
-        """Base class constructor, assigns process id of calling process aas internal attribute.
+        """Base class constructor, assigns process id of calling process as internal attribute.
 
         Args:
             process_id (int): ID of calling process

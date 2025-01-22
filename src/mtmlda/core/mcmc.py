@@ -397,9 +397,9 @@ class MLMetropolisHastingsKernel:
         proposal_logp_new_old = self._ground_proposal.evaluate_log_probability(new_state, old_state)
         proposal_logp_old_new = self._ground_proposal.evaluate_log_probability(old_state, new_state)
 
-        assert all(
-            value is not None for value in (posterior_logp_new, posterior_logp_old)
-        ), "Posterior value is None"
+        assert all(value is not None for value in (posterior_logp_new, posterior_logp_old)), (
+            "Posterior value is None"
+        )
 
         accept_probability = min(
             1,

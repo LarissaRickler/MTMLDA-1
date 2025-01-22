@@ -72,9 +72,9 @@ class Statistic:
 
     def set_value(self, value: float | np.ndarray) -> None:
         """Set the value of the statistic."""
-        assert (value is None) or isinstance(
-            value, int | float | np.ndarray
-        ), "Unsupported type for value"
+        assert (value is None) or isinstance(value, int | float | np.ndarray), (
+            "Unsupported type for value"
+        )
         self._value = value
 
     def get_value(self) -> int | float | np.ndarray:
@@ -97,9 +97,9 @@ class RunningStatistic(Statistic):
 
     def set_value(self, new_value: float | np.ndarray) -> None:
         """Set the value of the statistic."""
-        assert (new_value is None) or isinstance(
-            new_value, int | float | np.ndarray
-        ), "Unsupported type for value"
+        assert (new_value is None) or isinstance(new_value, int | float | np.ndarray), (
+            "Unsupported type for value"
+        )
         self.value.append(new_value)
 
     def get_value(self) -> np.ndarray:
@@ -126,9 +126,9 @@ class AccumulativeStatistic(Statistic):
 
     def set_value(self, new_value: float | np.ndarray) -> None:
         """Set the value of the statistic."""
-        assert (new_value is None) or isinstance(
-            new_value, int | float | np.ndarray
-        ), "Unsupported type for value"
+        assert (new_value is None) or isinstance(new_value, int | float | np.ndarray), (
+            "Unsupported type for value"
+        )
         self.value.append(new_value)
 
     def get_value(self) -> np.ndarray:

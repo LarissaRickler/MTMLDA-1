@@ -44,9 +44,9 @@ def distribute_rng_seeds_to_processes(seeds: list | int, process_id: int) -> int
     """
     assert isinstance(process_id, int) and process_id >= 0, "Process ID must be a positive integer"
     if isinstance(seeds, list):
-        assert all(
-            isinstance(seed, Real) for seed in seeds
-        ), "All seeds must be real numbers when specified in list"
+        assert all(isinstance(seed, Real) for seed in seeds), (
+            "All seeds must be real numbers when specified in list"
+        )
         return seeds[process_id]
     else:
         assert isinstance(seeds, Real), "Seed must be real number when specified as single value"

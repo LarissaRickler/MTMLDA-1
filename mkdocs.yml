@@ -32,7 +32,7 @@ theme:
       toggle:
         icon: material/toggle-switch-off-outline
         name: Switch to light mode
-  favicon: images/graph.png
+  favicon: images/markov_tree.png
   icon:
     annotation: material/plus-circle
     logo: material/graph

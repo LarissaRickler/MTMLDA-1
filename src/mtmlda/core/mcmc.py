@@ -264,7 +264,7 @@ class BaseAcceptRateEstimator:
 
     This class defines the interface for accept rate estimators. It is an abstract class and cannot
     be instantiated. The prefetching approach to our MLDA implementation requires a-priori estimates
-    for accepting MCMC moves on the different levels of the model hierarchy. Such estimates can 
+    for accepting MCMC moves on the different levels of the model hierarchy. Such estimates can
     depend on any number of factors like the level itself, the current state, or the sample history.
     In the simplest case, the acceptance rates are constant.
 
@@ -301,7 +301,7 @@ class StaticAcceptRateEstimator(BaseAcceptRateEstimator):
         Args:
             initial_guess (list[float]): List of initial guesses for the acceptance rates of each
                 level
-            update_parameter (float): Update parameter 
+            update_parameter (float): Update parameter
 
         Raises:
             ValueError: Checks that initial guesses are in (0,1)

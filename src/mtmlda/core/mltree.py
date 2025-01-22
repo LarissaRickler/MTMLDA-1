@@ -525,7 +525,7 @@ class MLTreeVisualizer:
         self._id_counter = 0
         self._result_dir = result_directory
         if self._result_dir is not None:
-            Path.mkdir(self._result_dir,parents=True, exist_ok=True)
+            Path.mkdir(self._result_dir, parents=True, exist_ok=True)
 
     # ----------------------------------------------------------------------------------------------
     def export_to_dot(self, mltree_root: MTNode) -> int:

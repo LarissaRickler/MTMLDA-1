@@ -8,7 +8,7 @@ The implemented version comprises within-chain parallelism through [prefetching]
 
 !!! warning
     MTMLDA is a library developed in the course of a research project, not as a dedicated tool. As
-    such such, it has been tested for a number of example use cases, but not with an exhaustive test suite. Therefore, we currently do not intend to upload this library to a public index.
+    such, it has been tested for a number of example use cases, but not with an exhaustive test suite. Therefore, we currently do not intend to upload this library to a public index.
 
 ## Installation and Development
 

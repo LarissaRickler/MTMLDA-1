@@ -25,7 +25,7 @@ To render images from generated dot files, you also need to have [Graphviz](http
 
 ## Usage
 
-The [documentation](https://uqatkit.github.io/mtmlda/) provides further information regarding usage, technical setup and API. Alternatively, you can check out the runnable [examples](https://github.com/UQatKIT/mtmlda/tree/main/examples).
+The [documentation](https://uqatkit.github.io/MTMLDA/) provides further information regarding usage, technical setup and API. Alternatively, you can check out the runnable [examples](https://github.com/UQatKIT/mtmlda/tree/main/examples).
 
 ## License
 

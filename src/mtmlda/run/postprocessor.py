@@ -101,25 +101,24 @@ class Postprocessor:
             print("Evaluate statistics ...")
             marginal_densities = self._compute_marginal_kdes()
             autocorrelations = self._compute_autocorrelation()
-            effective_sample_size, true_sample_size = self._compute_effective_sample_size()
-            psrf, num_samples = self._compute_psrf()
+            ess_data = self._compute_effective_sample_size()
+            psrf_data = self._compute_psrf()
 
             if self._output_data_directory is not None:
                 print("Save statistics data ...")
                 self._save_data(
                     marginal_densities,
                     autocorrelations,
-                    effective_sample_size,
-                    true_sample_size,
-                    psrf,
-                    num_samples,
+                    ess_data,
+                    psrf_data,
                 )
             if self._visualization_directory is not None:
                 print("Generate plots ...")
+                self._visualize_traces(self._components)
                 self._visualize_marginal_densities(marginal_densities)
                 self._visualize_autocorrelation(autocorrelations)
-                self._visualize_effective_sample_size(effective_sample_size, true_sample_size)
-                self._visualize_psrf(psrf, num_samples)
+                self._visualize_effective_sample_size(ess_data)
+                self._visualize_psrf(psrf_data)
                 if self._num_components > 1:
                     self._visualize_pairwise()
 
@@ -218,8 +217,8 @@ class Postprocessor:
             )
             effective_sample_size.append(ess_per_component)
 
-        true_sample_size = np.arange(4, num_samples_per_chain * num_chains, stride * num_chains)
-        return effective_sample_size, true_sample_size
+        true_sample_size = num_chains * np.arange(4, num_samples_per_chain, stride)
+        return true_sample_size, effective_sample_size
 
     # ----------------------------------------------------------------------------------------------
     def _compute_psrf(self) -> list:
@@ -239,17 +238,15 @@ class Postprocessor:
             psrf.append(rhat_per_component)
 
         num_samples = np.arange(4, num_samples_per_chain, stride)
-        return psrf, num_samples
+        return num_samples, psrf
 
     # ----------------------------------------------------------------------------------------------
     def _save_data(
         self,
         marginal_densities: list,
         autocorrelations: list,
-        effective_sample_size: list,
-        true_sample_size: np.ndarray,
-        psrf: list,
-        num_samples: np.ndarray,
+        ess_data: tuple,
+        psrf_data: tuple,
     ) -> None:
         """Save statistics data for reproducibility of plots.
 
@@ -261,6 +258,9 @@ class Postprocessor:
             psrf (list): PSRF for all components.
             num_samples (np.ndarray): Sample size array for comparison to PSRF.
         """
+        true_sample_size, effective_sample_size = ess_data
+        num_samples, psrf = psrf_data
+
         marginal_densities_file = self._output_data_directory / Path("marginal_density.npz")
         autocorrelations_file = self._output_data_directory / Path("autocorrelation.npz")
         effective_sample_size_file = self._output_data_directory / Path("effective_sample_size.npz")
@@ -285,6 +285,40 @@ class Postprocessor:
         np.savez(autocorrelations_file, **ac_data_dict)
         np.savez(effective_sample_size_file, **ess_data_dict)
         np.savez(psrf_file, **psrf_data_dict)
+
+    # ----------------------------------------------------------------------------------------------
+    def _visualize_traces(self, components: list) -> None:
+        """Visualize ACFs for all components.
+
+        Args:
+            autocorrelations (list): Computed ACFs for all components.
+        """
+        visualization_file = self._visualization_directory / Path("traceplots.pdf")
+        num_chains = components[0].shape[0]
+        num_samples_per_chain = components[0].shape[1]
+        sample_array = np.arange(1, num_samples_per_chain + 1, 1)
+
+        with PdfPages(visualization_file) as pdf:
+            for i, trace in enumerate(components):
+                fig, axs = plt.subplots(
+                    nrows=1,
+                    ncols=num_chains,
+                    figsize=(4 * num_chains, 4),
+                    layout="constrained",
+                )
+                if num_chains == 1:
+                    axs = [
+                        axs,
+                    ]
+                fig.suptitle(rf"Traces $\theta_{i + 1}$")
+                print(sample_array.shape)
+                print(trace.shape)
+                for j, ax in enumerate(axs):
+                    ax.plot(sample_array, trace[j, :])
+                    ax.set_xlabel(r"$N$")
+                    ax.set_ylabel(rf"Trace chain {j}")
+                pdf.savefig(fig)
+                plt.close(fig)
 
     # ----------------------------------------------------------------------------------------------
     def _visualize_marginal_densities(self, marginal_densities: list) -> None:
@@ -336,15 +370,14 @@ class Postprocessor:
                 plt.close(fig)
 
     # ----------------------------------------------------------------------------------------------
-    def _visualize_effective_sample_size(
-        self, effective_sample_size: list, true_sample_size: np.ndarray
-    ) -> None:
+    def _visualize_effective_sample_size(self, ess_data: tuple) -> None:
         """Visualize ESS for every component.
 
         Args:
             effective_sample_size (list): ESS for all components.
             true_sample_size (np.ndarray): True sample size for comparison.
         """
+        true_sample_size, effective_sample_size = ess_data
         visualization_file = self._visualization_directory / Path("effective_sample_size.pdf")
 
         with PdfPages(visualization_file) as pdf:
@@ -357,13 +390,14 @@ class Postprocessor:
                 plt.close(fig)
 
     # ----------------------------------------------------------------------------------------------
-    def _visualize_psrf(self, psrf: list, num_samples: np.ndarray) -> None:
+    def _visualize_psrf(self, psrf_data: tuple) -> None:
         """Visualize PSRF for every component.
 
         Args:
             psrf (list): PSRF for all components.
             num_samples (np.ndarray): Number of samples over which to plot.
         """
+        num_samples, psrf = psrf_data
         visualization_file = self._visualization_directory / Path("psrf.pdf")
 
         with PdfPages(visualization_file) as pdf:

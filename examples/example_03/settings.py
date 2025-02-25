@@ -75,5 +75,5 @@ postprocessor_settings = postprocessor.PostprocessorSettings(
     tree_directory=None,
     output_data_directory=Path(result_directory),
     visualization_directory=Path(result_directory),
-    acf_max_lag=9,
+    acf_max_lag=100,
 )

@@ -311,8 +311,6 @@ class Postprocessor:
                         axs,
                     ]
                 fig.suptitle(rf"Traces $\theta_{i + 1}$")
-                print(sample_array.shape)
-                print(trace.shape)
                 for j, ax in enumerate(axs):
                     ax.plot(sample_array, trace[j, :])
                     ax.set_xlabel(r"$N$")

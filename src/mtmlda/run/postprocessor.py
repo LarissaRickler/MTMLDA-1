@@ -208,6 +208,7 @@ class Postprocessor:
             list: ESS for all components.
         """
         num_samples_per_chain = self._components[0].shape[1]
+        num_chains = self._components[0].shape[0]
         stride = int(np.ceil(num_samples_per_chain / 100))
 
         effective_sample_size = []
@@ -217,7 +218,7 @@ class Postprocessor:
             )
             effective_sample_size.append(ess_per_component)
 
-        true_sample_size = np.arange(4, num_samples_per_chain, stride)
+        true_sample_size = np.arange(4, num_samples_per_chain * num_chains, stride * num_chains)
         return effective_sample_size, true_sample_size
 
     # ----------------------------------------------------------------------------------------------
@@ -350,7 +351,7 @@ class Postprocessor:
             for i, ess in enumerate(effective_sample_size):
                 fig, ax = plt.subplots(figsize=(4, 4), layout="constrained")
                 ax.plot(true_sample_size, ess)
-                ax.set_xlabel(r"N$")
+                ax.set_xlabel(r"$N$")
                 ax.set_ylabel(rf"ESS $\theta_{i + 1}$")
                 pdf.savefig(fig)
                 plt.close(fig)

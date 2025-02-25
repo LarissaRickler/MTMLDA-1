@@ -25,7 +25,7 @@ parallel_run_settings = runner.ParallelRunSettings(
 
 sampler_setup_settings = sampling.SamplerSetupSettings(
     num_levels=3,
-    subsampling_rates=[5, 3, -1],
+    subsampling_rates=[30, 3, -1],
     max_tree_height=50,
     underflow_threshold=-1000,
     rng_seed_mltree=1,

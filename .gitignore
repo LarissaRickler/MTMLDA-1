@@ -199,6 +199,7 @@ pyrightconfig.json
 *.npy
 *.pdf
 *.pkl
+development.ipynb
 
 /*/
 .VSCodeCounter/

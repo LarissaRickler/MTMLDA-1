@@ -162,7 +162,7 @@ class Postprocessor:
         """
         kdes = []
         for i in range(self._num_components):
-            kdes.append(az.kde(self._all_samples[:, i], bw="scott"))
+            kdes.append(az.kde(self._all_samples[:, i], bw="scott"))  # noqa: PERF401
 
         return kdes
 
@@ -179,7 +179,7 @@ class Postprocessor:
         for i in range(len(self._chains)):
             acf_per_chain = []
             for j in range(self._num_components):
-                acf_per_chain.append(az.autocorr(self._chains[i][:, j]))
+                acf_per_chain.append(az.autocorr(self._chains[i][:, j]))  # noqa: PERF401
             autocorrelations.append(acf_per_chain)
 
         return autocorrelations
@@ -312,7 +312,7 @@ class Postprocessor:
                 plt.close(fig)
 
     # ----------------------------------------------------------------------------------------------
-    def _visualize_pairwise(self):
+    def _visualize_pairwise(self) -> None:
         """Visualize all perwise sample distribution in an all-vs-all fashion."""
         visualization_file = self._visualization_directory / Path("pairwise_samples.pdf")
         component_list = list(range(self._num_components))

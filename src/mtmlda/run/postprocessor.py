@@ -98,14 +98,14 @@ class Postprocessor:
         generates visualizations, and renders trees.
         """
         if self._chain_directory is not None:
-            print("Evaluate statistics ...")
+            print("Evaluate statistics ...")  # noqa: T201
             marginal_densities = self._compute_marginal_kdes()
             autocorrelations = self._compute_autocorrelation()
             ess_data = self._compute_effective_sample_size()
             psrf_data = self._compute_psrf()
 
             if self._output_data_directory is not None:
-                print("Save statistics data ...")
+                print("Save statistics data ...")  # noqa: T201
                 self._save_data(
                     marginal_densities,
                     autocorrelations,
@@ -113,7 +113,7 @@ class Postprocessor:
                     psrf_data,
                 )
             if self._visualization_directory is not None:
-                print("Generate plots ...")
+                print("Generate plots ...")  # noqa: T201
                 self._visualize_traces(self._components)
                 self._visualize_marginal_densities(marginal_densities)
                 self._visualize_autocorrelation(autocorrelations)
@@ -123,7 +123,7 @@ class Postprocessor:
                     self._visualize_pairwise()
 
         if self._tree_directory is not None:
-            print("Render dot files ...")
+            print("Render dot files ...")  # noqa: T201
             self._render_dot_files(self._tree_directory)
 
     # ----------------------------------------------------------------------------------------------
@@ -180,9 +180,9 @@ class Postprocessor:
 
     # ----------------------------------------------------------------------------------------------
     def _compute_autocorrelation(self) -> list:
-        """Computes ACFs for eacht chain and component.
+        """Computes ACFs for each chain and component.
 
-        Useful for assessing mixing/burn-in of chains.
+        Useful for assessing mixing of chains.
 
         Returns:
             list: List of lists containing ACFs for each component and chain.
@@ -253,10 +253,8 @@ class Postprocessor:
         Args:
             marginal_densities (list): 1D Marginal densities from KDE.
             autocorrelations (list): ACFs for all components.
-            effective_sample_size (list): ESS for all components.
-            true_sample_size (np.ndarray): True sample size array for comparison to ESS.
-            psrf (list): PSRF for all components.
-            num_samples (np.ndarray): Sample size array for comparison to PSRF.
+            ess_data (tuple): ESS for all components.
+            psrf_data (tuple): PSRF for all components.
         """
         true_sample_size, effective_sample_size = ess_data
         num_samples, psrf = psrf_data
@@ -291,7 +289,7 @@ class Postprocessor:
         """Visualize ACFs for all components.
 
         Args:
-            autocorrelations (list): Computed ACFs for all components.
+            components (list): Sample collections of all components.
         """
         visualization_file = self._visualization_directory / Path("traceplots.pdf")
         num_chains = components[0].shape[0]
@@ -372,8 +370,7 @@ class Postprocessor:
         """Visualize ESS for every component.
 
         Args:
-            effective_sample_size (list): ESS for all components.
-            true_sample_size (np.ndarray): True sample size for comparison.
+            ess_data (tuple): ESS for all components.
         """
         true_sample_size, effective_sample_size = ess_data
         visualization_file = self._visualization_directory / Path("effective_sample_size.pdf")
@@ -392,8 +389,7 @@ class Postprocessor:
         """Visualize PSRF for every component.
 
         Args:
-            psrf (list): PSRF for all components.
-            num_samples (np.ndarray): Number of samples over which to plot.
+            psrf_data (tuple): PSRF for all components.
         """
         num_samples, psrf = psrf_data
         visualization_file = self._visualization_directory / Path("psrf.pdf")
@@ -409,7 +405,7 @@ class Postprocessor:
 
     # ----------------------------------------------------------------------------------------------
     def _visualize_pairwise(self) -> None:
-        """Visualize all perwise sample distribution in an all-vs-all fashion."""
+        """Visualize all pairwise sample distribution in an all-vs-all fashion."""
         visualization_file = self._visualization_directory / Path("pairwise_samples.pdf")
         component_list = list(range(self._num_components))
         component_permutations = list(combinations(component_list, 2))
